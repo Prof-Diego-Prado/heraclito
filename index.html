@@ -200,21 +200,9 @@
         </button>
       </div>
 
-      <p class="px-3 pb-1 text-xs font-medium" style="color:var(--muted);">Drive dos Professores</p>
-      <div id="sidebar-drives-lista" class="space-y-0.5 mb-3">
+      <div id="sidebar-pastas-tree" class="space-y-0.5 mt-1">
         <p class="px-3 text-xs py-1" style="color:var(--muted);">Carregando...</p>
       </div>
-
-      <p class="px-3 pb-1 text-xs font-medium" style="color:var(--muted);">Materiais Diversos</p>
-      <a href="https://drive.google.com/drive/folders/1IhOItmZg-WPfF7kry-lZ-wVV5-S6vLCG?usp=sharing"
-        target="_blank"
-        class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors hover:bg-[#F0EDE6] group">
-        <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background:#FFEDD5;">
-          <i data-lucide="folder-open" class="w-3.5 h-3.5" style="color:var(--accent);"></i>
-        </div>
-        <span class="truncate text-xs font-medium" style="color:var(--text);">Pasta de Materiais</span>
-        <i data-lucide="external-link" class="w-3 h-3 ml-auto shrink-0 opacity-0 group-hover:opacity-60" style="color:var(--muted);"></i>
-      </a>
     </div>
 
     <!-- Professores sidebar -->
@@ -519,6 +507,39 @@
     </div>
 
     <!-- USUÁRIOS -->
+    <!-- VIEW PASTA ───────────────────────────────────── -->
+    <div id="view-pasta" class="hidden">
+      <div class="mb-6">
+        <nav class="flex items-center gap-1.5 text-sm mb-3">
+          <button onclick="voltarDePasta()" class="flex items-center gap-1 font-medium hover:opacity-70 transition-opacity" style="color:var(--primary);">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Materiais
+          </button>
+          <span style="color:var(--muted);">/</span>
+          <span id="pasta-breadcrumb-nome" class="font-medium" style="color:var(--text);"></span>
+        </nav>
+        <div class="flex items-center justify-between">
+          <h2 id="pasta-titulo" class="text-xl font-bold" style="color:var(--text);"></h2>
+          <button id="btn-nova-subpasta-view" class="hidden btn-primary px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+            <i data-lucide="folder-plus" class="w-4 h-4"></i>Nova subpasta
+          </button>
+        </div>
+      </div>
+      <!-- Subfolders -->
+      <div id="pasta-subfolders" class="hidden mb-6">
+        <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">Subpastas</p>
+        <div id="pasta-subfolders-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
+      <!-- Files -->
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">Arquivos</p>
+        <div id="pasta-arquivos-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div class="col-span-full flex flex-col items-center py-12" style="color:var(--muted);">
+            <i data-lucide="folder" class="w-10 h-10 mb-2 opacity-20"></i><p class="text-sm">Pasta vazia</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="view-usuarios" class="hidden">
       <div class="mb-6">
         <h1 class="text-2xl font-bold" style="color:var(--text);">Gerenciar Usuários</h1>
@@ -768,6 +789,11 @@
           <div class="flex-1 h-px" style="background:var(--border);"></div>
         </div>
 
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome da Disciplina</label>
+          <input type="text" id="cad-disciplina-prof" class="input-field" placeholder="Ex: Cálculo I — Eng. Civil">
+          <p class="text-xs mt-1" style="color:var(--muted);">Nomeia sua pasta automaticamente na plataforma</p>
+        </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Instituição</label>
@@ -993,6 +1019,14 @@
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Mensagem para o Feed <span class="normal-case font-normal">(opcional)</span></label>
         <textarea id="arq-descricao" rows="3" class="input-field resize-none" placeholder="Escreva algo sobre este material..."></textarea>
       </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider flex items-center gap-1.5" style="color:var(--muted);">
+          <i data-lucide="folder" class="w-3.5 h-3.5"></i>Pasta de destino
+        </label>
+        <select id="arq-folder" class="input-field">
+          <option value="">— Carregando pastas… —</option>
+        </select>
+      </div>
       <div id="arq-erro" class="hidden rounded-xl px-3 py-2 text-sm" style="background:#FEF2F2; color:#B91C1C;"></div>
       <div class="flex justify-end gap-2 pt-1">
         <button type="button" class="fechar-modal px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
@@ -1035,6 +1069,36 @@
         class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold">
         Salvar foto
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL NOVA SUBPASTA
+═══════════════════════════════════════════════════════ -->
+<div id="modal-nova-subpasta" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2" style="color:var(--text);">
+        <i data-lucide="folder-plus" class="w-4 h-4" style="color:var(--primary);"></i>Nova Subpasta
+      </p>
+      <button onclick="fecharNovaSubpasta()" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome da subpasta</label>
+        <input type="text" id="nova-subpasta-nome" class="input-field" placeholder="Ex: Provas, Exercícios, Aula 1…">
+        <input type="hidden" id="nova-subpasta-parent">
+      </div>
+      <div id="nova-subpasta-erro" class="hidden text-sm rounded-xl px-3 py-2.5" style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA;"></div>
+      <div class="flex gap-2">
+        <button onclick="fecharNovaSubpasta()"
+          class="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
+        <button onclick="criarSubpasta()" id="btn-criar-subpasta"
+          class="flex-1 btn-primary py-2.5 rounded-xl text-sm font-semibold">Criar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1170,6 +1234,7 @@
       ...(tipo === 'teacher' && {
         institution:      document.getElementById('cad-instituicao').value.trim() || null,
         area:             document.getElementById('cad-area').value.trim() || null,
+        disciplina:       document.getElementById('cad-disciplina-prof').value.trim() || null,
         drive_folder_url: document.getElementById('cad-drive').value.trim() || null,
       })
     }
@@ -1239,7 +1304,7 @@
     // Marcar primeira nav como ativa
     document.querySelector('a[href="#dashboard"]').classList.add('active')
 
-    await Promise.all([ carregarAulas(), carregarMaterialDidatico(), carregarProfessoresSidebar() ])
+    await Promise.all([ carregarAulas(), carregarSidebarPastas(), carregarProfessoresSidebar() ])
     if (isAdmin) await carregarUsuariosPendentes()
     setupRealtime()
     lucide.createIcons()
@@ -1523,23 +1588,236 @@
   }
 
   // ── MATERIAL SIDEBAR ─────────────────────────────────
-  async function carregarMaterialDidatico() {
-    const { data: profs } = await db.from('users').select('id,name,username,avatar_url,drive_folder_url')
-      .eq('role','teacher').eq('approved',true).not('drive_folder_url','is',null).order('name')
+  // ── SISTEMA DE PASTAS ────────────────────────────────
+  let pastaAtiva = null
 
-    const el = document.getElementById('sidebar-drives-lista')
-    if (!profs || profs.length === 0) {
-      el.innerHTML = `<p class="px-3 text-xs py-1" style="color:var(--muted);">Nenhuma pasta cadastrada</p>`
+  async function carregarSidebarPastas() {
+    const el = document.getElementById('sidebar-pastas-tree')
+    if (!el) return
+    const { data: folders } = await db.from('folders')
+      .select('*, owner:users!owner_id(id,name,username,avatar_url)')
+      .order('tipo').order('name')
+
+    if (!folders || folders.length === 0) {
+      el.innerHTML = `<p class="px-3 text-xs py-1.5" style="color:var(--muted);">Sem pastas</p>`
+      lucide.createIcons(); return
+    }
+
+    const childrenOf = {}
+    folders.forEach(f => { childrenOf[f.id] = [] })
+    folders.forEach(f => { if (f.parent_id && childrenOf[f.parent_id]) childrenOf[f.parent_id].push(f) })
+    const roots = folders.filter(f => !f.parent_id)
+    el.innerHTML = roots.map(f => renderSidebarFolder(f, childrenOf, 0)).join('')
+    lucide.createIcons()
+  }
+
+  function renderSidebarFolder(folder, childrenOf, depth) {
+    const children   = childrenOf[folder.id] || []
+    const hasKids    = children.length > 0
+    const isProf     = folder.tipo === 'professor'
+    const isGlobal   = folder.tipo === 'global'
+    const owner      = folder.owner
+    const isActive   = pastaAtiva === folder.id
+    const canAddSub  = isAdmin || (isTeacher && folder.owner_id === currentUser?.id)
+    const indent     = depth * 10
+
+    const folderIcon = isProf && owner
+      ? `<img src="${avatarUrl(owner)}" class="avatar w-5 h-5 shrink-0" style="border:1.5px solid var(--border);">`
+      : `<div class="w-5 h-5 rounded flex items-center justify-center shrink-0" style="background:${isGlobal ? '#FFEDD5' : '#EEF2FF'};">
+           <i data-lucide="${isGlobal ? 'folder-open' : 'folder'}" class="w-3 h-3" style="color:${isGlobal ? 'var(--accent)' : 'var(--primary)'};"></i>
+         </div>`
+
+    const childrenHtml = hasKids
+      ? `<div id="subfolders-${folder.id}" class="space-y-0.5 mt-0.5" style="display:none;">
+           ${children.map(c => renderSidebarFolder(c, childrenOf, depth + 1)).join('')}
+         </div>`
+      : ''
+
+    return `
+    <div class="group/sf">
+      <div class="flex items-center gap-0.5" style="padding-left:${indent}px;">
+        ${hasKids
+          ? `<button onclick="toggleSidebarFolder('${folder.id}')" class="p-0.5 rounded hover:bg-gray-200 shrink-0 transition-all" style="color:var(--muted);">
+               <i data-lucide="chevron-right" id="chevron-${folder.id}" class="w-3 h-3 transition-transform"></i>
+             </button>`
+          : `<span class="w-4 shrink-0"></span>`}
+        <button onclick="selecionarPasta('${folder.id}','${folder.tipo}','${folder.owner_id||''}')"
+          class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors hover:bg-[#F0EDE6]"
+          style="${isActive ? 'background:var(--soft);' : ''}">
+          ${folderIcon}
+          <span class="text-xs font-medium truncate flex-1" style="color:${isActive ? 'var(--primary)' : 'var(--text)'};">${folder.name}</span>
+        </button>
+        ${canAddSub
+          ? `<button onclick="abrirNovaSubpasta('${folder.id}')"
+               class="opacity-0 group-hover/sf:opacity-100 p-0.5 rounded hover:bg-indigo-100 transition-all shrink-0"
+               title="Nova subpasta" style="color:var(--primary);">
+               <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
+             </button>`
+          : ''}
+      </div>
+      ${childrenHtml}
+    </div>`
+  }
+
+  window.toggleSidebarFolder = (id) => {
+    const el = document.getElementById(`subfolders-${id}`)
+    const ch = document.getElementById(`chevron-${id}`)
+    if (!el) return
+    const visible = el.style.display !== 'none'
+    el.style.display = visible ? 'none' : 'block'
+    if (ch) ch.style.transform = visible ? '' : 'rotate(90deg)'
+  }
+
+  window.selecionarPasta = (id, tipo, ownerId) => {
+    pastaAtiva = id
+    carregarSidebarPastas()
+    if (tipo === 'professor' && ownerId) {
+      abrirPerfilProfessor(ownerId)
     } else {
-      el.innerHTML = profs.map(p => `
-        <a href="${p.drive_folder_url}" target="_blank"
-          class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors hover:bg-[#F0EDE6] group">
-          <img src="${avatarUrl(p)}" class="avatar w-5 h-5 shrink-0">
-          <span class="text-xs font-medium truncate flex-1" style="color:var(--text);">${p.name}</span>
-          <i data-lucide="external-link" class="w-3 h-3 opacity-0 group-hover:opacity-50 shrink-0" style="color:var(--muted);"></i>
-        </a>`).join('')
+      abrirViewPasta(id)
+    }
+  }
+
+  async function abrirViewPasta(folderId) {
+    const { data: folder } = await db.from('folders').select('*').eq('id', folderId).single()
+    if (!folder) return
+    navTo('pasta', null)
+    document.getElementById('pasta-breadcrumb-nome').textContent = folder.name
+    document.getElementById('pasta-titulo').textContent = folder.name
+    const canAddSub = isAdmin || (isTeacher && folder.owner_id === currentUser?.id)
+    const btn = document.getElementById('btn-nova-subpasta-view')
+    btn.dataset.parentId = folderId
+    canAddSub ? btn.classList.remove('hidden') : btn.classList.add('hidden')
+
+    const { data: subs } = await db.from('folders').select('*').eq('parent_id', folderId).order('name')
+    const subsEl   = document.getElementById('pasta-subfolders')
+    const subsGrid = document.getElementById('pasta-subfolders-grid')
+    if (subs && subs.length > 0) {
+      subsEl.classList.remove('hidden')
+      subsGrid.innerHTML = subs.map(s => `
+        <button onclick="selecionarPasta('${s.id}','${s.tipo}','${s.owner_id||''}')"
+          class="rounded-xl p-3 text-left transition-shadow hover:shadow-md w-full"
+          style="background:var(--surface); border:1px solid var(--border);">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style="background:#EEF2FF;">
+            <i data-lucide="folder" class="w-4 h-4" style="color:var(--primary);"></i>
+          </div>
+          <p class="text-xs font-semibold truncate" style="color:var(--text);">${s.name}</p>
+        </button>`).join('')
+    } else {
+      subsEl.classList.add('hidden')
+    }
+
+    const { data: arqs } = await db.from('arquivos')
+      .select('*').eq('folder_id', folderId).eq('categoria', 'material')
+      .order('created_at', { ascending: false })
+    const grid   = document.getElementById('pasta-arquivos-grid')
+    const bgMap  = { pdf:'#FEF2F2', doc:'#EFF6FF', ppt:'#FFF7ED', link:'#F0FDF4' }
+    const icMap  = { pdf:'#EF4444', doc:'#3B82F6', ppt:'#F97316', link:'#10B981' }
+    const icName = { pdf:'file-text', doc:'file-text', ppt:'presentation', link:'link' }
+    const label  = { pdf:'PDF', doc:'Word', ppt:'PPT', link:'Link' }
+
+    if (!arqs || arqs.length === 0) {
+      grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-12" style="color:var(--muted);">
+        <i data-lucide="folder" class="w-10 h-10 mb-2 opacity-20"></i><p class="text-sm">Pasta vazia</p></div>`
+    } else {
+      grid.innerHTML = arqs.map(item => {
+        const bg = bgMap[item.tipo] || '#F9FAFB'
+        const ic = icMap[item.tipo] || '#6B7280'
+        const ln = icName[item.tipo] || 'file'
+        const lb = label[item.tipo] || item.tipo
+        return `
+          <a href="${item.url}" target="_blank"
+            class="rounded-xl p-3 transition-shadow hover:shadow-md block"
+            style="background:var(--surface); border:1px solid var(--border);">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style="background:${ic}22;">
+              <i data-lucide="${ln}" class="w-4 h-4" style="color:${ic};"></i>
+            </div>
+            <p class="text-xs font-semibold truncate" style="color:var(--text);">${item.nome}</p>
+            <p class="text-[10px] mt-0.5 font-medium" style="color:${ic};">${lb}</p>
+          </a>`
+      }).join('')
     }
     lucide.createIcons()
+  }
+
+  window.voltarDePasta = () => {
+    pastaAtiva = null
+    navTo('professores', document.querySelector('a[href="#professores"]'))
+    carregarProfessores()
+    carregarSidebarPastas()
+  }
+
+  window.abrirNovaSubpasta = (parentId) => {
+    document.getElementById('nova-subpasta-nome').value = ''
+    document.getElementById('nova-subpasta-parent').value = parentId
+    document.getElementById('nova-subpasta-erro').classList.add('hidden')
+    const modal = document.getElementById('modal-nova-subpasta')
+    modal.classList.remove('hidden'); modal.classList.add('flex')
+    lucide.createIcons()
+    setTimeout(() => document.getElementById('nova-subpasta-nome').focus(), 60)
+  }
+
+  window.fecharNovaSubpasta = () => {
+    const modal = document.getElementById('modal-nova-subpasta')
+    modal.classList.add('hidden'); modal.classList.remove('flex')
+  }
+
+  window.criarSubpasta = async () => {
+    const nome     = document.getElementById('nova-subpasta-nome').value.trim()
+    const parentId = document.getElementById('nova-subpasta-parent').value
+    const erroEl   = document.getElementById('nova-subpasta-erro')
+    const btn      = document.getElementById('btn-criar-subpasta')
+    if (!nome) { erroEl.textContent = 'Digite um nome.'; erroEl.classList.remove('hidden'); return }
+    erroEl.classList.add('hidden')
+    btn.disabled = true; btn.textContent = 'Criando…'
+    const { error } = await db.from('folders').insert({
+      name: nome, parent_id: parentId, tipo: 'sub',
+      owner_id: currentUser.id, created_by: currentUser.id
+    })
+    btn.disabled = false; btn.textContent = 'Criar'
+    if (error) { erroEl.textContent = error.message; erroEl.classList.remove('hidden'); return }
+    fecharNovaSubpasta()
+    await carregarSidebarPastas()
+    if (pastaAtiva === parentId) await abrirViewPasta(parentId)
+  }
+
+  async function garantirPastaProf() {
+    const { data } = await db.from('folders')
+      .select('id').eq('owner_id', currentUser.id).eq('tipo', 'professor').limit(1)
+    if (data && data.length > 0) return data[0].id
+    const disc = currentProfile?.disciplina || currentProfile?.area || 'Disciplina'
+    const nome = currentProfile?.name || 'Professor'
+    const { data: folder, error } = await db.from('folders').insert({
+      name: `${disc} — Prof. ${nome}`, tipo: 'professor',
+      owner_id: currentUser.id, created_by: currentUser.id
+    }).select('id').single()
+    if (error) return null
+    await carregarSidebarPastas()
+    return folder.id
+  }
+
+  async function carregarFolderSelect() {
+    const select = document.getElementById('arq-folder')
+    if (!select) return
+    const { data: folders } = await db.from('folders')
+      .select('*, owner:users!owner_id(name)').order('tipo').order('name')
+    if (!folders) return
+    const childrenOf = {}
+    folders.forEach(f => { childrenOf[f.id] = [] })
+    folders.forEach(f => { if (f.parent_id && childrenOf[f.parent_id]) childrenOf[f.parent_id].push(f) })
+    const roots = folders.filter(f => !f.parent_id)
+    const myProfFolder = isTeacher
+      ? folders.find(f => f.tipo === 'professor' && f.owner_id === currentUser?.id)
+      : null
+    const options = [`<option value="">— Sem pasta —</option>`]
+    function addOpts(f, depth) {
+      const pad    = '\u00A0\u00A0'.repeat(depth)
+      const sel    = myProfFolder?.id === f.id ? ' selected' : ''
+      options.push(`<option value="${f.id}"${sel}>${pad}📁 ${f.name}</option>`)
+      ;(childrenOf[f.id] || []).forEach(c => addOpts(c, depth + 1))
+    }
+    roots.forEach(r => addOpts(r, 0))
+    select.innerHTML = options.join('')
   }
 
   function formatarTempo(d) {
@@ -2210,7 +2488,8 @@
   // ── REALTIME ─────────────────────────────────────────
   function setupRealtime() {
     db.channel('aulas').on('postgres_changes',{event:'*',schema:'public',table:'aulas'}, carregarAulas).subscribe()
-    db.channel('arquivos').on('postgres_changes',{event:'*',schema:'public',table:'arquivos'}, () => { carregarMaterialDidatico(); carregarFeed() }).subscribe()
+    db.channel('arquivos').on('postgres_changes',{event:'*',schema:'public',table:'arquivos'}, () => { carregarFeed() }).subscribe()
+    db.channel('folders').on('postgres_changes',{event:'*',schema:'public',table:'folders'}, () => { carregarSidebarPastas() }).subscribe()
     if (isAdmin) db.channel('users').on('postgres_changes',{event:'*',schema:'public',table:'users'}, carregarUsuariosPendentes).subscribe()
   }
 
@@ -2234,13 +2513,29 @@
 
   document.getElementById('form-arquivo').addEventListener('submit', async (e) => {
     e.preventDefault()
-    const tipo     = document.querySelector('input[name="arq-tipo"]:checked').value
-    const descricao= document.getElementById('arq-descricao').value.trim() || null
+    const tipo      = document.querySelector('input[name="arq-tipo"]:checked').value
+    const descricao = document.getElementById('arq-descricao').value.trim() || null
+    const btn       = e.target.querySelector('[type="submit"]')
+    btn.disabled = true; btn.textContent = 'Publicando…'
+
+    // Determinar pasta de destino
+    let folderId = document.getElementById('arq-folder').value || null
+
+    // Professor: garantir que a pasta dele existe; usar como padrão se nenhuma selecionada
+    if (isTeacher && !folderId) {
+      folderId = await garantirPastaProf()
+    }
+
     const { error } = await db.from('arquivos').insert({
       nome: document.getElementById('arq-nome').value,
       tipo, fonte:'web', url: document.getElementById('arq-url').value,
-      created_by: currentUser.id, ...(descricao && { descricao })
+      created_by: currentUser.id,
+      ...(descricao  && { descricao }),
+      ...(folderId   && { folder_id: folderId }),
     })
+
+    btn.disabled = false; btn.textContent = 'Publicar'
+
     if (error) {
       document.getElementById('arq-erro').textContent = error.message
       document.getElementById('arq-erro').classList.remove('hidden')
@@ -2248,8 +2543,14 @@
       document.getElementById('modal-arquivo').classList.add('hidden')
       document.getElementById('arq-erro').classList.add('hidden')
       e.target.reset()
+      await carregarSidebarPastas()
     }
   })
+
+  // Popular folder select ao abrir o modal
+  document.getElementById('btn-novo-arquivo').addEventListener('click', () => {
+    carregarFolderSelect()
+  }, { capture: true })
 
 
   // ── NAVEGAÇÃO ────────────────────────────────────────
@@ -2262,6 +2563,12 @@
   }
 
   function setupEventListeners() {
+    // Botão nova subpasta na view-pasta
+    document.getElementById('btn-nova-subpasta-view').addEventListener('click', (e) => {
+      const parentId = e.currentTarget.dataset.parentId
+      if (parentId) abrirNovaSubpasta(parentId)
+    })
+
     // Nav clicks
     document.querySelectorAll('.nav-item').forEach(item => {
       item.addEventListener('click', async (e) => {
