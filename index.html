@@ -3,7 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Heráclito</title>
+  <title>Heráclito — ProfEduCatec 2026</title>
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%234338CA'/><text y='74' x='50' text-anchor='middle' font-size='64' font-family='serif' fill='white'>Η</text></svg>">
+  <!-- Open Graph / Social preview -->
+  <meta name="description" content="Plataforma educacional ProfEduCatec 2026 — UEM. Materiais, calendário e comunicação para professores e alunos.">
+  <meta property="og:type"        content="website">
+  <meta property="og:title"       content="Heráclito — ProfEduCatec 2026">
+  <meta property="og:description" content="Plataforma educacional para professores e alunos da UEM. Acesse materiais, calendário e o bate-papo da turma.">
+  <meta property="og:image"       content="https://prof-diego-prado.github.io/heraclito/og.png">
+  <meta property="og:url"         content="https://bit.ly/profeducatec_uem">
+  <meta property="og:site_name"   content="Heráclito">
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="Heráclito — ProfEduCatec 2026">
+  <meta name="twitter:description" content="Plataforma educacional para professores e alunos da UEM.">
+  <meta name="twitter:image"       content="https://prof-diego-prado.github.io/heraclito/og.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -185,6 +199,9 @@
     </a>
     <a href="#videos" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
       <i data-lucide="play-circle" class="w-4 h-4 shrink-0"></i>Videoaulas
+    </a>
+    <a href="#biblioteca" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
+      <i data-lucide="library" class="w-4 h-4 shrink-0"></i>Biblioteca
     </a>
     <a id="nav-usuarios" href="#usuarios" class="nav-item hidden flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
       <i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i>Usuários
@@ -507,6 +524,27 @@
     </div>
 
     <!-- USUÁRIOS -->
+    <!-- VIEW BIBLIOTECA ──────────────────────────────── -->
+    <div id="view-biblioteca" class="hidden">
+      <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold" style="color:var(--text);">Biblioteca</h1>
+          <p class="text-sm mt-0.5" style="color:var(--muted);">Acervo de PDFs — ProfEduCatec 2026</p>
+        </div>
+        <a id="biblioteca-drive-link" href="https://drive.google.com/drive/folders/15ac3Hmg3ujAHhNUJdn1UKuw4AqaaBzuc?usp=sharing"
+          target="_blank"
+          class="btn-primary shrink-0 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+          <i data-lucide="folder-open" class="w-4 h-4"></i>Abrir Drive
+        </a>
+      </div>
+      <div id="biblioteca-container">
+        <div class="flex flex-col items-center py-20" style="color:var(--muted);">
+          <i data-lucide="loader" class="w-10 h-10 mb-3 opacity-20 animate-spin"></i>
+          <p class="text-sm">Carregando biblioteca…</p>
+        </div>
+      </div>
+    </div>
+
     <!-- VIEW PASTA ───────────────────────────────────── -->
     <div id="view-pasta" class="hidden">
       <div class="mb-6">
@@ -886,9 +924,15 @@
     </div>
     <div class="p-5 space-y-4">
       <p id="editar-data-titulo" class="text-sm font-semibold line-clamp-2" style="color:var(--text);"></p>
-      <div>
-        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nova data</label>
-        <input type="date" id="editar-data-nova" class="input-field">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nova data</label>
+          <input type="date" id="editar-data-nova" class="input-field">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Novo horário</label>
+          <input type="time" id="editar-hora-nova" class="input-field">
+        </div>
       </div>
       <div class="space-y-2.5">
         <label class="flex items-start gap-3 cursor-pointer group">
@@ -1091,6 +1135,12 @@
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome da subpasta</label>
         <input type="text" id="nova-subpasta-nome" class="input-field" placeholder="Ex: Provas, Exercícios, Aula 1…">
         <input type="hidden" id="nova-subpasta-parent">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider flex items-center gap-1.5" style="color:var(--muted);">
+          <i data-lucide="folder-open" class="w-3.5 h-3.5" style="color:#F97316;"></i>Pasta Google Drive <span class="normal-case font-normal">(opcional)</span>
+        </label>
+        <input type="url" id="nova-subpasta-drive" class="input-field" placeholder="https://drive.google.com/drive/folders/…">
       </div>
       <div id="nova-subpasta-erro" class="hidden text-sm rounded-xl px-3 py-2.5" style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA;"></div>
       <div class="flex gap-2">
@@ -1646,6 +1696,7 @@
           style="${isActive ? 'background:var(--soft);' : ''}">
           ${folderIcon}
           <span class="text-xs font-medium truncate flex-1" style="color:${isActive ? 'var(--primary)' : 'var(--text)'};">${folder.name}</span>
+          ${folder.drive_url ? `<i data-lucide="folder-open" class="w-3 h-3 shrink-0 opacity-50" style="color:#F97316;" title="Tem pasta no Drive"></i>` : ''}
         </button>
         ${canAddSub
           ? `<button onclick="abrirNovaSubpasta('${folder.id}')"
@@ -1684,6 +1735,25 @@
     navTo('pasta', null)
     document.getElementById('pasta-breadcrumb-nome').textContent = folder.name
     document.getElementById('pasta-titulo').textContent = folder.name
+
+    // Botão Drive
+    let driveBtn = document.getElementById('pasta-drive-btn')
+    if (!driveBtn) {
+      driveBtn = document.createElement('a')
+      driveBtn.id = 'pasta-drive-btn'
+      driveBtn.target = '_blank'
+      driveBtn.className = 'hidden px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 hover:opacity-80 transition-opacity'
+      driveBtn.style.cssText = 'background:#FFF7ED; color:#B45309; border:1px solid #FED7AA;'
+      driveBtn.innerHTML = '<i data-lucide="folder-open" class="w-4 h-4"></i>Abrir no Drive'
+      document.getElementById('pasta-titulo').parentElement.appendChild(driveBtn)
+    }
+    if (folder.drive_url) {
+      driveBtn.href = folder.drive_url
+      driveBtn.classList.remove('hidden')
+    } else {
+      driveBtn.classList.add('hidden')
+    }
+
     const canAddSub = isAdmin || (isTeacher && folder.owner_id === currentUser?.id)
     const btn = document.getElementById('btn-nova-subpasta-view')
     btn.dataset.parentId = folderId
@@ -1770,9 +1840,11 @@
     if (!nome) { erroEl.textContent = 'Digite um nome.'; erroEl.classList.remove('hidden'); return }
     erroEl.classList.add('hidden')
     btn.disabled = true; btn.textContent = 'Criando…'
+    const driveUrl = document.getElementById('nova-subpasta-drive')?.value.trim() || null
     const { error } = await db.from('folders').insert({
       name: nome, parent_id: parentId, tipo: 'sub',
-      owner_id: currentUser.id, created_by: currentUser.id
+      owner_id: currentUser.id, created_by: currentUser.id,
+      ...(driveUrl && { drive_url: driveUrl })
     })
     btn.disabled = false; btn.textContent = 'Criar'
     if (error) { erroEl.textContent = error.message; erroEl.classList.remove('hidden'); return }
@@ -2362,8 +2434,9 @@
     const a = todasAulas.find(x => x.id === id)
     if (!a) return
     editandoAula = a
-    document.getElementById('editar-data-titulo').textContent = a.titulo
+    document.getElementById('editar-data-titulo').textContent = `${a.titulo} — ${a.hora || ''}`
     document.getElementById('editar-data-nova').value = a.data || ''
+    document.getElementById('editar-hora-nova').value = a.hora || ''
     document.getElementById('editar-data-erro').classList.add('hidden')
     document.querySelector('input[name="editar-escopo"][value="futuras"]').checked = true
     const m = document.getElementById('modal-editar-data')
@@ -2379,6 +2452,7 @@
 
   window.salvarAlteracaoData = async () => {
     const novaData = document.getElementById('editar-data-nova').value
+    const novaHora = document.getElementById('editar-hora-nova').value
     const erroEl   = document.getElementById('editar-data-erro')
     if (!novaData || !editandoAula) return
     erroEl.classList.add('hidden')
@@ -2387,16 +2461,17 @@
     const diasNome = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
     const novoDate = new Date(novaData + 'T12:00:00')
     const novoDia  = diasNome[novoDate.getDay()]
+    const campos   = { data: novaData, dia: novoDia, ...(novaHora && { hora: novaHora }) }
 
     const confirmarBtn = document.querySelector('#modal-editar-data button[onclick="salvarAlteracaoData()"]')
     confirmarBtn.disabled = true; confirmarBtn.textContent = 'Salvando…'
 
     if (escopo === 'apenas') {
-      const { error } = await db.from('aulas').update({ data: novaData, dia: novoDia }).eq('id', editandoAula.id)
+      const { error } = await db.from('aulas').update(campos).eq('id', editandoAula.id)
       if (error) { erroEl.textContent = error.message; erroEl.classList.remove('hidden') }
       else fecharEditarData()
     } else {
-      // Mesmo deslocamento aplicado a todas as aulas futuras com mesma disciplina + mesmo dia da semana
+      // Mesmo deslocamento de dias aplicado a todas as aulas futuras com mesma disciplina + mesmo dia da semana
       const deltaMs   = novoDate.getTime() - new Date(editandoAula.data + 'T12:00:00').getTime()
       const deltaDias = Math.round(deltaMs / 86400000)
 
@@ -2413,7 +2488,8 @@
           const d = new Date(a.data + 'T12:00:00')
           d.setDate(d.getDate() + deltaDias)
           const novaDataStr = d.toISOString().slice(0,10)
-          await db.from('aulas').update({ data: novaDataStr, dia: diasNome[d.getDay()] }).eq('id', a.id)
+          const camposFut   = { data: novaDataStr, dia: diasNome[d.getDay()], ...(novaHora && { hora: novaHora }) }
+          await db.from('aulas').update(camposFut).eq('id', a.id)
         }
         fecharEditarData()
       }
@@ -2577,6 +2653,7 @@
         navTo(target, e.currentTarget)
         if (target === 'professores') await carregarProfessores()
         if (target === 'feed') await carregarFeed()
+        if (target === 'biblioteca') await carregarBiblioteca()
         if (target === 'usuarios' && isAdmin) { await carregarUsuariosPendentes(); await carregarTodosUsuarios() }
       })
     })
@@ -2914,9 +2991,105 @@
   }
 
   // ── GLOBAL ───────────────────────────────────────────
+  // ── BIBLIOTECA ───────────────────────────────────────
+  const BIBLIOTECA_FOLDER_ID = '15ac3Hmg3ujAHhNUJdn1UKuw4AqaaBzuc'
+  const DRIVE_API_KEY        = '' // Opcional: cole sua Google API Key aqui para mostrar capas dos PDFs
+
+  async function carregarBiblioteca() {
+    const container = document.getElementById('biblioteca-container')
+    lucide.createIcons()
+
+    if (!DRIVE_API_KEY) {
+      // Sem API key: embed Drive em modo grid
+      container.innerHTML = `
+        <div class="rounded-2xl overflow-hidden mb-4" style="border:1px solid var(--border);">
+          <iframe
+            src="https://drive.google.com/embeddedfolderview?id=${BIBLIOTECA_FOLDER_ID}#grid"
+            class="w-full block"
+            style="height:600px; border:none;"
+            title="Biblioteca ProfEduCatec">
+          </iframe>
+        </div>
+        <p class="text-xs text-center" style="color:var(--muted);">
+          Para visualizar capas dos PDFs, configure uma Google API Key na constante DRIVE_API_KEY do código.
+        </p>`
+      return
+    }
+
+    // Com API key: listar arquivos e mostrar capas dos PDFs
+    container.innerHTML = `<div class="flex flex-col items-center py-16" style="color:var(--muted);">
+      <i data-lucide="loader" class="w-8 h-8 mb-2 opacity-30 animate-spin"></i>
+      <p class="text-sm">Buscando PDFs…</p></div>`
+    lucide.createIcons()
+
+    try {
+      const apiUrl = `https://www.googleapis.com/drive/v3/files`
+        + `?q=%27${BIBLIOTECA_FOLDER_ID}%27+in+parents+and+mimeType%3D%27application%2Fpdf%27+and+trashed%3Dfalse`
+        + `&fields=files(id%2Cname%2CthumbnailLink%2CwebViewLink%2Csize)`
+        + `&orderBy=name&key=${DRIVE_API_KEY}`
+
+      const res  = await fetch(apiUrl)
+      const json = await res.json()
+
+      if (json.error) throw new Error(json.error.message)
+      if (!json.files || json.files.length === 0) {
+        container.innerHTML = `<div class="flex flex-col items-center py-20" style="color:var(--muted);">
+          <i data-lucide="book-open" class="w-12 h-12 mb-3 opacity-20"></i>
+          <p class="text-sm">Nenhum PDF encontrado na pasta</p></div>`
+        lucide.createIcons(); return
+      }
+
+      container.innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          ${json.files.map(f => {
+            const thumb = f.thumbnailLink
+              ? f.thumbnailLink.replace(/=s\d+/, '=s400')
+              : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`
+            const nome = f.name.replace(/\.pdf$/i, '')
+            return `
+            <div class="group rounded-2xl overflow-hidden transition-shadow hover:shadow-lg"
+              style="background:var(--surface); border:1px solid var(--border);">
+              <div class="aspect-[3/4] overflow-hidden relative bg-red-50">
+                <img src="${thumb}" alt="${nome}"
+                  class="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="hidden w-full h-full items-center justify-center absolute inset-0" style="background:#FEF2F2;">
+                  <i data-lucide="file-text" class="w-12 h-12" style="color:#FECACA;"></i>
+                </div>
+              </div>
+              <div class="p-3">
+                <p class="text-xs font-semibold line-clamp-2 leading-snug mb-2.5" style="color:var(--text);" title="${nome}">${nome}</p>
+                <div class="flex gap-1.5">
+                  <a href="${f.webViewLink}" target="_blank"
+                    class="flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
+                    style="background:#EEF2FF; color:var(--primary);">Abrir</a>
+                  <a href="https://drive.google.com/uc?export=download&id=${f.id}" target="_blank"
+                    class="flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 flex items-center justify-center gap-1"
+                    style="background:#F0FDF4; color:#065F46;">
+                    <i data-lucide="download" class="w-3 h-3"></i>Baixar
+                  </a>
+                </div>
+              </div>
+            </div>`
+          }).join('')}
+        </div>`
+      lucide.createIcons()
+    } catch (err) {
+      container.innerHTML = `<div class="rounded-2xl px-4 py-3 text-sm" style="background:#FEF2F2; color:#B91C1C;">
+        Erro ao carregar biblioteca: ${err.message}</div>`
+    }
+  }
+
   window.removerAula = async (id) => {
-    if (!confirm('Remover esta aula?')) return
-    await db.from('aulas').delete().eq('id', id)
+    if (!confirm('Remover este compromisso do calendário?')) return
+    const { error } = await db.from('aulas').delete().eq('id', id)
+    if (error) {
+      alert('Erro ao remover: ' + error.message)
+    } else {
+      // Remover do array local imediatamente e recarregar
+      todasAulas = todasAulas.filter(a => a.id !== id)
+      await carregarAulas()
+    }
   }
 </script>
 </body>
