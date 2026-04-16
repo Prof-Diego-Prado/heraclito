@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heráclito</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --bg:        #F4F2ED;
+      --surface:   #FFFFFF;
+      --sidebar:   #FDFCFA;
+      --primary:   #4338CA;
+      --primary-h: #3730A3;
+      --accent:    #B45309;
+      --text:      #111827;
+      --muted:     #6B7280;
+      --border:    #E8E4DB;
+      --soft:      #F0EDE6;
+    }
+
+    * { font-family: 'Inter', system-ui, sans-serif; }
+    body { background: var(--bg); }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D1CCC2; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+    .nav-item { color: var(--muted); transition: all .15s; }
+    .nav-item:hover { background: var(--soft); color: var(--text); }
+    .nav-item.active {
+      background: #EEF2FF;
+      color: var(--primary);
+      border-left: 3px solid var(--primary);
+    }
+
+    .feed-card { transition: box-shadow .2s; }
+    .feed-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.07); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      transition: background .15s, transform .1s;
+    }
+    .btn-primary:hover { background: var(--primary-h); }
+    .btn-primary:active { transform: scale(.98); }
+
+    .input-field {
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      width: 100%;
+      font-size: .875rem;
+      background: var(--surface);
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67,56,202,.1);
+    }
+    .input-field::placeholder { color: #B0ACAA; }
+
+    .dropdown {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.12);
+      overflow: hidden;
+    }
+
+    .avatar { object-fit: cover; border-radius: 9999px; }
+
+    /* Login */
+    .login-bg {
+      background: linear-gradient(135deg, #4338CA 0%, #6366F1 40%, #B45309 100%);
+    }
+    .glass {
+      background: rgba(255,255,255,.97);
+      backdrop-filter: blur(20px);
+    }
+
+    #preview-foto { display:none; }
+    #preview-foto.show { display:block; }
+
+    .badge {
+      font-size:.65rem; font-weight:600; padding:2px 7px;
+      border-radius:999px; letter-spacing:.03em; text-transform:uppercase;
+    }
+
+    .tag-pdf  { background:#FEE2E2; color:#B91C1C; }
+    .tag-doc  { background:#DBEAFE; color:#1D4ED8; }
+    .tag-ppt  { background:#FFEDD5; color:#C2410C; }
+    .tag-link { background:#D1FAE5; color:#065F46; }
+    .tag-4001 { background:#EEF2FF; color:#4338CA; }
+    .tag-4008 { background:#F0FDF4; color:#15803D; }
+    .tag-todas{ background:#F3F4F6; color:#6B7280; }
+
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+    .fade-in { animation: fadeIn .25s ease; }
+
+    /* Hoje — pulso teal calmo */
+    @keyframes hojeGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(13,148,136,.45); }
+      55%       { box-shadow: 0 0 0 8px rgba(13,148,136,0); }
+    }
+    .hoje-pulse {
+      animation: hojeGlow 2.6s ease-in-out infinite;
+      border-left-color: #0D9488 !important;
+      background: linear-gradient(135deg,#F0FDFA 0%,#FFFFFF 65%) !important;
+      color: #134E4A !important;
+    }
+    .cal-view-btn { transition: all .15s; border:1.5px solid var(--border); }
+    .cal-view-btn.ativo { background:var(--primary); color:#fff; border-color:var(--primary); }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- Marca d'água — Πάντα ῥεῖ -->
+<div aria-hidden="true" style="
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background: url('watermark.svg') center/cover no-repeat;
+  opacity:0.08;
+  mix-blend-mode:multiply;
+"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════════════ -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-20 hidden lg:hidden"></div>
+
+<aside id="sidebar"
+  class="fixed inset-y-0 left-0 z-30 w-64 flex flex-col transform -translate-x-full transition-transform duration-300 lg:static lg:translate-x-0"
+  style="background:var(--sidebar); border-right:1px solid var(--border);">
+
+  <!-- Logo -->
+  <div class="flex items-center gap-3 px-5 h-16 shrink-0" style="border-bottom:1px solid var(--border);">
+    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--primary);">
+      <i data-lucide="waves" class="w-4 h-4 text-white"></i>
+    </div>
+    <span class="font-bold text-lg tracking-tight" style="color:var(--text);">Heráclito</span>
+    <button id="btn-close-sidebar" class="ml-auto lg:hidden text-gray-400 hover:text-gray-600">
+      <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+  </div>
+
+  <!-- Status -->
+  <div class="mx-4 mt-3 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs" style="background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0;">
+    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+    Conectado
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+    <p class="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-widest" style="color:var(--muted);">Menu</p>
+    <a href="#dashboard" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
+      <i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i>Calendário
+    </a>
+    <a href="#professores" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
+      <i data-lucide="users" class="w-4 h-4 shrink-0"></i>Professores
+    </a>
+    <a href="#feed" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
+      <i data-lucide="newspaper" class="w-4 h-4 shrink-0"></i>Feed
+    </a>
+    <a href="#videos" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
+      <i data-lucide="play-circle" class="w-4 h-4 shrink-0"></i>Videoaulas
+    </a>
+    <a id="nav-usuarios" href="#usuarios" class="nav-item hidden flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
+      <i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i>Usuários
+      <span id="badge-pendentes" class="hidden ml-auto text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full" style="background:var(--accent);">0</span>
+    </a>
+
+    <!-- Material Didático -->
+    <div class="pt-4">
+      <div class="flex items-center justify-between px-3 pb-2">
+        <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--muted);">Material</p>
+        <button id="btn-novo-arquivo" class="hidden rounded-md p-0.5 transition-colors hover:bg-indigo-50" style="color:var(--primary);">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p class="px-3 pb-1 text-xs font-medium" style="color:var(--muted);">Drive dos Professores</p>
+      <div id="sidebar-drives-lista" class="space-y-0.5 mb-3">
+        <p class="px-3 text-xs py-1" style="color:var(--muted);">Carregando...</p>
+      </div>
+
+      <p class="px-3 pb-1 text-xs font-medium" style="color:var(--muted);">Materiais Diversos</p>
+      <a href="https://drive.google.com/drive/folders/1IhOItmZg-WPfF7kry-lZ-wVV5-S6vLCG?usp=sharing"
+        target="_blank"
+        class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors hover:bg-[#F0EDE6] group">
+        <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background:#FFEDD5;">
+          <i data-lucide="folder-open" class="w-3.5 h-3.5" style="color:var(--accent);"></i>
+        </div>
+        <span class="truncate text-xs font-medium" style="color:var(--text);">Pasta de Materiais</span>
+        <i data-lucide="external-link" class="w-3 h-3 ml-auto shrink-0 opacity-0 group-hover:opacity-60" style="color:var(--muted);"></i>
+      </a>
+    </div>
+
+    <!-- Professores sidebar -->
+    <div id="sidebar-professores" class="hidden pt-4">
+      <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style="color:var(--muted);">Professores</p>
+      <div id="sidebar-professores-lista" class="space-y-0.5"></div>
+    </div>
+  </nav>
+
+  <!-- Quote -->
+  <div class="px-5 py-3 shrink-0" style="border-top:1px solid var(--border); background:#FEFCF8;">
+    <p class="text-[11px] italic text-center leading-relaxed" style="color:var(--muted);">"Nenhum homem entra duas vezes no mesmo rio"</p>
+    <p class="text-[10px] text-center mt-0.5 font-medium" style="color:#C4BCAF;">— Heráclito</p>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════
+     MAIN
+═══════════════════════════════════════════════════════ -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden h-screen">
+
+  <!-- ── BANNER AVISO ─────────────────────────────────── -->
+  <div id="banner-aviso" class="shrink-0 px-4 py-2.5 flex items-start gap-3 text-xs leading-relaxed"
+    style="background:#FFFBEB; border-bottom:2px solid #FCD34D; color:#78350F;">
+    <i data-lucide="triangle-alert" class="w-4 h-4 shrink-0 mt-0.5 text-amber-500"></i>
+    <div class="flex-1 min-w-0">
+      <span class="font-bold">Projeto experimental.</span>
+      Esta plataforma é um protótipo desenvolvido de forma independente, sem qualquer vínculo, patrocínio ou endosso da
+      <strong>Universidade Estadual de Maringá (UEM)</strong>, do programa
+      <strong>ProfEduCatec</strong> ou de qualquer outra instituição de ensino.
+      Seu uso é estritamente <strong>educacional e sem fins lucrativos</strong>.
+      <!-- CC License -->
+      <span class="inline-flex items-center gap-1 ml-2 align-middle">
+        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener"
+          title="Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional"
+          class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-semibold hover:opacity-80 transition-opacity"
+          style="background:#E5E7EB; color:#374151; font-size:0.6rem; letter-spacing:.04em;">
+          <img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" class="w-3 h-3" alt="CC">
+          <img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" class="w-3 h-3" alt="BY">
+          <img src="https://mirrors.creativecommons.org/presskit/icons/nc.svg" class="w-3 h-3" alt="NC">
+          <img src="https://mirrors.creativecommons.org/presskit/icons/sa.svg" class="w-3 h-3" alt="SA">
+          <span>CC BY-NC-SA 4.0</span>
+        </a>
+      </span>
+    </div>
+    <button id="btn-fechar-banner" title="Fechar aviso"
+      class="shrink-0 p-0.5 rounded hover:bg-amber-100 transition-colors text-amber-600 hover:text-amber-800">
+      <i data-lucide="x" class="w-3.5 h-3.5"></i>
+    </button>
+  </div>
+
+  <!-- Header -->
+  <header class="shrink-0 h-14 px-4 sm:px-6 flex items-center justify-between gap-4" style="background:var(--surface); border-bottom:1px solid var(--border);">
+    <button id="btn-open-sidebar" class="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
+      <i data-lucide="menu" class="w-5 h-5"></i>
+    </button>
+
+    <div class="flex-1 lg:hidden">
+      <span class="font-semibold text-sm" style="color:var(--text);">Heráclito</span>
+    </div>
+
+    <div class="flex items-center gap-3 ml-auto">
+      <!-- Botão Nova Aula -->
+      <button id="btn-nova-aula" class="hidden btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Nova Aula</span>
+      </button>
+
+      <!-- User chip -->
+      <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-[#F0EDE6] transition-colors" style="border:1px solid var(--border);">
+        <img id="user-avatar" src="" alt="Avatar" class="avatar w-7 h-7 border-2 border-indigo-200">
+        <div class="hidden sm:block">
+          <p id="user-name" class="text-xs font-semibold leading-tight" style="color:var(--text);"></p>
+          <p id="user-role" class="text-[10px] leading-tight" style="color:var(--muted);"></p>
+        </div>
+      </div>
+
+      <button id="btn-logout" class="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div id="main-content" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-bold" style="color:var(--text);">Calendário</h1>
+          <p class="text-sm mt-0.5" style="color:var(--muted);">Cronograma ProfEduCatec — Turma 2026</p>
+        </div>
+        <button id="btn-nova-aula-2" class="hidden btn-primary px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4"></i>Nova Aula
+        </button>
+      </div>
+
+      <!-- Controles do calendário -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4 px-1">
+        <!-- Navegação -->
+        <div class="flex items-center gap-2">
+          <button onclick="calNavPrev()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" style="color:var(--muted);">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
+          <span id="cal-periodo" class="text-sm font-semibold min-w-[180px] text-center" style="color:var(--text);"></span>
+          <button onclick="calNavNext()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" style="color:var(--muted);">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+          <button onclick="calHoje()" class="px-3 py-1 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity ml-1" style="background:var(--soft); color:var(--primary);">Hoje</button>
+        </div>
+
+        <!-- Toggle de visão -->
+        <div class="flex rounded-xl overflow-hidden gap-px" style="background:var(--border);">
+          <button data-cal-view="semanal" onclick="setCalView('semanal')"
+            class="cal-view-btn ativo px-3 py-1.5 text-xs font-semibold rounded-l-xl">Semanal</button>
+          <button data-cal-view="mensal" onclick="setCalView('mensal')"
+            class="cal-view-btn px-3 py-1.5 text-xs font-semibold" style="background:var(--surface); color:var(--muted);">Mensal</button>
+          <button data-cal-view="anual" onclick="setCalView('anual')"
+            class="cal-view-btn px-3 py-1.5 text-xs font-semibold rounded-r-xl" style="background:var(--surface); color:var(--muted);">Anual</button>
+        </div>
+      </div>
+
+      <div class="rounded-2xl overflow-hidden" style="background:var(--surface); border:1px solid var(--border);">
+        <div id="calendario-grid" class="overflow-x-auto">
+          <div class="flex flex-col items-center justify-center p-12" style="color:var(--muted);">
+            <i data-lucide="calendar" class="w-12 h-12 mb-3 opacity-20"></i>
+            <p class="text-sm">Carregando calendário...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFESSORES -->
+    <div id="view-professores" class="hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold" style="color:var(--text);">Professores</h1>
+        <p class="text-sm mt-1" style="color:var(--muted);">Explore perfis e materiais</p>
+      </div>
+      <div id="professores-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div class="col-span-full flex flex-col items-center py-20" style="color:var(--muted);">
+          <i data-lucide="users" class="w-12 h-12 mb-3 opacity-20"></i>
+          <p class="text-sm">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERFIL PROFESSOR -->
+    <div id="view-perfil-professor" class="hidden">
+      <button id="btn-voltar-professores" class="flex items-center gap-2 text-sm mb-6 hover:opacity-70 transition-opacity font-medium" style="color:var(--primary);">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>Professores
+      </button>
+      <div class="rounded-2xl overflow-hidden mb-6" style="background:var(--surface); border:1px solid var(--border);">
+        <div class="h-28 relative" style="background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #FEF3C7 100%);"></div>
+        <div class="px-6 pb-6">
+          <div class="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 mb-4">
+            <img id="perfil-avatar" src="" alt="Avatar" class="avatar w-24 h-24 border-4 border-white shadow-md">
+            <div class="sm:mb-1">
+              <div class="flex items-center gap-3 flex-wrap">
+                <h2 id="perfil-nome" class="text-xl font-bold" style="color:var(--text);"></h2>
+                <span id="perfil-username" class="text-sm font-medium" style="color:var(--primary);"></span>
+              </div>
+              <div class="flex gap-4 mt-1">
+                <span class="text-sm" style="color:var(--muted);">
+                  <strong id="perfil-total-materiais" class="font-semibold" style="color:var(--text);">0</strong> materiais
+                </span>
+              </div>
+            </div>
+            <a id="perfil-drive-link" href="#" target="_blank"
+              class="hidden sm:ml-auto btn-primary px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+              <i data-lucide="folder-open" class="w-4 h-4"></i>Abrir Drive
+            </a>
+          </div>
+          <div class="flex flex-wrap gap-4 text-sm" style="color:var(--muted);">
+            <p id="perfil-instituicao" class="flex items-center gap-1.5"><i data-lucide="building" class="w-3.5 h-3.5"></i><span></span></p>
+            <p id="perfil-area" class="flex items-center gap-1.5"><i data-lucide="book-open" class="w-3.5 h-3.5"></i><span></span></p>
+          </div>
+          <p id="perfil-bio" class="hidden mt-3 text-sm italic" style="color:var(--muted);"></p>
+        </div>
+      </div>
+      <h3 class="font-semibold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider" style="color:var(--muted);">
+        <i data-lucide="folder-open" class="w-4 h-4"></i>Materiais Publicados
+      </h3>
+      <div id="perfil-materiais-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <div class="col-span-full flex flex-col items-center py-12" style="color:var(--muted);">
+          <i data-lucide="folder" class="w-10 h-10 mb-2 opacity-20"></i>
+          <p class="text-sm">Nenhum material ainda</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEED -->
+    <div id="view-feed" class="hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold" style="color:var(--text);">Feed Educacional</h1>
+        <p class="text-sm mt-1" style="color:var(--muted);">Materiais publicados pela comunidade</p>
+      </div>
+      <div id="feed-lista" class="max-w-xl space-y-4">
+        <div class="flex flex-col items-center py-20" style="color:var(--muted);">
+          <i data-lucide="newspaper" class="w-12 h-12 mb-3 opacity-20"></i>
+          <p class="text-sm">Carregando feed...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIDEOS -->
+    <div id="view-videos" class="hidden">
+      <h1 class="text-2xl font-bold mb-6" style="color:var(--text);">Videoaulas</h1>
+      <div class="rounded-2xl p-8 text-center" style="background:var(--surface); border:1px solid var(--border);">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style="background:#EDE9FE;">
+          <i data-lucide="play-circle" class="w-7 h-7" style="color:var(--primary);"></i>
+        </div>
+        <p class="font-semibold" style="color:var(--text);">Em desenvolvimento</p>
+        <p class="text-sm mt-1" style="color:var(--muted);">Biblioteca de videoaulas em breve</p>
+      </div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div id="view-usuarios" class="hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold" style="color:var(--text);">Gerenciar Usuários</h1>
+        <p class="text-sm mt-1" style="color:var(--muted);">Aprovação e gestão de contas</p>
+      </div>
+      <div class="rounded-2xl overflow-hidden mb-5" style="background:var(--surface); border:1px solid var(--border);">
+        <div class="px-5 py-4 flex items-center gap-3" style="border-bottom:1px solid var(--border);">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#FEF3C7;">
+            <i data-lucide="clock" class="w-4 h-4" style="color:var(--accent);"></i>
+          </div>
+          <p class="font-semibold text-sm" style="color:var(--text);">Aguardando Aprovação</p>
+          <span id="count-pendentes" class="ml-auto text-xs font-bold px-2 py-0.5 rounded-full" style="background:#FEF3C7; color:var(--accent);">0</span>
+        </div>
+        <div id="lista-pendentes" class="divide-y" style="divide-color:var(--border);">
+          <p class="text-sm text-center py-8" style="color:var(--muted);">Nenhum usuário pendente</p>
+        </div>
+      </div>
+      <div class="rounded-2xl overflow-hidden" style="background:var(--surface); border:1px solid var(--border);">
+        <div class="px-5 py-4 flex items-center gap-3" style="border-bottom:1px solid var(--border);">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#EEF2FF;">
+            <i data-lucide="users" class="w-4 h-4" style="color:var(--primary);"></i>
+          </div>
+          <p class="font-semibold text-sm" style="color:var(--text);">Todos os Usuários</p>
+        </div>
+        <div id="lista-todos-usuarios" class="divide-y" style="divide-color:var(--border);">
+          <p class="text-sm text-center py-8" style="color:var(--muted);">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RODAPÉ DE AVISOS -->
+    <footer class="mt-10 rounded-2xl overflow-hidden text-xs" style="background:var(--surface); border:1px solid var(--border);">
+      <div class="px-5 py-3 flex items-center gap-2" style="background:#FFFBEB; border-bottom:1px solid #FCD34D;">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-500 shrink-0"></i>
+        <span class="font-bold uppercase tracking-wider text-amber-700" style="font-size:.6rem;">Avisos Legais e Institucionais</span>
+      </div>
+      <div class="px-5 py-4 grid sm:grid-cols-3 gap-5" style="color:var(--muted);">
+
+        <div>
+          <p class="font-semibold mb-1 flex items-center gap-1.5" style="color:var(--text);">
+            <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-amber-500"></i>Projeto Experimental
+          </p>
+          <p class="leading-relaxed">
+            Esta plataforma é um protótipo em fase de desenvolvimento. Funcionalidades podem mudar, dados podem ser redefinidos e o serviço pode ser interrompido sem aviso prévio.
+          </p>
+        </div>
+
+        <div>
+          <p class="font-semibold mb-1 flex items-center gap-1.5" style="color:var(--text);">
+            <i data-lucide="building-2" class="w-3.5 h-3.5" style="color:var(--primary);"></i>Sem Vínculo Institucional
+          </p>
+          <p class="leading-relaxed">
+            Este projeto <strong class="font-semibold" style="color:var(--text);">não possui qualquer vínculo, patrocínio ou endosso</strong> da Universidade Estadual de Maringá (UEM), do programa ProfEduCatec ou de qualquer outra instituição. É uma iniciativa acadêmica independente.
+          </p>
+        </div>
+
+        <div>
+          <p class="font-semibold mb-1 flex items-center gap-1.5" style="color:var(--text);">
+            <i data-lucide="heart-handshake" class="w-3.5 h-3.5 text-emerald-600"></i>Propósito Educacional
+          </p>
+          <p class="leading-relaxed mb-2">
+            Plataforma de uso exclusivamente educacional, sem fins lucrativos, desenvolvida como parte de pesquisa de mestrado.
+          </p>
+          <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener"
+            class="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+            title="Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0">
+            <img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" class="w-4 h-4" alt="CC">
+            <img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" class="w-4 h-4" alt="BY">
+            <img src="https://mirrors.creativecommons.org/presskit/icons/nc.svg" class="w-4 h-4" alt="NC">
+            <img src="https://mirrors.creativecommons.org/presskit/icons/sa.svg" class="w-4 h-4" alt="SA">
+            <span class="font-medium" style="color:var(--text);">CC BY-NC-SA 4.0</span>
+          </a>
+          <p class="mt-1" style="font-size:.6rem;">Atribuição · Não Comercial · Compartilha Igual</p>
+        </div>
+
+      </div>
+    </footer>
+
+  </div><!-- /main-content -->
+</main>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL LOGIN
+═══════════════════════════════════════════════════════ -->
+<div id="modal-login" class="fixed inset-0 z-50 flex items-center justify-center p-4 login-bg">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="px-8 pt-8 pb-6">
+      <!-- Logo -->
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:var(--primary);">
+          <i data-lucide="waves" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <p class="font-bold text-lg leading-none" style="color:var(--text);">Heráclito</p>
+          <p class="text-xs" style="color:var(--muted);">Plataforma Educacional</p>
+        </div>
+      </div>
+
+      <h2 class="text-xl font-bold mb-1" style="color:var(--text);">Bem-vindo de volta</h2>
+      <p class="text-sm mb-6" style="color:var(--muted);">Entre com seu usuário ou email</p>
+
+      <form id="form-login" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Usuário ou Email</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--muted);"></i>
+            <input type="text" id="login-identificador" class="input-field pl-9"
+              placeholder="@usuario ou email" required autocomplete="username">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Senha</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--muted);"></i>
+            <input type="password" id="login-senha" class="input-field pl-9 pr-10"
+              placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" id="btn-toggle-senha"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="login-lembrar" class="w-4 h-4 rounded accent-indigo-600" checked>
+          <label for="login-lembrar" class="text-sm cursor-pointer" style="color:var(--muted);">Manter sessão neste dispositivo</label>
+        </div>
+
+        <div id="login-erro" class="hidden rounded-xl px-3 py-2.5 text-sm flex items-center gap-2" style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA;">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          Usuário ou senha incorretos
+        </div>
+
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold text-sm">
+          Entrar
+        </button>
+
+        <p class="text-center text-sm" style="color:var(--muted);">
+          Não tem conta? <a href="#" id="link-cadastro" class="font-semibold hover:opacity-70 transition-opacity" style="color:var(--primary);">Cadastre-se</a>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL CADASTRO
+═══════════════════════════════════════════════════════ -->
+<div id="modal-cadastro" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[95vh] overflow-y-auto fade-in">
+    <div class="px-6 pt-6 pb-5" style="border-bottom:1px solid var(--border);">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:var(--primary);">
+          <i data-lucide="user-plus" class="w-4 h-4 text-white"></i>
+        </div>
+        <div>
+          <p class="font-bold" style="color:var(--text);">Criar Conta</p>
+          <p class="text-xs" style="color:var(--muted);">Junte-se à plataforma</p>
+        </div>
+        <button id="btn-fechar-cadastro" class="ml-auto p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <form id="form-cadastro" class="p-6 space-y-4">
+      <!-- Tipo -->
+      <div>
+        <label class="block text-xs font-semibold mb-2 uppercase tracking-wider" style="color:var(--muted);">Tipo de Conta</label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="cursor-pointer">
+            <input type="radio" name="cad-tipo" value="student" class="hidden peer" checked>
+            <div class="peer-checked:ring-2 ring-indigo-500 peer-checked:bg-indigo-50 rounded-xl p-3.5 text-center transition-all hover:bg-gray-50" style="border:1.5px solid var(--border);">
+              <i data-lucide="graduation-cap" class="w-5 h-5 mx-auto mb-1.5" style="color:var(--primary);"></i>
+              <p class="text-sm font-semibold" style="color:var(--text);">Aluno</p>
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="cad-tipo" value="teacher" class="hidden peer">
+            <div class="peer-checked:ring-2 ring-indigo-500 peer-checked:bg-indigo-50 rounded-xl p-3.5 text-center transition-all hover:bg-gray-50" style="border:1.5px solid var(--border);">
+              <i data-lucide="book-open" class="w-5 h-5 mx-auto mb-1.5" style="color:var(--accent);"></i>
+              <p class="text-sm font-semibold" style="color:var(--text);">Professor</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome Completo</label>
+          <input type="text" id="cad-nome" class="input-field" placeholder="Seu nome" required>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">@Usuário</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style="color:var(--muted);">@</span>
+            <input type="text" id="cad-username" class="input-field pl-7" placeholder="seunome" required>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Email</label>
+        <input type="email" id="cad-email" class="input-field" placeholder="seu@email.com" required autocomplete="email">
+        <p class="text-xs mt-1" style="color:var(--muted);">Emails @uem.br são aprovados automaticamente</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Senha</label>
+        <input type="password" id="cad-senha" class="input-field" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+      </div>
+
+      <!-- Foto de perfil — disponível para todos -->
+      <div>
+        <label class="block text-xs font-semibold mb-2 uppercase tracking-wider" style="color:var(--muted);">Foto de Identificação <span class="normal-case font-normal">(opcional)</span></label>
+        <div class="flex items-center gap-4">
+          <img id="preview-foto" src="" alt="Preview" class="avatar w-14 h-14 border-2 border-indigo-200" style="display:none;">
+          <div id="preview-placeholder" class="w-14 h-14 rounded-full flex items-center justify-center shrink-0" style="background:var(--soft); border:2px dashed var(--border);">
+            <i data-lucide="user" class="w-6 h-6" style="color:var(--muted);"></i>
+          </div>
+          <label class="flex-1 cursor-pointer rounded-xl p-3 text-center transition-colors hover:bg-gray-50"
+            style="border:1.5px dashed var(--border);">
+            <i data-lucide="camera" class="w-5 h-5 mx-auto mb-1" style="color:var(--muted);"></i>
+            <p class="text-xs font-medium" style="color:var(--text);">Clique para selecionar</p>
+            <p class="text-[10px] mt-0.5" style="color:var(--muted);">JPG, PNG ou GIF · máx 2 MB</p>
+            <input type="file" id="cad-foto" accept="image/*" class="hidden">
+          </label>
+        </div>
+      </div>
+
+      <!-- Disciplina (somente alunos) -->
+      <div id="campo-disciplina">
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Disciplina</label>
+        <select id="cad-disciplina" class="input-field">
+          <option value="">Selecionar depois (admin atribui)</option>
+          <option value="4001">4001 — Tecnologias Educacionais (Marli Futata / Renata Oliveira)</option>
+          <option value="4008">4008 — Processos Inovadores e Culturas Digitais (Flávio Rodrigues / Maria Luísa)</option>
+          <option value="4001,4008">Ambas as disciplinas</option>
+        </select>
+      </div>
+
+      <!-- Campos do Professor -->
+      <div id="campos-professor" class="hidden space-y-4 pt-2">
+        <div class="flex items-center gap-2 mb-1">
+          <div class="flex-1 h-px" style="background:var(--border);"></div>
+          <span class="text-xs font-semibold uppercase tracking-wider px-2" style="color:var(--accent);">Perfil do Professor</span>
+          <div class="flex-1 h-px" style="background:var(--border);"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Instituição</label>
+            <input type="text" id="cad-instituicao" class="input-field" placeholder="Ex: UEM">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Área</label>
+            <input type="text" id="cad-area" class="input-field" placeholder="Ex: Educação">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider flex items-center gap-1.5" style="color:var(--muted);">
+            <i data-lucide="folder-open" class="w-3.5 h-3.5"></i>Pasta Google Drive Compartilhada
+          </label>
+          <input type="url" id="cad-drive" class="input-field" placeholder="https://drive.google.com/drive/folders/...">
+          <div class="mt-2 rounded-xl px-3 py-2.5 text-xs space-y-0.5" style="background:#EEF2FF; color:#4338CA;">
+            <p class="font-semibold">Como compartilhar:</p>
+            <p>1. Clique com botão direito na pasta → Compartilhar</p>
+            <p>2. Selecione "Qualquer pessoa com o link" e copie</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="cadastro-erro" class="hidden rounded-xl px-3 py-2.5 text-sm" style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA;"></div>
+
+      <button type="submit" id="btn-cadastrar" class="btn-primary w-full py-3 rounded-xl font-semibold text-sm">
+        Criar Conta
+      </button>
+      <p class="text-center text-sm" style="color:var(--muted);">
+        Já tem conta? <a href="#" id="link-login" class="font-semibold hover:opacity-70" style="color:var(--primary);">Entrar</a>
+      </p>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL ALTERAR SENHA (1º login) -->
+<div id="modal-alterar-senha" class="fixed inset-0 z-[60] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.6);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="px-6 pt-6 pb-4" style="border-bottom:1px solid var(--border);">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#FEF3C7;">
+          <i data-lucide="key-round" class="w-4 h-4" style="color:var(--accent);"></i>
+        </div>
+        <div>
+          <p class="font-bold" style="color:var(--text);">Crie sua senha pessoal</p>
+          <p class="text-xs" style="color:var(--muted);">Sua conta usa uma senha temporária</p>
+        </div>
+      </div>
+    </div>
+    <form id="form-alterar-senha" class="p-6 space-y-4">
+      <div class="rounded-xl px-4 py-3 text-xs leading-relaxed" style="background:#FFF7ED; color:#92400E; border:1px solid #FCD34D;">
+        Por segurança, defina uma nova senha antes de continuar. A senha deve ter pelo menos 6 caracteres.
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nova Senha</label>
+        <div class="relative">
+          <input type="password" id="nova-senha" class="input-field pr-10"
+            placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+          <button type="button" id="btn-toggle-nova-senha"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Confirmar Senha</label>
+        <input type="password" id="confirmar-senha" class="input-field"
+          placeholder="Repita a senha" required minlength="6" autocomplete="new-password">
+      </div>
+      <div id="alterar-senha-erro" class="hidden rounded-xl px-3 py-2 text-sm" style="background:#FEF2F2; color:#B91C1C;"></div>
+      <button type="submit" id="btn-salvar-nova-senha" class="btn-primary w-full py-3 rounded-xl font-semibold text-sm">
+        Salvar e continuar
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL EDITAR DATA (estilo Google Calendar) -->
+<div id="modal-editar-data" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2 text-sm" style="color:var(--text);">
+        <i data-lucide="calendar-clock" class="w-4 h-4" style="color:var(--primary);"></i>
+        Alterar data
+      </p>
+      <button onclick="fecharEditarData()" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <p id="editar-data-titulo" class="text-sm font-semibold line-clamp-2" style="color:var(--text);"></p>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nova data</label>
+        <input type="date" id="editar-data-nova" class="input-field">
+      </div>
+      <div class="space-y-2.5">
+        <label class="flex items-start gap-3 cursor-pointer group">
+          <input type="radio" name="editar-escopo" value="apenas" class="mt-0.5 accent-indigo-600">
+          <div>
+            <p class="text-sm font-medium" style="color:var(--text);">Apenas esta ocorrência</p>
+            <p class="text-xs" style="color:var(--muted);">Somente esta aula é alterada</p>
+          </div>
+        </label>
+        <label class="flex items-start gap-3 cursor-pointer group">
+          <input type="radio" name="editar-escopo" value="futuras" checked class="mt-0.5 accent-indigo-600">
+          <div>
+            <p class="text-sm font-medium" style="color:var(--text);">Esta e todas as atividades futuras correspondentes</p>
+            <p class="text-xs" style="color:var(--muted);">Aplica o mesmo deslocamento de dias a todas as aulas futuras da mesma disciplina e dia da semana</p>
+          </div>
+        </label>
+      </div>
+      <div id="editar-data-erro" class="hidden rounded-xl px-3 py-2 text-xs" style="background:#FEF2F2; color:#B91C1C;"></div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="fecharEditarData()"
+          class="flex-1 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">
+          Cancelar
+        </button>
+        <button onclick="salvarAlteracaoData()"
+          class="flex-1 btn-primary py-2.5 rounded-xl text-sm font-semibold">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGUARDANDO -->
+<div id="modal-aguardando" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center fade-in">
+    <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style="background:#FEF3C7;">
+      <i data-lucide="clock" class="w-8 h-8" style="color:var(--accent);"></i>
+    </div>
+    <h3 class="text-xl font-bold mb-2" style="color:var(--text);">Cadastro recebido!</h3>
+    <p class="text-sm mb-6 leading-relaxed" style="color:var(--muted);">Seu email não é do domínio @uem.br. Aguarde a aprovação de um administrador para acessar a plataforma.</p>
+    <button id="btn-fechar-aguardando" class="btn-primary w-full py-3 rounded-xl font-semibold text-sm">Entendido</button>
+  </div>
+</div>
+
+<!-- MODAL NOVA AULA -->
+<div id="modal-aula" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto fade-in">
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2" style="color:var(--text);">
+        <i data-lucide="calendar-plus" class="w-5 h-5" style="color:var(--primary);"></i>Nova Aula
+      </p>
+      <button class="fechar-modal p-1 rounded-lg hover:bg-gray-100 text-gray-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <form id="form-aula" class="p-6 space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Data</label>
+          <input type="date" id="aula-data" class="input-field" required>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Horário</label>
+          <input type="text" id="aula-hora" class="input-field" placeholder="19:00" required>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Disciplina</label>
+        <input type="text" id="aula-titulo" class="input-field" placeholder="Ex: Metodologias Ativas" required>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Local / Link</label>
+        <input type="text" id="aula-local" class="input-field" placeholder="Sala 201 ou link da reunião" required>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-2 uppercase tracking-wider" style="color:var(--muted);">Cor</label>
+        <div class="flex gap-2">
+          <label class="cursor-pointer"><input type="radio" name="aula-cor" value="blue" class="hidden peer" checked><div class="w-8 h-8 rounded-full bg-blue-500 peer-checked:ring-4 ring-blue-200 transition-all"></div></label>
+          <label class="cursor-pointer"><input type="radio" name="aula-cor" value="green" class="hidden peer"><div class="w-8 h-8 rounded-full bg-emerald-500 peer-checked:ring-4 ring-emerald-200 transition-all"></div></label>
+          <label class="cursor-pointer"><input type="radio" name="aula-cor" value="purple" class="hidden peer"><div class="w-8 h-8 rounded-full bg-purple-500 peer-checked:ring-4 ring-purple-200 transition-all"></div></label>
+          <label class="cursor-pointer"><input type="radio" name="aula-cor" value="orange" class="hidden peer"><div class="w-8 h-8 rounded-full bg-orange-500 peer-checked:ring-4 ring-orange-200 transition-all"></div></label>
+          <label class="cursor-pointer"><input type="radio" name="aula-cor" value="indigo" class="hidden peer"><div class="w-8 h-8 rounded-full bg-indigo-500 peer-checked:ring-4 ring-indigo-200 transition-all"></div></label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" class="fechar-modal px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
+        <button type="submit" class="btn-primary px-5 py-2 rounded-xl text-sm font-semibold">Adicionar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL NOVO ARQUIVO -->
+<div id="modal-arquivo" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-md overflow-hidden fade-in">
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2" style="color:var(--text);">
+        <i data-lucide="file-plus" class="w-5 h-5" style="color:var(--primary);"></i>Novo Material
+      </p>
+      <button class="fechar-modal p-1 rounded-lg hover:bg-gray-100 text-gray-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <form id="form-arquivo" class="p-6 space-y-4">
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome do Material</label>
+        <input type="text" id="arq-nome" class="input-field" placeholder="Ex: Apostila de Cálculo I" required>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-2 uppercase tracking-wider" style="color:var(--muted);">Tipo</label>
+        <div class="grid grid-cols-4 gap-2">
+          <label class="cursor-pointer"><input type="radio" name="arq-tipo" value="pdf" class="hidden peer" checked>
+            <div class="peer-checked:ring-2 ring-red-400 peer-checked:bg-red-50 rounded-xl p-3 text-center transition-all hover:bg-gray-50 border" style="border-color:var(--border);">
+              <i data-lucide="file-text" class="w-4 h-4 mx-auto mb-1 text-red-500"></i><p class="text-xs font-semibold text-gray-700">PDF</p></div></label>
+          <label class="cursor-pointer"><input type="radio" name="arq-tipo" value="doc" class="hidden peer">
+            <div class="peer-checked:ring-2 ring-blue-400 peer-checked:bg-blue-50 rounded-xl p-3 text-center transition-all hover:bg-gray-50 border" style="border-color:var(--border);">
+              <i data-lucide="file-text" class="w-4 h-4 mx-auto mb-1 text-blue-500"></i><p class="text-xs font-semibold text-gray-700">Word</p></div></label>
+          <label class="cursor-pointer"><input type="radio" name="arq-tipo" value="ppt" class="hidden peer">
+            <div class="peer-checked:ring-2 ring-orange-400 peer-checked:bg-orange-50 rounded-xl p-3 text-center transition-all hover:bg-gray-50 border" style="border-color:var(--border);">
+              <i data-lucide="presentation" class="w-4 h-4 mx-auto mb-1 text-orange-500"></i><p class="text-xs font-semibold text-gray-700">PPT</p></div></label>
+          <label class="cursor-pointer"><input type="radio" name="arq-tipo" value="link" class="hidden peer">
+            <div class="peer-checked:ring-2 ring-emerald-400 peer-checked:bg-emerald-50 rounded-xl p-3 text-center transition-all hover:bg-gray-50 border" style="border-color:var(--border);">
+              <i data-lucide="link" class="w-4 h-4 mx-auto mb-1 text-emerald-500"></i><p class="text-xs font-semibold text-gray-700">Link</p></div></label>
+        </div>
+        <p class="text-xs mt-1.5" style="color:var(--muted);">Use "Link" para vídeos do Meet, YouTube etc.</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">URL</label>
+        <input type="url" id="arq-url" class="input-field" placeholder="https://..." required>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Mensagem para o Feed <span class="normal-case font-normal">(opcional)</span></label>
+        <textarea id="arq-descricao" rows="3" class="input-field resize-none" placeholder="Escreva algo sobre este material..."></textarea>
+      </div>
+      <div id="arq-erro" class="hidden rounded-xl px-3 py-2 text-sm" style="background:#FEF2F2; color:#B91C1C;"></div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" class="fechar-modal px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
+        <button type="submit" class="btn-primary px-5 py-2 rounded-xl text-sm font-semibold">Publicar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCRIPT
+═══════════════════════════════════════════════════════ -->
+<script type="module">
+  const SUPABASE_URL     = 'https://scwhsfutncfbwgvqsgbf.supabase.co'
+  const SUPABASE_ANON_KEY = 'sb_publishable_mcvvhFe5AIdQLN4BQAhjEw_y1bvEbvT'
+  const { createClient } = supabase
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  let currentUser    = null
+  let currentProfile = null
+  let isAdmin        = false
+  let isTeacher      = false
+
+  const avatarUrl = (u) => u?.avatar_url ||
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u?.username || u?.name || 'x')}`
+
+  // ── INIT ─────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    lucide.createIcons()
+    const { data: { session } } = await db.auth.getSession()
+    if (!session) showLogin()
+    else { currentUser = session.user; await inicializarApp() }
+    setupEventListeners()
+  })
+
+  function showLogin() {
+    document.getElementById('modal-login').classList.remove('hidden')
+    document.getElementById('modal-login').classList.add('flex')
+    lucide.createIcons()
+  }
+
+  // ── TOGGLE SENHA ─────────────────────────────────────
+  document.getElementById('btn-toggle-senha').addEventListener('click', () => {
+    const input = document.getElementById('login-senha')
+    const icon  = document.querySelector('#btn-toggle-senha i')
+    if (input.type === 'password') {
+      input.type = 'text'
+      icon.setAttribute('data-lucide', 'eye-off')
+    } else {
+      input.type = 'password'
+      icon.setAttribute('data-lucide', 'eye')
+    }
+    lucide.createIcons()
+  })
+
+  // ── LOGIN ────────────────────────────────────────────
+  document.getElementById('form-login').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const identificador = document.getElementById('login-identificador').value.trim()
+    const senha         = document.getElementById('login-senha').value
+    const erroEl        = document.getElementById('login-erro')
+    erroEl.classList.add('hidden')
+
+    let email = identificador
+    if (!identificador.includes('@')) {
+      // Buscar email pelo username
+      const { data: u } = await db.from('users').select('email').eq('username', identificador.toLowerCase()).single()
+      if (!u) { erroEl.classList.remove('hidden'); return }
+      email = u.email
+    }
+
+    const { data, error } = await db.auth.signInWithPassword({ email, password: senha })
+    if (error) {
+      erroEl.classList.remove('hidden')
+    } else {
+      currentUser = data.user
+      document.getElementById('modal-login').classList.add('hidden')
+      document.getElementById('modal-login').classList.remove('flex')
+      await inicializarApp()
+    }
+  })
+
+  // ── CADASTRO ─────────────────────────────────────────
+  document.querySelectorAll('input[name="cad-tipo"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isTeacher = r.value === 'teacher'
+      document.getElementById('campos-professor').classList.toggle('hidden', !isTeacher)
+      document.getElementById('campo-disciplina').classList.toggle('hidden', isTeacher)
+    })
+  })
+
+  document.getElementById('cad-foto').addEventListener('change', (e) => {
+    const f = e.target.files[0]; if (!f) return
+    const preview = document.getElementById('preview-foto')
+    const placeholder = document.getElementById('preview-placeholder')
+    preview.src = URL.createObjectURL(f)
+    preview.style.display = 'block'
+    placeholder.style.display = 'none'
+  })
+
+  document.getElementById('form-cadastro').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const nome      = document.getElementById('cad-nome').value.trim()
+    const username  = document.getElementById('cad-username').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'')
+    const email     = document.getElementById('cad-email').value.trim()
+    const senha     = document.getElementById('cad-senha').value
+    const tipo      = document.querySelector('input[name="cad-tipo"]:checked').value
+    const erroEl    = document.getElementById('cadastro-erro')
+    const btnEl     = document.getElementById('btn-cadastrar')
+
+    erroEl.classList.add('hidden')
+    btnEl.disabled = true; btnEl.textContent = 'Criando conta...'
+
+    const { data: authData, error: authError } = await db.auth.signUp({ email, password: senha })
+    if (authError) {
+      erroEl.textContent = authError.message; erroEl.classList.remove('hidden')
+      btnEl.disabled = false; btnEl.textContent = 'Criar Conta'; return
+    }
+
+    const userId = authData.user.id
+    const autoOk = email.endsWith('@uem.br')
+
+    let avatarFinal = null
+    const fotoFile = document.getElementById('cad-foto').files[0]
+    if (fotoFile) {
+      const ext  = fotoFile.name.split('.').pop()
+      const { data: up } = await db.storage.from('avatars').upload(`${userId}.${ext}`, fotoFile, { upsert:true })
+      if (up) avatarFinal = db.storage.from('avatars').getPublicUrl(up.path).data.publicUrl
+    }
+
+    const discVal = document.getElementById('cad-disciplina').value
+    const discArr = discVal === '4001,4008' ? ['4001','4008'] : discVal ? [discVal] : []
+
+    const perfil = {
+      id: userId, email, name: nome, username, role: tipo, approved: autoOk,
+      ...(avatarFinal && { avatar_url: avatarFinal }),
+      ...(tipo === 'student' && discArr.length > 0 && { disciplinas: discArr }),
+      ...(tipo === 'teacher' && {
+        institution:      document.getElementById('cad-instituicao').value.trim() || null,
+        area:             document.getElementById('cad-area').value.trim() || null,
+        drive_folder_url: document.getElementById('cad-drive').value.trim() || null,
+      })
+    }
+
+    const { error: pErr } = await db.from('users').insert(perfil)
+    if (pErr) {
+      erroEl.textContent = 'Erro: ' + pErr.message; erroEl.classList.remove('hidden')
+      btnEl.disabled = false; btnEl.textContent = 'Criar Conta'; return
+    }
+
+    fecharCadastro()
+    btnEl.disabled = false; btnEl.textContent = 'Criar Conta'
+
+    if (autoOk) {
+      currentUser = authData.user; await inicializarApp()
+    } else {
+      document.getElementById('modal-aguardando').classList.remove('hidden')
+      document.getElementById('modal-aguardando').classList.add('flex')
+    }
+  })
+
+  function fecharCadastro() {
+    const m = document.getElementById('modal-cadastro')
+    m.classList.add('hidden'); m.classList.remove('flex')
+    document.getElementById('form-cadastro').reset()
+    const preview = document.getElementById('preview-foto')
+    preview.style.display = 'none'; preview.src = ''
+    document.getElementById('preview-placeholder').style.display = 'flex'
+    document.getElementById('campos-professor').classList.add('hidden')
+    document.getElementById('campo-disciplina').classList.remove('hidden')
+  }
+
+  // ── LOGOUT ───────────────────────────────────────────
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    await db.auth.signOut(); window.location.reload()
+  })
+
+  // ── INIT APP ─────────────────────────────────────────
+  async function inicializarApp() {
+    const { data: profile } = await db.from('users').select('*').eq('id', currentUser.id).single()
+    currentProfile = profile
+    isAdmin   = profile?.role === 'admin'
+    isTeacher = profile?.role === 'teacher' || isAdmin
+
+    document.getElementById('user-avatar').src = avatarUrl(profile)
+    document.getElementById('user-name').textContent  = profile?.name || currentUser.email.split('@')[0]
+    document.getElementById('user-role').textContent  = isAdmin ? 'Administrador' : isTeacher ? 'Professor' : 'Aluno'
+
+    // Forçar troca de senha no 1º login
+    if (profile?.must_change_password) {
+      mostrarAlterarSenha()
+    }
+
+    if (isAdmin) {
+      document.querySelectorAll('#btn-nova-aula, #btn-nova-aula-2').forEach(b => b.classList.remove('hidden'))
+      document.getElementById('nav-usuarios').classList.remove('hidden')
+    }
+    if (isTeacher || currentProfile?.role === 'student') document.getElementById('btn-novo-arquivo').classList.remove('hidden')
+
+    // Marcar primeira nav como ativa
+    document.querySelector('a[href="#dashboard"]').classList.add('active')
+
+    await Promise.all([ carregarAulas(), carregarMaterialDidatico(), carregarProfessoresSidebar() ])
+    if (isAdmin) await carregarUsuariosPendentes()
+    setupRealtime()
+    lucide.createIcons()
+  }
+
+  // ── CALENDÁRIO ───────────────────────────────────────
+  let calView       = 'semanal'
+  let calDate       = new Date()
+  let todasAulas    = []
+  let alunosPorDisc = {}  // { '4001': [...users], '4008': [...users], 'todas': [...users] }
+
+  const DIAS_ABREV = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+  const MESES_PT   = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                      'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+  const COR_CLASS  = {
+    blue:  'border-blue-400 bg-blue-50 text-blue-900',
+    green: 'border-emerald-400 bg-emerald-50 text-emerald-900',
+    purple:'border-purple-400 bg-purple-50 text-purple-900',
+    orange:'border-orange-400 bg-orange-50 text-orange-900',
+    indigo:'border-indigo-400 bg-indigo-50 text-indigo-900',
+  }
+  const COR_HEX = {blue:'#3B82F6',green:'#10B981',purple:'#8B5CF6',orange:'#F97316',indigo:'#6366F1'}
+
+  function isoDate(d) { return d.toISOString().slice(0,10) }
+  function fmtShort(d) { return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) }
+  function weekOf(d) {
+    const day = d.getDay()
+    const diff = day === 0 ? -6 : 1 - day
+    const start = new Date(d); start.setDate(d.getDate() + diff); start.setHours(0,0,0,0)
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999)
+    return { start, end }
+  }
+
+  async function carregarAulas() {
+    const [{ data: aulas }, { data: users }] = await Promise.all([
+      db.from('aulas').select('*').order('data,hora'),
+      db.from('users').select('id,name,disciplinas').eq('approved', true).eq('role', 'student')
+    ])
+
+    // Montar índice alunos por disciplina
+    alunosPorDisc = { '4001': [], '4008': [], 'todas': [] }
+    ;(users || []).forEach(u => {
+      const discs = u.disciplinas || []
+      if (discs.includes('4001')) alunosPorDisc['4001'].push(u)
+      if (discs.includes('4008')) alunosPorDisc['4008'].push(u)
+      alunosPorDisc['todas'].push(u)
+    })
+
+    // Para alunos: filtrar só as aulas da sua disciplina
+    const raw = aulas || []
+    if (!isAdmin && !isTeacher && currentProfile?.disciplinas?.length > 0) {
+      const minhasDiscs = currentProfile.disciplinas
+      todasAulas = raw.filter(a => !a.disciplina || a.disciplina === 'todas' || minhasDiscs.includes(a.disciplina))
+    } else {
+      todasAulas = raw
+    }
+
+    renderCalendario()
+  }
+
+  function renderCalendario() {
+    updateCalPeriodo()
+    if (calView === 'semanal')     renderSemanal()
+    else if (calView === 'mensal') renderMensal()
+    else                           renderAnual()
+  }
+
+  function updateCalPeriodo() {
+    const el = document.getElementById('cal-periodo')
+    if (!el) return
+    if (calView === 'semanal') {
+      const { start, end } = weekOf(calDate)
+      el.textContent = `${fmtShort(start)} – ${fmtShort(end)}`
+    } else if (calView === 'mensal') {
+      el.textContent = `${MESES_PT[calDate.getMonth()]} ${calDate.getFullYear()}`
+    } else {
+      el.textContent = calDate.getFullYear().toString()
+    }
+  }
+
+  function discTag(d) {
+    if (!d || d === 'todas') return `<span class="badge tag-todas">Todas</span>`
+    if (d === '4001') return `<span class="badge tag-4001">4001</span>`
+    if (d === '4008') return `<span class="badge tag-4008">4008</span>`
+    return `<span class="badge tag-todas">${d}</span>`
+  }
+
+  function aulaCard(a, hoje) {
+    const cls = COR_CLASS[a.cor] || COR_CLASS.blue
+    const del = isAdmin
+      ? `<button onclick="removerAula('${a.id}')" class="text-[10px] text-red-400 hover:text-red-600 mt-1 flex items-center gap-0.5 transition-colors"><i data-lucide="trash-2" class="w-2.5 h-2.5"></i>Remover</button>`
+      : ''
+    const alunosDisc = (alunosPorDisc[a.disciplina] || alunosPorDisc['todas'] || [])
+    const alunosHtml = isAdmin && alunosDisc.length > 0
+      ? `<details class="mt-1.5">
+          <summary class="text-[9px] cursor-pointer" style="color:var(--muted);">${alunosDisc.length} aluno${alunosDisc.length>1?'s':''}</summary>
+          <p class="text-[9px] mt-0.5 leading-relaxed" style="color:var(--muted);">${alunosDisc.map(u=>u.name.split(' ')[0]).join(', ')}</p>
+        </details>`
+      : ''
+    const tooltipConteudo = a.conteudo
+      ? `title="${a.conteudo.replace(/"/g,"'")}"`
+      : ''
+    const editDataBtn = isAdmin
+      ? `<button onclick="event.stopPropagation();abrirEditarData('${a.id}')"
+          class="shrink-0 p-0.5 rounded opacity-0 group-hover/card:opacity-60 hover:!opacity-100 transition-opacity"
+          style="color:var(--primary);" title="Alterar data">
+          <i data-lucide="calendar-clock" class="w-3 h-3"></i>
+        </button>`
+      : ''
+    return `
+      <div class="border-l-[3px] ${cls} rounded-r-xl px-2.5 py-2 shadow-sm group/card ${hoje ? 'hoje-pulse' : 'hover:shadow transition-shadow'}" ${tooltipConteudo}>
+        <div class="flex items-start gap-1 mb-0.5">
+          <p class="font-semibold text-[11px] leading-snug flex-1">${a.titulo}</p>
+          ${editDataBtn}
+          ${discTag(a.disciplina)}
+        </div>
+        <p class="text-[10px] opacity-70">${a.hora} · ${a.local}</p>
+        ${alunosHtml}
+        ${del}
+      </div>`
+  }
+
+  // ── VISÃO SEMANAL ────────────────────────────────────
+  function renderSemanal() {
+    const todayStr = isoDate(new Date())
+    const { start } = weekOf(calDate)
+    const grid = document.getElementById('calendario-grid')
+    grid.className = 'overflow-x-auto'
+
+    const cols = Array.from({length:7}, (_,i) => {
+      const d = new Date(start); d.setDate(start.getDate() + i)
+      const dStr    = isoDate(d)
+      const isToday = dStr === todayStr
+      const events  = todasAulas.filter(a => a.data === dStr)
+      return `
+        <div class="flex-shrink-0 w-36 sm:w-40 border-r last:border-r-0 min-h-[480px]"
+          style="border-color:var(--border); ${isToday ? 'background:#F0FDFA;' : ''}">
+          <div class="px-2 py-3 text-center border-b" style="border-color:var(--border); ${isToday ? 'background:#CCFBF1;' : ''}">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" style="color:var(--muted);">${DIAS_ABREV[d.getDay()]}</p>
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all"
+              style="${isToday ? 'background:#0D9488;color:#fff;' : 'color:var(--text);'}">
+              ${d.getDate()}
+            </span>
+            <p class="text-[9px] mt-0.5" style="color:var(--muted);">${MESES_PT[d.getMonth()].slice(0,3)}</p>
+          </div>
+          <div class="p-2 space-y-2">
+            ${events.length === 0
+              ? `<p class="text-[10px] text-center py-8" style="color:var(--border);">—</p>`
+              : events.map(a => aulaCard(a, isToday)).join('')}
+          </div>
+        </div>`
+    })
+
+    grid.innerHTML = `<div class="flex">${cols.join('')}</div>`
+    lucide.createIcons()
+  }
+
+  // ── VISÃO MENSAL ─────────────────────────────────────
+  function renderMensal() {
+    const todayStr = isoDate(new Date())
+    const year  = calDate.getFullYear()
+    const month = calDate.getMonth()
+    const first = new Date(year, month, 1)
+    const last  = new Date(year, month+1, 0)
+    let offset  = first.getDay() - 1; if (offset < 0) offset = 6
+
+    let html = `<div class="p-4">
+      <div class="grid grid-cols-7 mb-1">
+        ${['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(d =>
+          `<div class="text-center text-[10px] font-bold uppercase tracking-widest py-2" style="color:var(--muted);">${d}</div>`
+        ).join('')}
+      </div>
+      <div class="grid grid-cols-7 gap-1">`
+
+    for (let i=0; i<offset; i++)
+      html += `<div class="min-h-[80px] rounded-xl" style="background:var(--soft);opacity:.25;"></div>`
+
+    for (let day=1; day<=last.getDate(); day++) {
+      const d    = new Date(year, month, day)
+      const dStr = isoDate(d)
+      const isToday = dStr === todayStr
+      const events  = todasAulas.filter(a => a.data === dStr)
+
+      html += `<div class="min-h-[80px] rounded-xl p-1.5 transition-all"
+        style="background:${isToday ? '#F0FDFA' : 'var(--surface)'}; border:1px solid ${isToday ? '#0D9488' : 'var(--border)'}; ${isToday ? 'box-shadow:0 0 0 2px rgba(13,148,136,.2);' : ''}">
+        <p class="text-xs font-bold mb-1 ${isToday ? '' : ''}" style="${isToday ? 'color:#0D9488;' : 'color:var(--text);'}">${day}</p>`
+
+      events.forEach(a => {
+        const hex = COR_HEX[a.cor] || '#6B7280'
+        html += `<div class="text-[9px] font-medium leading-tight mb-0.5 px-1 py-0.5 rounded truncate ${isToday ? 'hoje-pulse' : ''}"
+          style="background:${hex}22; color:${hex}; border-left:2px solid ${hex};">
+          ${a.hora} ${a.titulo.split('—')[0].trim()}
+        </div>`
+      })
+
+      html += `</div>`
+    }
+
+    const total = offset + last.getDate()
+    const rem   = (7 - (total % 7)) % 7
+    for (let i=0; i<rem; i++)
+      html += `<div class="min-h-[80px] rounded-xl" style="background:var(--soft);opacity:.25;"></div>`
+
+    html += `</div></div>`
+    document.getElementById('calendario-grid').innerHTML = html
+    lucide.createIcons()
+  }
+
+  // ── VISÃO ANUAL ──────────────────────────────────────
+  function renderAnual() {
+    const year  = calDate.getFullYear()
+    const today = new Date()
+
+    let html = `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 p-4">`
+
+    MESES_PT.forEach((mes, i) => {
+      const events = todasAulas.filter(a => {
+        if (!a.data) return false
+        const d = new Date(a.data)
+        return d.getFullYear() === year && d.getMonth() === i
+      })
+      const isCurrent = today.getFullYear() === year && today.getMonth() === i
+
+      html += `<div class="rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all"
+        style="background:var(--surface); border:2px solid ${isCurrent ? '#0D9488' : 'var(--border)'};"
+        onclick="irParaMes(${year},${i})">
+        <p class="text-sm font-bold mb-2" style="color:${isCurrent ? '#0D9488' : 'var(--text)'};">${mes}</p>
+        <p class="text-3xl font-bold" style="color:${events.length > 0 ? 'var(--primary)' : 'var(--border)'};">${events.length}</p>
+        <p class="text-xs mb-2" style="color:var(--muted);">${events.length === 1 ? 'compromisso' : 'compromissos'}</p>
+        <div class="space-y-1">
+          ${events.slice(0,3).map(a => {
+            const hex = COR_HEX[a.cor] || '#6B7280'
+            const dt  = new Date(a.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})
+            return `<div class="flex items-center gap-1.5 text-[10px]" style="color:var(--muted);">
+              <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:${hex};"></span>
+              <span class="truncate">${dt} · ${a.titulo.split('—')[0].trim()}</span>
+            </div>`
+          }).join('')}
+          ${events.length > 3 ? `<p class="text-[10px]" style="color:var(--muted);">+${events.length - 3} mais</p>` : ''}
+        </div>
+      </div>`
+    })
+
+    html += `</div>`
+    document.getElementById('calendario-grid').innerHTML = html
+    lucide.createIcons()
+  }
+
+  // ── CONTROLES DO CALENDÁRIO ──────────────────────────
+  window.calNavPrev = () => {
+    calDate = new Date(calDate)
+    if (calView === 'semanal')     calDate.setDate(calDate.getDate() - 7)
+    else if (calView === 'mensal') calDate.setMonth(calDate.getMonth() - 1)
+    else                           calDate.setFullYear(calDate.getFullYear() - 1)
+    renderCalendario()
+  }
+  window.calNavNext = () => {
+    calDate = new Date(calDate)
+    if (calView === 'semanal')     calDate.setDate(calDate.getDate() + 7)
+    else if (calView === 'mensal') calDate.setMonth(calDate.getMonth() + 1)
+    else                           calDate.setFullYear(calDate.getFullYear() + 1)
+    renderCalendario()
+  }
+  window.calHoje = () => {
+    calDate = new Date()
+    renderCalendario()
+  }
+  window.setCalView = (view) => {
+    calView = view
+    document.querySelectorAll('[data-cal-view]').forEach(b => {
+      const ativo = b.dataset.calView === view
+      b.classList.toggle('ativo', ativo)
+      if (!ativo) { b.style.background = 'var(--surface)'; b.style.color = 'var(--muted)' }
+      else        { b.style.background = ''; b.style.color = '' }
+    })
+    renderCalendario()
+  }
+  window.irParaMes = (year, month) => {
+    calDate = new Date(year, month, 1)
+    setCalView('mensal')
+  }
+
+  // ── MATERIAL SIDEBAR ─────────────────────────────────
+  async function carregarMaterialDidatico() {
+    const { data: profs } = await db.from('users').select('id,name,username,avatar_url,drive_folder_url')
+      .eq('role','teacher').eq('approved',true).not('drive_folder_url','is',null).order('name')
+
+    const el = document.getElementById('sidebar-drives-lista')
+    if (!profs || profs.length === 0) {
+      el.innerHTML = `<p class="px-3 text-xs py-1" style="color:var(--muted);">Nenhuma pasta cadastrada</p>`
+    } else {
+      el.innerHTML = profs.map(p => `
+        <a href="${p.drive_folder_url}" target="_blank"
+          class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors hover:bg-[#F0EDE6] group">
+          <img src="${avatarUrl(p)}" class="avatar w-5 h-5 shrink-0">
+          <span class="text-xs font-medium truncate flex-1" style="color:var(--text);">${p.name}</span>
+          <i data-lucide="external-link" class="w-3 h-3 opacity-0 group-hover:opacity-50 shrink-0" style="color:var(--muted);"></i>
+        </a>`).join('')
+    }
+    lucide.createIcons()
+  }
+
+  function formatarTempo(d) {
+    const s = Math.floor((new Date() - d)/1000)
+    if (s < 60) return 'agora'
+    if (s < 3600) return `${Math.floor(s/60)}min`
+    if (s < 86400) return `${Math.floor(s/3600)}h`
+    return `${Math.floor(s/86400)}d`
+  }
+
+  // ── PROFESSORES ──────────────────────────────────────
+  async function carregarProfessores() {
+    const { data } = await db.from('users').select('*').eq('role','teacher').eq('approved',true).order('name')
+    const grid = document.getElementById('professores-grid')
+    if (!data || data.length === 0) {
+      grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-20" style="color:var(--muted);">
+        <i data-lucide="users" class="w-12 h-12 mb-3 opacity-20"></i><p class="text-sm">Nenhum professor ainda</p></div>`
+      lucide.createIcons(); return
+    }
+    grid.innerHTML = data.map(p => `
+      <div class="rounded-2xl overflow-hidden transition-shadow hover:shadow-lg cursor-pointer" style="background:var(--surface); border:1px solid var(--border);" onclick="abrirPerfilProfessor('${p.id}')">
+        <div class="h-16 relative" style="background:linear-gradient(135deg,#EEF2FF,#E0E7FF,#FEF3C7);"></div>
+        <div class="px-4 pb-5">
+          <img src="${avatarUrl(p)}" class="avatar w-16 h-16 -mt-8 mb-3 border-4 border-white shadow-sm">
+          <p class="font-bold text-sm leading-snug" style="color:var(--text);">${p.name}</p>
+          ${p.username ? `<p class="text-xs font-medium mt-0.5" style="color:var(--primary);">@${p.username}</p>` : ''}
+          ${p.institution ? `<p class="text-xs mt-1.5 flex items-center gap-1" style="color:var(--muted);"><i data-lucide="building" class="w-3 h-3"></i>${p.institution}</p>` : ''}
+          ${p.area ? `<p class="text-xs flex items-center gap-1 mt-0.5" style="color:var(--muted);"><i data-lucide="book-open" class="w-3 h-3"></i>${p.area}</p>` : ''}
+          <button onclick="event.stopPropagation(); abrirPerfilProfessor('${p.id}')"
+            class="btn-primary mt-3 w-full py-1.5 rounded-lg text-xs font-semibold">Ver perfil</button>
+        </div>
+      </div>`).join('')
+    lucide.createIcons()
+  }
+
+  async function carregarProfessoresSidebar() {
+    const { data } = await db.from('users').select('id,name,username,avatar_url').eq('role','teacher').eq('approved',true).order('name')
+    if (!data || data.length === 0) return
+    document.getElementById('sidebar-professores').classList.remove('hidden')
+    document.getElementById('sidebar-professores-lista').innerHTML = data.map(p => `
+      <button onclick="abrirPerfilProfessor('${p.id}')"
+        class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left hover:bg-[#F0EDE6] transition-colors">
+        <img src="${avatarUrl(p)}" class="avatar w-6 h-6 shrink-0">
+        <div class="min-w-0">
+          <p class="text-xs font-medium truncate" style="color:var(--text);">${p.name}</p>
+          ${p.username ? `<p class="text-[10px]" style="color:var(--muted);">@${p.username}</p>` : ''}
+        </div>
+      </button>`).join('')
+  }
+
+  window.abrirPerfilProfessor = async (userId) => {
+    const { data: p } = await db.from('users').select('*').eq('id',userId).single()
+    if (!p) return
+
+    document.getElementById('perfil-avatar').src = avatarUrl(p)
+    document.getElementById('perfil-nome').textContent = p.name
+    document.getElementById('perfil-username').textContent = p.username ? `@${p.username}` : ''
+    document.getElementById('perfil-instituicao').querySelector('span').textContent = p.institution || '—'
+    document.getElementById('perfil-area').querySelector('span').textContent = p.area || '—'
+    const bioEl = document.getElementById('perfil-bio')
+    p.bio ? (bioEl.textContent = p.bio, bioEl.classList.remove('hidden')) : bioEl.classList.add('hidden')
+
+    const driveBtn = document.getElementById('perfil-drive-link')
+    p.drive_folder_url ? (driveBtn.href = p.drive_folder_url, driveBtn.classList.remove('hidden')) : driveBtn.classList.add('hidden')
+
+    const { data: mats } = await db.from('arquivos').select('*').eq('created_by',userId).order('created_at',{ascending:false})
+    document.getElementById('perfil-total-materiais').textContent = mats?.length || 0
+
+    const icones = { pdf:'file-text', doc:'file-text', ppt:'presentation', link:'link' }
+    const tagCls = { pdf:'tag-pdf', doc:'tag-doc', ppt:'tag-ppt', link:'tag-link' }
+    const bg     = { pdf:'#FEF2F2', doc:'#EFF6FF', ppt:'#FFF7ED', link:'#F0FDF4' }
+    const ic     = { pdf:'#EF4444', doc:'#3B82F6', ppt:'#F97316', link:'#10B981' }
+
+    const grid = document.getElementById('perfil-materiais-grid')
+    if (!mats || mats.length === 0) {
+      grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-12" style="color:var(--muted);">
+        <i data-lucide="folder" class="w-10 h-10 mb-2 opacity-20"></i><p class="text-sm">Nenhum material</p></div>`
+    } else {
+      grid.innerHTML = mats.map(m => `
+        <a href="${m.url}" target="_blank"
+          class="rounded-2xl p-4 hover:shadow-md transition-all cursor-pointer" style="background:${bg[m.tipo]||'#F9FAFB'}; border:1px solid var(--border);">
+          <i data-lucide="${icones[m.tipo]||'file'}" class="w-6 h-6 mb-2.5" style="color:${ic[m.tipo]||'#6B7280'};"></i>
+          <p class="text-xs font-semibold leading-snug line-clamp-2 mb-1.5" style="color:var(--text);">${m.nome}</p>
+          <span class="badge ${tagCls[m.tipo]||''}">${m.tipo.toUpperCase()}</span>
+        </a>`).join('')
+    }
+
+    navTo('perfil-professor', null)
+    lucide.createIcons()
+  }
+
+  // ── FEED ─────────────────────────────────────────────
+  async function carregarFeed() {
+    const lista = document.getElementById('feed-lista')
+    lista.innerHTML = `<div class="flex flex-col items-center py-16" style="color:var(--muted);">
+      <i data-lucide="loader" class="w-8 h-8 mb-2 opacity-30"></i><p class="text-sm">Carregando...</p></div>`
+    lucide.createIcons()
+
+    const { data, error } = await db.from('arquivos')
+      .select('*, creator:users!created_by(id,name,username,avatar_url)')
+      .order('created_at',{ascending:false}).limit(50)
+
+    if (error || !data || data.length === 0) {
+      lista.innerHTML = `<div class="flex flex-col items-center py-20" style="color:var(--muted);">
+        <i data-lucide="newspaper" class="w-12 h-12 mb-3 opacity-20"></i><p class="text-sm">Nenhum material publicado ainda</p></div>`
+      lucide.createIcons(); return
+    }
+
+    const badges = {
+      pdf:  { cls:'tag-pdf',  icon:'file-text',   label:'PDF',  bg:'#FEF2F2', ic:'#EF4444' },
+      doc:  { cls:'tag-doc',  icon:'file-text',   label:'Word', bg:'#EFF6FF', ic:'#3B82F6' },
+      ppt:  { cls:'tag-ppt',  icon:'presentation',label:'PPT',  bg:'#FFF7ED', ic:'#F97316' },
+      link: { cls:'tag-link', icon:'link',        label:'Link', bg:'#F0FDF4', ic:'#10B981' },
+    }
+
+    lista.innerHTML = data.map(item => {
+      const autor   = item.creator || {}
+      const av      = avatarUrl(autor)
+      const nome    = autor.name || 'Usuário'
+      const handle  = autor.username ? `@${autor.username}` : ''
+      const tempo   = formatarTempo(new Date(item.created_at))
+      const b       = badges[item.tipo] || { cls:'', icon:'file', label:item.tipo, bg:'#F9FAFB', ic:'#6B7280' }
+      const podeEdit= isAdmin || (currentUser && item.created_by === currentUser.id)
+      const texto   = item.descricao || 'Publicou um novo material 📎'
+      const textoEsc= texto.replace(/`/g,'\\`').replace(/\$/g,'\\$')
+
+      return `
+        <div class="feed-card rounded-2xl p-5 fade-in" style="background:var(--surface); border:1px solid var(--border);" id="feed-card-${item.id}">
+          <div class="flex items-start gap-3">
+            <img src="${av}" class="avatar w-10 h-10 shrink-0" style="border:2px solid var(--border);">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-semibold text-sm" style="color:var(--text);">${nome}</span>
+                    ${handle ? `<span class="text-xs font-medium" style="color:var(--primary);">${handle}</span>` : ''}
+                    <span class="text-xs" style="color:#D1D5DB;">·</span>
+                    <span class="text-xs" style="color:var(--muted);">${tempo}</span>
+                  </div>
+                  <p id="feed-texto-${item.id}" class="text-sm mt-1.5 leading-relaxed" style="color:#374151;">${texto}</p>
+                  <div id="feed-edit-${item.id}" class="hidden mt-2">
+                    <textarea id="feed-textarea-${item.id}" rows="3"
+                      class="input-field resize-none text-sm">${textoEsc}</textarea>
+                    <div class="flex gap-2 mt-2">
+                      <button onclick="salvarEdicaoFeed('${item.id}')"
+                        class="btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold">Salvar</button>
+                      <button onclick="cancelarEdicaoFeed('${item.id}')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
+                    </div>
+                  </div>
+                </div>
+                ${podeEdit ? `
+                <div class="relative shrink-0">
+                  <button onclick="toggleMenuFeed('${item.id}')"
+                    class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" style="color:var(--muted);">
+                    <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                  </button>
+                  <div id="menu-feed-${item.id}" class="dropdown hidden absolute right-0 top-9 z-10 w-36 py-1">
+                    <button onclick="editarFeed('${item.id}')"
+                      class="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 transition-colors" style="color:var(--text);">
+                      <i data-lucide="pencil" class="w-3.5 h-3.5"></i>Editar
+                    </button>
+                    <button onclick="deletarFeed('${item.id}')"
+                      class="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-50 transition-colors text-red-600">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Excluir
+                    </button>
+                  </div>
+                </div>` : ''}
+              </div>
+            </div>
+          </div>
+          <!-- Attachment -->
+          <a href="${item.url}" target="_blank"
+            class="mt-3 flex items-center gap-3 rounded-xl p-3 hover:opacity-80 transition-opacity" style="background:${b.bg}; border:1px solid var(--border);">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style="background:${b.ic}22;">
+              <i data-lucide="${b.icon}" class="w-4 h-4" style="color:${b.ic};"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold truncate" style="color:var(--text);">${item.nome}</p>
+              <span class="badge ${b.cls}">${b.label}</span>
+            </div>
+            <i data-lucide="external-link" class="w-4 h-4 shrink-0" style="color:var(--muted);"></i>
+          </a>
+        </div>`
+    }).join('')
+
+    lucide.createIcons()
+  }
+
+  window.toggleMenuFeed = (id) => {
+    document.querySelectorAll('[id^="menu-feed-"]').forEach(m => { if (m.id !== `menu-feed-${id}`) m.classList.add('hidden') })
+    document.getElementById(`menu-feed-${id}`).classList.toggle('hidden')
+  }
+  window.editarFeed = (id) => {
+    document.getElementById(`menu-feed-${id}`).classList.add('hidden')
+    document.getElementById(`feed-texto-${id}`).classList.add('hidden')
+    document.getElementById(`feed-edit-${id}`).classList.remove('hidden')
+    document.getElementById(`feed-textarea-${id}`).focus()
+  }
+  window.cancelarEdicaoFeed = (id) => {
+    document.getElementById(`feed-edit-${id}`).classList.add('hidden')
+    document.getElementById(`feed-texto-${id}`).classList.remove('hidden')
+  }
+  window.salvarEdicaoFeed = async (id) => {
+    const txt = document.getElementById(`feed-textarea-${id}`).value.trim()
+    if (!txt) return
+    const { error } = await db.from('arquivos').update({ descricao: txt }).eq('id', id)
+    if (!error) {
+      document.getElementById(`feed-texto-${id}`).textContent = txt
+      cancelarEdicaoFeed(id)
+      document.getElementById(`feed-textarea-${id}`).value = txt
+    }
+  }
+  window.deletarFeed = async (id) => {
+    document.getElementById(`menu-feed-${id}`).classList.add('hidden')
+    if (!confirm('Excluir este post?')) return
+    const { error } = await db.from('arquivos').delete().eq('id', id)
+    if (!error) {
+      const card = document.getElementById(`feed-card-${id}`)
+      card.style.transition = 'opacity .3s, transform .3s'
+      card.style.opacity = '0'; card.style.transform = 'scale(.97)'
+      setTimeout(() => card.remove(), 300)
+    }
+  }
+
+  // ── USUÁRIOS ─────────────────────────────────────────
+  async function carregarUsuariosPendentes() {
+    const { data } = await db.from('users').select('*').eq('approved',false).order('created_at')
+    const count = data?.length || 0
+    document.getElementById('count-pendentes').textContent = count
+    const badge = document.getElementById('badge-pendentes')
+    count > 0 ? (badge.textContent = count, badge.classList.remove('hidden')) : badge.classList.add('hidden')
+    const el = document.getElementById('lista-pendentes')
+    el.innerHTML = (!data || data.length === 0)
+      ? `<p class="text-sm text-center py-8" style="color:var(--muted);">Nenhum usuário pendente</p>`
+      : data.map(u => renderUser(u, true)).join('')
+    lucide.createIcons()
+  }
+
+  async function carregarTodosUsuarios() {
+    const { data } = await db.from('users').select('*').order('created_at',{ascending:false})
+    const el = document.getElementById('lista-todos-usuarios')
+    el.innerHTML = (!data || data.length === 0)
+      ? `<p class="text-sm text-center py-8" style="color:var(--muted);">Nenhum usuário</p>`
+      : data.map(u => renderUser(u, false)).join('')
+    lucide.createIcons()
+  }
+
+  function renderUser(u, pendente) {
+    const roleColors = { admin:'#EDE9FE:#6D28D9', teacher:'#EEF2FF:#4338CA', student:'#ECFDF5:#065F46' }
+    const [rbg, rtc]  = (roleColors[u.role] || '#F3F4F6:#6B7280').split(':')
+    const roleLabel   = { admin:'Admin', teacher:'Professor', student:'Aluno' }
+    return `
+      <div class="flex items-center gap-3 px-5 py-3.5">
+        <img src="${avatarUrl(u)}" class="avatar w-9 h-9 shrink-0" style="border:1.5px solid var(--border);">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold truncate" style="color:var(--text);">${u.name}</p>
+          <p class="text-xs truncate" style="color:var(--muted);">${u.email}</p>
+        </div>
+        <span class="badge shrink-0" style="background:${rbg}; color:${rtc};">${roleLabel[u.role]||u.role}</span>
+        ${pendente ? `
+          <div class="flex gap-1.5 shrink-0">
+            <button onclick="aprovarUsuario('${u.id}')"
+              class="btn-primary px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1">
+              <i data-lucide="check" class="w-3 h-3"></i>Aprovar
+            </button>
+            <button onclick="rejeitarUsuario('${u.id}')"
+              class="px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-red-50 transition-colors" style="color:#DC2626; border:1px solid #FECACA;">
+              <i data-lucide="x" class="w-3 h-3"></i>Rejeitar
+            </button>
+          </div>` : u.role === 'student' ? `
+          <div class="flex items-center gap-2 shrink-0">
+            <select onchange="atribuirDisciplina('${u.id}', this.value)"
+              class="text-xs rounded-lg px-2 py-1 border transition-colors cursor-pointer"
+              style="border-color:var(--border); color:var(--text); background:var(--surface);">
+              <option value="" ${!u.disciplinas?.length ? 'selected':''}>Disciplina…</option>
+              <option value="4001" ${u.disciplinas?.includes('4001') && !u.disciplinas?.includes('4008') ? 'selected':''}>4001</option>
+              <option value="4008" ${u.disciplinas?.includes('4008') && !u.disciplinas?.includes('4001') ? 'selected':''}>4008</option>
+              <option value="4001,4008" ${u.disciplinas?.includes('4001') && u.disciplinas?.includes('4008') ? 'selected':''}>4001 e 4008</option>
+            </select>
+            <span class="text-xs font-medium" style="color:${u.approved ? '#059669':'#D97706'};">
+              ${u.approved ? 'Ativo':'Pendente'}
+            </span>
+            <button onclick="deletarUsuario('${u.id}','${u.name.replace(/'/g,"\\'")}')"
+              class="p-1 rounded-lg hover:bg-red-50 transition-colors text-gray-400 hover:text-red-500" title="Excluir">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>` : u.role !== 'admin' ? `
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-xs font-medium" style="color:${u.approved ? '#059669':'#D97706'};">
+              ${u.approved ? 'Ativo':'Pendente'}
+            </span>
+            <button onclick="deletarUsuario('${u.id}','${u.name.replace(/'/g,"\\'")}')"
+              class="p-1 rounded-lg hover:bg-red-50 transition-colors text-gray-400 hover:text-red-500" title="Excluir">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>` : `<span class="text-xs font-medium" style="color:#059669;">Ativo</span>`}
+      </div>`
+  }
+
+  // ── EDITAR DATA (estilo Google Calendar) ─────────────
+  let editandoAula = null
+
+  window.abrirEditarData = (id) => {
+    const a = todasAulas.find(x => x.id === id)
+    if (!a) return
+    editandoAula = a
+    document.getElementById('editar-data-titulo').textContent = a.titulo
+    document.getElementById('editar-data-nova').value = a.data || ''
+    document.getElementById('editar-data-erro').classList.add('hidden')
+    document.querySelector('input[name="editar-escopo"][value="futuras"]').checked = true
+    const m = document.getElementById('modal-editar-data')
+    m.classList.remove('hidden'); m.classList.add('flex')
+    lucide.createIcons()
+  }
+
+  window.fecharEditarData = () => {
+    const m = document.getElementById('modal-editar-data')
+    m.classList.add('hidden'); m.classList.remove('flex')
+    editandoAula = null
+  }
+
+  window.salvarAlteracaoData = async () => {
+    const novaData = document.getElementById('editar-data-nova').value
+    const erroEl   = document.getElementById('editar-data-erro')
+    if (!novaData || !editandoAula) return
+    erroEl.classList.add('hidden')
+
+    const escopo   = document.querySelector('input[name="editar-escopo"]:checked').value
+    const diasNome = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
+    const novoDate = new Date(novaData + 'T12:00:00')
+    const novoDia  = diasNome[novoDate.getDay()]
+
+    const confirmarBtn = document.querySelector('#modal-editar-data button[onclick="salvarAlteracaoData()"]')
+    confirmarBtn.disabled = true; confirmarBtn.textContent = 'Salvando…'
+
+    if (escopo === 'apenas') {
+      const { error } = await db.from('aulas').update({ data: novaData, dia: novoDia }).eq('id', editandoAula.id)
+      if (error) { erroEl.textContent = error.message; erroEl.classList.remove('hidden') }
+      else fecharEditarData()
+    } else {
+      // Mesmo deslocamento aplicado a todas as aulas futuras com mesma disciplina + mesmo dia da semana
+      const deltaMs   = novoDate.getTime() - new Date(editandoAula.data + 'T12:00:00').getTime()
+      const deltaDias = Math.round(deltaMs / 86400000)
+
+      const { data: futuras, error } = await db.from('aulas')
+        .select('id,data')
+        .eq('disciplina', editandoAula.disciplina)
+        .eq('dia', editandoAula.dia)
+        .gte('data', editandoAula.data)
+        .order('data')
+
+      if (error) { erroEl.textContent = error.message; erroEl.classList.remove('hidden') }
+      else {
+        for (const a of (futuras || [])) {
+          const d = new Date(a.data + 'T12:00:00')
+          d.setDate(d.getDate() + deltaDias)
+          const novaDataStr = d.toISOString().slice(0,10)
+          await db.from('aulas').update({ data: novaDataStr, dia: diasNome[d.getDay()] }).eq('id', a.id)
+        }
+        fecharEditarData()
+      }
+    }
+
+    confirmarBtn.disabled = false; confirmarBtn.textContent = 'Confirmar'
+    await carregarAulas()
+  }
+
+  // ── ALTERAR SENHA (1º login) ──────────────────────────
+  function mostrarAlterarSenha() {
+    const m = document.getElementById('modal-alterar-senha')
+    m.classList.remove('hidden'); m.classList.add('flex')
+    lucide.createIcons()
+  }
+
+  document.getElementById('btn-toggle-nova-senha').addEventListener('click', () => {
+    const inp  = document.getElementById('nova-senha')
+    const icon = document.querySelector('#btn-toggle-nova-senha i')
+    inp.type = inp.type === 'password' ? 'text' : 'password'
+    icon.setAttribute('data-lucide', inp.type === 'password' ? 'eye' : 'eye-off')
+    lucide.createIcons()
+  })
+
+  document.getElementById('form-alterar-senha').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const nova      = document.getElementById('nova-senha').value
+    const confirmar = document.getElementById('confirmar-senha').value
+    const erroEl    = document.getElementById('alterar-senha-erro')
+    const btn       = document.getElementById('btn-salvar-nova-senha')
+    erroEl.classList.add('hidden')
+
+    if (nova !== confirmar) {
+      erroEl.textContent = 'As senhas não coincidem.'; erroEl.classList.remove('hidden'); return
+    }
+
+    btn.disabled = true; btn.textContent = 'Salvando…'
+    const { error } = await db.auth.updateUser({ password: nova })
+    if (error) {
+      erroEl.textContent = error.message; erroEl.classList.remove('hidden')
+    } else {
+      await db.from('users').update({ must_change_password: false }).eq('id', currentUser.id)
+      currentProfile.must_change_password = false
+      const m = document.getElementById('modal-alterar-senha')
+      m.classList.add('hidden'); m.classList.remove('flex')
+    }
+    btn.disabled = false; btn.textContent = 'Salvar e continuar'
+  })
+
+  window.atribuirDisciplina = async (id, valor) => {
+    const discs = valor === '4001,4008' ? ['4001','4008'] : valor ? [valor] : []
+    await db.from('users').update({ disciplinas: discs }).eq('id', id)
+    await carregarAulas()
+  }
+
+  window.aprovarUsuario = async (id) => {
+    await db.from('users').update({ approved:true }).eq('id',id)
+    await carregarUsuariosPendentes(); await carregarTodosUsuarios()
+    await carregarProfessoresSidebar(); await carregarMaterialDidatico()
+  }
+  window.rejeitarUsuario = async (id) => {
+    if (!confirm('Rejeitar e remover este usuário?')) return
+    await db.from('users').delete().eq('id',id)
+    await carregarUsuariosPendentes(); await carregarTodosUsuarios()
+  }
+  window.deletarUsuario = async (id, nome) => {
+    if (!confirm(`Excluir permanentemente "${nome}"?`)) return
+    await db.from('users').delete().eq('id',id)
+    await carregarTodosUsuarios(); await carregarProfessoresSidebar(); await carregarMaterialDidatico()
+  }
+
+  // ── REALTIME ─────────────────────────────────────────
+  function setupRealtime() {
+    db.channel('aulas').on('postgres_changes',{event:'*',schema:'public',table:'aulas'}, carregarAulas).subscribe()
+    db.channel('arquivos').on('postgres_changes',{event:'*',schema:'public',table:'arquivos'}, () => { carregarMaterialDidatico(); carregarFeed() }).subscribe()
+    if (isAdmin) db.channel('users').on('postgres_changes',{event:'*',schema:'public',table:'users'}, carregarUsuariosPendentes).subscribe()
+  }
+
+  // ── FORMS ────────────────────────────────────────────
+  document.getElementById('form-aula').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const cor   = document.querySelector('input[name="aula-cor"]:checked').value
+    const data  = document.getElementById('aula-data').value
+    const d     = new Date(data + 'T12:00:00')
+    const dias  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
+    const dia   = dias[d.getDay()]
+    const { error } = await db.from('aulas').insert({
+      dia, data,
+      hora:   document.getElementById('aula-hora').value,
+      titulo: document.getElementById('aula-titulo').value,
+      local:  document.getElementById('aula-local').value,
+      cor
+    })
+    if (!error) { document.getElementById('modal-aula').classList.add('hidden'); e.target.reset() }
+  })
+
+  document.getElementById('form-arquivo').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const tipo     = document.querySelector('input[name="arq-tipo"]:checked').value
+    const descricao= document.getElementById('arq-descricao').value.trim() || null
+    const { error } = await db.from('arquivos').insert({
+      nome: document.getElementById('arq-nome').value,
+      tipo, fonte:'web', url: document.getElementById('arq-url').value,
+      created_by: currentUser.id, ...(descricao && { descricao })
+    })
+    if (error) {
+      document.getElementById('arq-erro').textContent = error.message
+      document.getElementById('arq-erro').classList.remove('hidden')
+    } else {
+      document.getElementById('modal-arquivo').classList.add('hidden')
+      document.getElementById('arq-erro').classList.add('hidden')
+      e.target.reset()
+    }
+  })
+
+
+  // ── NAVEGAÇÃO ────────────────────────────────────────
+  function navTo(target, el) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'))
+    if (el) el.classList.add('active')
+    document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'))
+    const view = document.getElementById(`view-${target}`)
+    if (view) view.classList.remove('hidden')
+  }
+
+  function setupEventListeners() {
+    // Nav clicks
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', async (e) => {
+        e.preventDefault()
+        const target = e.currentTarget.getAttribute('href').substring(1)
+        navTo(target, e.currentTarget)
+        if (target === 'professores') await carregarProfessores()
+        if (target === 'feed') await carregarFeed()
+        if (target === 'usuarios' && isAdmin) { await carregarUsuariosPendentes(); await carregarTodosUsuarios() }
+      })
+    })
+
+    // Botões admin
+    document.querySelectorAll('#btn-nova-aula, #btn-nova-aula-2').forEach(b =>
+      b.addEventListener('click', () => {
+        document.getElementById('modal-aula').classList.remove('hidden')
+        lucide.createIcons()
+      }))
+    document.getElementById('btn-novo-arquivo').addEventListener('click', () => {
+      document.getElementById('modal-arquivo').classList.remove('hidden')
+      lucide.createIcons()
+    })
+
+    // Fechar modais
+    document.querySelectorAll('.fechar-modal').forEach(b => b.addEventListener('click', () => {
+      document.getElementById('modal-aula').classList.add('hidden')
+      document.getElementById('modal-arquivo').classList.add('hidden')
+      document.getElementById('arq-erro').classList.add('hidden')
+    }))
+
+    // Cadastro ↔ Login
+    document.getElementById('link-cadastro').addEventListener('click', (e) => {
+      e.preventDefault()
+      document.getElementById('modal-login').classList.add('hidden')
+      document.getElementById('modal-login').classList.remove('flex')
+      document.getElementById('modal-cadastro').classList.remove('hidden')
+      document.getElementById('modal-cadastro').classList.add('flex')
+      lucide.createIcons()
+    })
+    document.getElementById('link-login').addEventListener('click', (e) => {
+      e.preventDefault()
+      fecharCadastro()
+      showLogin()
+    })
+    document.getElementById('btn-fechar-cadastro').addEventListener('click', () => {
+      fecharCadastro(); showLogin()
+    })
+    document.getElementById('btn-fechar-aguardando').addEventListener('click', () => {
+      document.getElementById('modal-aguardando').classList.add('hidden')
+      document.getElementById('modal-aguardando').classList.remove('flex')
+      showLogin()
+    })
+
+    // Username sanitize
+    document.getElementById('cad-username').addEventListener('input', (e) => {
+      e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,'')
+    })
+
+    // Sidebar mobile
+    document.getElementById('btn-open-sidebar').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.remove('-translate-x-full')
+      document.getElementById('sidebar-overlay').classList.remove('hidden')
+    })
+    const closeSidebar = () => {
+      document.getElementById('sidebar').classList.add('-translate-x-full')
+      document.getElementById('sidebar-overlay').classList.add('hidden')
+    }
+    document.getElementById('btn-close-sidebar').addEventListener('click', closeSidebar)
+    document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar)
+
+    // Voltar professores
+    document.getElementById('btn-voltar-professores').addEventListener('click', () => {
+      const profNav = document.querySelector('a[href="#professores"]')
+      navTo('professores', profNav)
+      carregarProfessores()
+    })
+
+    // Fechar banner de aviso
+    document.getElementById('btn-fechar-banner').addEventListener('click', () => {
+      document.getElementById('banner-aviso').style.display = 'none'
+    })
+
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('[id^="menu-feed-"]') && !e.target.closest('[onclick^="toggleMenuFeed"]')) {
+        document.querySelectorAll('[id^="menu-feed-"]').forEach(m => m.classList.add('hidden'))
+      }
+    })
+  }
+
+  // ── GLOBAL ───────────────────────────────────────────
+  window.removerAula = async (id) => {
+    if (!confirm('Remover esta aula?')) return
+    await db.from('aulas').delete().eq('id', id)
+  }
+</script>
+</body>
+</html>
