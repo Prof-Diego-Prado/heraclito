@@ -117,6 +117,17 @@
     }
     .cal-view-btn { transition: all .15s; border:1.5px solid var(--border); }
     .cal-view-btn.ativo { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    /* Compose box */
+    #compose-form { transition: max-height .3s ease, opacity .25s ease; }
+    #user-chip { position:relative; }
+    #user-chip-cam {
+      position:absolute; bottom:-2px; right:-2px;
+      width:18px; height:18px; border-radius:9999px;
+      background:var(--primary); display:flex; align-items:center; justify-content:center;
+      opacity:0; transition:opacity .15s; pointer-events:none;
+    }
+    #user-chip:hover #user-chip-cam { opacity:1; }
   </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -271,8 +282,13 @@
       </button>
 
       <!-- User chip -->
-      <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-[#F0EDE6] transition-colors" style="border:1px solid var(--border);">
-        <img id="user-avatar" src="" alt="Avatar" class="avatar w-7 h-7 border-2 border-indigo-200">
+      <div id="user-chip" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-[#F0EDE6] transition-colors" style="border:1px solid var(--border);" title="Alterar foto de perfil">
+        <div class="relative shrink-0">
+          <img id="user-avatar" src="" alt="Avatar" class="avatar w-7 h-7 border-2 border-indigo-200">
+          <div id="user-chip-cam">
+            <i data-lucide="camera" class="w-2.5 h-2.5 text-white"></i>
+          </div>
+        </div>
         <div class="hidden sm:block">
           <p id="user-name" class="text-xs font-semibold leading-tight" style="color:var(--text);"></p>
           <p id="user-role" class="text-[10px] leading-tight" style="color:var(--muted);"></p>
@@ -395,10 +411,77 @@
 
     <!-- FEED -->
     <div id="view-feed" class="hidden">
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold" style="color:var(--text);">Feed Educacional</h1>
-        <p class="text-sm mt-1" style="color:var(--muted);">Materiais publicados pela comunidade</p>
+      <div class="mb-5">
+        <h1 class="text-2xl font-bold" style="color:var(--text);">Feed</h1>
+        <p class="text-sm mt-0.5" style="color:var(--muted);">Comunidade ProfEduCatec 2026</p>
       </div>
+
+      <!-- ── COMPOSE BOX ────────────────────────────── -->
+      <div id="feed-compose" class="hidden max-w-xl mb-5 rounded-2xl overflow-hidden fade-in"
+        style="background:var(--surface); border:1px solid var(--border);">
+
+        <!-- Linha sempre visível -->
+        <div class="flex items-center gap-3 p-4">
+          <div class="relative shrink-0">
+            <img id="compose-avatar" src="" alt="" class="avatar w-10 h-10" style="border:2px solid var(--border);">
+          </div>
+          <div id="compose-placeholder"
+            class="flex-1 rounded-xl px-4 py-2.5 text-sm cursor-pointer select-none transition-colors hover:opacity-80"
+            style="background:var(--soft); color:var(--muted); border:1.5px solid var(--border);">
+            Compartilhe algo com a turma...
+          </div>
+        </div>
+
+        <!-- Formulário expandido -->
+        <div id="compose-form" class="hidden px-4 pb-4 space-y-3">
+          <textarea id="compose-texto" rows="2" class="input-field resize-none text-sm"
+            placeholder="O que você quer compartilhar? (opcional)"></textarea>
+
+          <input type="text" id="compose-titulo" class="input-field text-sm"
+            placeholder="Título do material (obrigatório)">
+
+          <!-- Tipo -->
+          <div class="grid grid-cols-4 gap-2">
+            <label class="cursor-pointer"><input type="radio" name="compose-tipo" value="pdf" class="hidden peer" checked>
+              <div class="peer-checked:ring-2 ring-red-400 peer-checked:bg-red-50 rounded-xl p-2.5 text-center transition-all hover:bg-gray-50" style="border:1.5px solid var(--border);">
+                <i data-lucide="file-text" class="w-4 h-4 mx-auto mb-1 text-red-500"></i><p class="text-xs font-semibold text-gray-700">PDF</p></div></label>
+            <label class="cursor-pointer"><input type="radio" name="compose-tipo" value="doc" class="hidden peer">
+              <div class="peer-checked:ring-2 ring-blue-400 peer-checked:bg-blue-50 rounded-xl p-2.5 text-center transition-all hover:bg-gray-50" style="border:1.5px solid var(--border);">
+                <i data-lucide="file-text" class="w-4 h-4 mx-auto mb-1 text-blue-500"></i><p class="text-xs font-semibold text-gray-700">Word</p></div></label>
+            <label class="cursor-pointer"><input type="radio" name="compose-tipo" value="ppt" class="hidden peer">
+              <div class="peer-checked:ring-2 ring-orange-400 peer-checked:bg-orange-50 rounded-xl p-2.5 text-center transition-all hover:bg-gray-50" style="border:1.5px solid var(--border);">
+                <i data-lucide="presentation" class="w-4 h-4 mx-auto mb-1 text-orange-500"></i><p class="text-xs font-semibold text-gray-700">PPT</p></div></label>
+            <label class="cursor-pointer"><input type="radio" name="compose-tipo" value="link" class="hidden peer">
+              <div class="peer-checked:ring-2 ring-emerald-400 peer-checked:bg-emerald-50 rounded-xl p-2.5 text-center transition-all hover:bg-gray-50" style="border:1.5px solid var(--border);">
+                <i data-lucide="link" class="w-4 h-4 mx-auto mb-1 text-emerald-500"></i><p class="text-xs font-semibold text-gray-700">Link</p></div></label>
+          </div>
+
+          <input type="url" id="compose-url" class="input-field text-sm"
+            placeholder="https://... (link do material)">
+
+          <!-- Cooldown — só alunos -->
+          <div id="compose-cooldown" class="hidden flex items-center gap-2 text-xs rounded-xl px-3 py-2.5"
+            style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;">
+            <i data-lucide="timer" class="w-3.5 h-3.5 shrink-0"></i>
+            <span>Próxima publicação em <strong id="compose-countdown">5:00</strong></span>
+          </div>
+
+          <!-- Erro -->
+          <div id="compose-erro" class="hidden text-xs rounded-xl px-3 py-2"
+            style="background:#FEF2F2; color:#B91C1C;"></div>
+
+          <!-- Ações -->
+          <div class="flex items-center justify-between pt-1" style="border-top:1px solid var(--border);">
+            <button id="btn-compose-cancelar" type="button"
+              class="text-sm px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+              style="color:var(--muted);">Cancelar</button>
+            <button id="btn-compose-publicar" type="button"
+              class="btn-primary px-5 py-2 rounded-xl text-sm font-semibold">Publicar</button>
+          </div>
+        </div>
+      </div>
+      <!-- /compose box -->
+
       <div id="feed-lista" class="max-w-xl space-y-4">
         <div class="flex flex-col items-center py-20" style="color:var(--muted);">
           <i data-lucide="newspaper" class="w-12 h-12 mb-3 opacity-20"></i>
@@ -904,6 +987,43 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════
+     MODAL FOTO DE PERFIL
+═══════════════════════════════════════════════════════ -->
+<div id="modal-foto-perfil" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2" style="color:var(--text);">
+        <i data-lucide="camera" class="w-4 h-4" style="color:var(--primary);"></i>Foto de Perfil
+      </p>
+      <button onclick="fecharFotoPerfil()" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="flex flex-col items-center gap-4">
+        <div class="relative">
+          <img id="foto-perfil-preview" src="" alt="Preview"
+            class="avatar w-24 h-24" style="border:3px solid var(--border);">
+        </div>
+        <label class="cursor-pointer rounded-xl px-4 py-3 text-sm text-center transition-colors hover:bg-gray-50 w-full"
+          style="border:1.5px dashed var(--border);">
+          <i data-lucide="camera" class="w-5 h-5 mx-auto mb-1.5" style="color:var(--muted);"></i>
+          <p class="font-medium" style="color:var(--text);">Selecionar nova foto</p>
+          <p class="text-xs mt-0.5" style="color:var(--muted);">JPG, PNG ou GIF · máx 2 MB</p>
+          <input type="file" id="input-foto-perfil" accept="image/*" class="hidden">
+        </label>
+      </div>
+      <div id="foto-perfil-erro" class="hidden text-sm rounded-xl px-3 py-2.5"
+        style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA;"></div>
+      <button id="btn-salvar-foto" onclick="salvarFotoPerfil()"
+        class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold">
+        Salvar foto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
      SCRIPT
 ═══════════════════════════════════════════════════════ -->
 <script type="module">
@@ -1091,7 +1211,14 @@
       document.querySelectorAll('#btn-nova-aula, #btn-nova-aula-2').forEach(b => b.classList.remove('hidden'))
       document.getElementById('nav-usuarios').classList.remove('hidden')
     }
-    if (isTeacher || currentProfile?.role === 'student') document.getElementById('btn-novo-arquivo').classList.remove('hidden')
+    if (isTeacher || currentProfile?.role === 'student') {
+      document.getElementById('btn-novo-arquivo').classList.remove('hidden')
+      // Compose box no feed
+      const compose = document.getElementById('feed-compose')
+      if (compose) compose.classList.remove('hidden')
+      const composeAv = document.getElementById('compose-avatar')
+      if (composeAv) composeAv.src = avatarUrl(currentProfile)
+    }
 
     // Marcar primeira nav como ativa
     document.querySelector('a[href="#dashboard"]').classList.add('active')
@@ -1490,6 +1617,9 @@
 
   // ── FEED ─────────────────────────────────────────────
   async function carregarFeed() {
+    // Manter compose avatar atualizado
+    const ca = document.getElementById('compose-avatar')
+    if (ca && currentProfile) ca.src = avatarUrl(currentProfile)
     const lista = document.getElementById('feed-lista')
     lista.innerHTML = `<div class="flex flex-col items-center py-16" style="color:var(--muted);">
       <i data-lucide="loader" class="w-8 h-8 mb-2 opacity-30"></i><p class="text-sm">Carregando...</p></div>`
@@ -1960,9 +2090,43 @@
     })
 
     // Fechar banner de aviso
-    document.getElementById('btn-fechar-banner').addEventListener('click', () => {
-      document.getElementById('banner-aviso').style.display = 'none'
-    })
+    function attachBannerClose() {
+      document.getElementById('btn-fechar-banner')?.addEventListener('click', (e) => {
+        e.stopPropagation()
+        document.getElementById('banner-aviso').style.display = 'none'
+      })
+    }
+    attachBannerClose()
+
+    // Auto-minimizar banner após 2 minutos
+    const bannerEl = document.getElementById('banner-aviso')
+    const bannerOrigHTML = bannerEl ? bannerEl.innerHTML : ''
+    setTimeout(() => {
+      if (!bannerEl || bannerEl.style.display === 'none') return
+      bannerEl.style.transition = 'padding 0.4s ease'
+      bannerEl.style.padding = '5px 16px'
+      bannerEl.innerHTML = `
+        <i data-lucide="triangle-alert" class="w-3.5 h-3.5 shrink-0 text-amber-500"></i>
+        <span class="text-xs font-semibold ml-2 flex-1" style="color:#92400E;">
+          Projeto experimental · sem vínculo com UEM/ProfEduCatec · CC BY-NC-SA 4.0
+        </span>
+        <button id="btn-expandir-banner" class="shrink-0 text-xs font-bold px-2 py-0.5 rounded hover:bg-amber-200 transition-colors ml-2" style="color:#92400E;" title="Expandir">ver +</button>
+        <button id="btn-fechar-banner" class="shrink-0 p-0.5 rounded hover:bg-amber-100 transition-colors ml-1 text-amber-600 hover:text-amber-800">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>`
+      lucide.createIcons()
+      attachBannerClose()
+      document.getElementById('btn-expandir-banner')?.addEventListener('click', (e) => {
+        e.stopPropagation()
+        bannerEl.innerHTML = bannerOrigHTML
+        bannerEl.style.padding = ''
+        lucide.createIcons()
+        attachBannerClose()
+      })
+    }, 2 * 60 * 1000)
+
+    // User chip → alterar foto de perfil
+    document.getElementById('user-chip').addEventListener('click', () => abrirFotoPerfil())
 
     // Fechar dropdown ao clicar fora
     document.addEventListener('click', (e) => {
@@ -1970,6 +2134,185 @@
         document.querySelectorAll('[id^="menu-feed-"]').forEach(m => m.classList.add('hidden'))
       }
     })
+  }
+
+  // ── COMPOSE BOX ──────────────────────────────────────
+  const COOLDOWN_MS = 5 * 60 * 1000
+  let cooldownTimer = null
+
+  function getCooldownRemaining() {
+    if (isTeacher) return 0
+    const last = localStorage.getItem(`lastPost_${currentUser?.id}`)
+    if (!last) return 0
+    return Math.max(0, COOLDOWN_MS - (Date.now() - parseInt(last)))
+  }
+
+  function fmtCountdown(ms) {
+    const s = Math.ceil(ms / 1000)
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  }
+
+  function iniciarCooldownUI(rem) {
+    const box = document.getElementById('compose-cooldown')
+    const cd  = document.getElementById('compose-countdown')
+    const btn = document.getElementById('btn-compose-publicar')
+    box.classList.remove('hidden')
+    cd.textContent = fmtCountdown(rem)
+    if (btn) btn.disabled = true
+    if (cooldownTimer) clearInterval(cooldownTimer)
+    cooldownTimer = setInterval(() => {
+      const r = getCooldownRemaining()
+      if (r <= 0) {
+        box.classList.add('hidden')
+        if (btn) btn.disabled = false
+        clearInterval(cooldownTimer); cooldownTimer = null
+      } else {
+        cd.textContent = fmtCountdown(r)
+      }
+    }, 1000)
+  }
+
+  // Expandir compose ao clicar no placeholder
+  document.getElementById('compose-placeholder')?.addEventListener('click', () => {
+    document.getElementById('compose-placeholder').classList.add('hidden')
+    const form = document.getElementById('compose-form')
+    form.classList.remove('hidden')
+    lucide.createIcons()
+    // Verificar cooldown para alunos
+    const rem = getCooldownRemaining()
+    if (rem > 0) iniciarCooldownUI(rem)
+    else {
+      document.getElementById('compose-cooldown').classList.add('hidden')
+      const btn = document.getElementById('btn-compose-publicar')
+      if (btn) btn.disabled = false
+    }
+    document.getElementById('compose-texto').focus()
+  })
+
+  document.getElementById('btn-compose-cancelar')?.addEventListener('click', fecharCompose)
+
+  document.getElementById('btn-compose-publicar')?.addEventListener('click', publicarCompose)
+
+  function fecharCompose() {
+    document.getElementById('compose-form').classList.add('hidden')
+    document.getElementById('compose-placeholder').classList.remove('hidden')
+    document.getElementById('compose-erro').classList.add('hidden')
+    document.getElementById('compose-cooldown').classList.add('hidden')
+    if (cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null }
+    document.getElementById('compose-texto').value  = ''
+    document.getElementById('compose-titulo').value = ''
+    document.getElementById('compose-url').value    = ''
+    const pdf = document.querySelector('input[name="compose-tipo"][value="pdf"]')
+    if (pdf) pdf.checked = true
+    const btn = document.getElementById('btn-compose-publicar')
+    if (btn) { btn.disabled = false; btn.textContent = 'Publicar' }
+  }
+
+  async function publicarCompose() {
+    const titulo = document.getElementById('compose-titulo').value.trim()
+    const texto  = document.getElementById('compose-texto').value.trim()
+    const tipo   = document.querySelector('input[name="compose-tipo"]:checked')?.value || 'link'
+    const url    = document.getElementById('compose-url').value.trim()
+    const erroEl = document.getElementById('compose-erro')
+    const btn    = document.getElementById('btn-compose-publicar')
+
+    erroEl.classList.add('hidden')
+
+    if (!titulo) {
+      erroEl.textContent = 'O título é obrigatório.'
+      erroEl.classList.remove('hidden'); return
+    }
+    if (!url) {
+      erroEl.textContent = 'A URL do material é obrigatória.'
+      erroEl.classList.remove('hidden'); return
+    }
+
+    const rem = getCooldownRemaining()
+    if (rem > 0) { iniciarCooldownUI(rem); return }
+
+    btn.disabled = true; btn.textContent = 'Publicando…'
+
+    const { error } = await db.from('arquivos').insert({
+      nome: titulo, tipo, fonte: 'web', url,
+      created_by: currentUser.id,
+      ...(texto && { descricao: texto })
+    })
+
+    if (error) {
+      erroEl.textContent = error.message
+      erroEl.classList.remove('hidden')
+      btn.disabled = false; btn.textContent = 'Publicar'
+    } else {
+      if (!isTeacher) {
+        localStorage.setItem(`lastPost_${currentUser.id}`, Date.now().toString())
+      }
+      fecharCompose()
+      await carregarFeed()
+    }
+  }
+
+  // ── FOTO DE PERFIL ────────────────────────────────────
+  document.getElementById('input-foto-perfil')?.addEventListener('change', (e) => {
+    const f = e.target.files[0]; if (!f) return
+    document.getElementById('foto-perfil-preview').src = URL.createObjectURL(f)
+  })
+
+  window.abrirFotoPerfil = () => {
+    const modal = document.getElementById('modal-foto-perfil')
+    document.getElementById('foto-perfil-preview').src = avatarUrl(currentProfile)
+    document.getElementById('foto-perfil-erro').classList.add('hidden')
+    document.getElementById('input-foto-perfil').value = ''
+    const btn = document.getElementById('btn-salvar-foto')
+    btn.disabled = false; btn.textContent = 'Salvar foto'
+    modal.classList.remove('hidden'); modal.classList.add('flex')
+    lucide.createIcons()
+  }
+
+  window.fecharFotoPerfil = () => {
+    const modal = document.getElementById('modal-foto-perfil')
+    modal.classList.add('hidden'); modal.classList.remove('flex')
+  }
+
+  window.salvarFotoPerfil = async () => {
+    const f     = document.getElementById('input-foto-perfil').files[0]
+    const erroEl= document.getElementById('foto-perfil-erro')
+    const btn   = document.getElementById('btn-salvar-foto')
+
+    erroEl.classList.add('hidden')
+
+    if (!f) {
+      erroEl.textContent = 'Selecione uma foto primeiro.'
+      erroEl.classList.remove('hidden'); return
+    }
+    if (f.size > 2 * 1024 * 1024) {
+      erroEl.textContent = 'Arquivo muito grande — máximo 2 MB.'
+      erroEl.classList.remove('hidden'); return
+    }
+
+    btn.disabled = true; btn.textContent = 'Salvando…'
+
+    const ext = f.name.split('.').pop()
+    const { data: up, error: upErr } = await db.storage
+      .from('avatars')
+      .upload(`${currentUser.id}.${ext}`, f, { upsert: true })
+
+    if (upErr) {
+      erroEl.textContent = upErr.message
+      erroEl.classList.remove('hidden')
+      btn.disabled = false; btn.textContent = 'Salvar foto'; return
+    }
+
+    const newUrl = db.storage.from('avatars').getPublicUrl(up.path).data.publicUrl
+    await db.from('users').update({ avatar_url: newUrl }).eq('id', currentUser.id)
+    currentProfile.avatar_url = newUrl
+
+    const ts = '?t=' + Date.now()
+    document.getElementById('user-avatar').src     = newUrl + ts
+    const ca = document.getElementById('compose-avatar')
+    if (ca) ca.src = newUrl + ts
+
+    fecharFotoPerfil()
+    btn.disabled = false; btn.textContent = 'Salvar foto'
   }
 
   // ── GLOBAL ───────────────────────────────────────────
