@@ -1076,6 +1076,7 @@
           <label class="cursor-pointer"><input type="radio" name="aula-cor" value="red" class="hidden peer"><div class="w-8 h-8 rounded-full bg-red-500 peer-checked:ring-4 ring-red-200 transition-all" title="Vermelho (Artigo)"></div></label>
         </div>
       </div>
+      <div id="aula-erro" class="hidden rounded-xl px-3 py-2 text-sm" style="background:#FEF2F2; color:#B91C1C;"></div>
       <div class="flex justify-end gap-2 pt-2">
         <button type="button" class="fechar-modal px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
         <button type="submit" id="btn-submit-aula" class="btn-primary px-5 py-2 rounded-xl text-sm font-semibold">Adicionar</button>
@@ -2710,24 +2711,44 @@
   // ── FORMS ────────────────────────────────────────────
   document.getElementById('form-aula').addEventListener('submit', async (e) => {
     e.preventDefault()
+    const erroEl   = document.getElementById('aula-erro')
+    const btnEl    = document.getElementById('btn-submit-aula')
     const isArtigo = document.getElementById('aula-is-artigo').checked
-    const cor      = isArtigo ? 'red' : document.querySelector('input[name="aula-cor"]:checked').value
-    const data     = document.getElementById('aula-data').value
-    const d        = new Date(data + 'T12:00:00')
-    const dias     = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
-    const dia      = dias[d.getDay()]
+
+    // Quando é Artigo, o campo cor pode ser qualquer valor válido
+    // (a cor vermelha vem do is_artigo, não do campo cor)
+    const cor  = document.querySelector('input[name="aula-cor"]:checked')?.value || 'blue'
+    const data = document.getElementById('aula-data').value
+    const d    = new Date(data + 'T12:00:00')
+    const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
+    const dia  = dias[d.getDay()]
+
+    erroEl.classList.add('hidden')
+    btnEl.disabled = true
+    btnEl.textContent = 'Salvando…'
+
     const { error } = await db.from('aulas').insert({
       dia, data,
-      hora:       document.getElementById('aula-hora').value,
-      titulo:     document.getElementById('aula-titulo').value,
-      local:      document.getElementById('aula-local').value,
+      hora:      document.getElementById('aula-hora').value,
+      titulo:    document.getElementById('aula-titulo').value,
+      local:     document.getElementById('aula-local').value,
       cor,
-      is_artigo:  isArtigo
+      is_artigo: isArtigo
     })
-    if (!error) {
+
+    btnEl.disabled = false
+    btnEl.textContent = 'Adicionar'
+
+    if (error) {
+      erroEl.textContent = error.message
+      erroEl.classList.remove('hidden')
+    } else {
       document.getElementById('modal-aula').classList.add('hidden')
       document.getElementById('aula-is-artigo').checked = false
       document.getElementById('aula-cor-wrap').style.opacity = '1'
+      document.getElementById('aula-cor-wrap').style.pointerEvents = ''
+      btnEl.style.background = ''
+      erroEl.classList.add('hidden')
       e.target.reset()
     }
   })
