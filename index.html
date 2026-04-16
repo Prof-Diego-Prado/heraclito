@@ -2715,9 +2715,8 @@
     const btnEl    = document.getElementById('btn-submit-aula')
     const isArtigo = document.getElementById('aula-is-artigo').checked
 
-    // Quando é Artigo, o campo cor pode ser qualquer valor válido
-    // (a cor vermelha vem do is_artigo, não do campo cor)
-    const cor  = document.querySelector('input[name="aula-cor"]:checked')?.value || 'blue'
+    // Artigo: força cor válida no banco (o vermelho vem de is_artigo, não do campo cor)
+    const cor  = isArtigo ? 'blue' : (document.querySelector('input[name="aula-cor"]:checked')?.value || 'blue')
     const data = document.getElementById('aula-data').value
     const d    = new Date(data + 'T12:00:00')
     const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
