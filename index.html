@@ -130,6 +130,23 @@
       color: #134E4A !important;
     }
     .cal-view-btn { transition: all .15s; border:1.5px solid var(--border); }
+
+    /* Artigo — pulso vermelho de urgência */
+    @keyframes artigoGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.5); }
+      55%       { box-shadow: 0 0 0 10px rgba(220,38,38,0); }
+    }
+    .artigo-card {
+      animation: artigoGlow 2s ease-in-out infinite;
+      border-left-color: #DC2626 !important;
+      background: linear-gradient(135deg,#FEF2F2 0%,#FFFFFF 60%) !important;
+      color: #7F1D1D !important;
+    }
+    @keyframes artigoBanner {
+      0%, 100% { opacity:1; }
+      50%       { opacity:.82; }
+    }
+    .artigo-banner-pulse { animation: artigoBanner 2.5s ease-in-out infinite; }
     .cal-view-btn.ativo { background:var(--primary); color:#fff; border-color:var(--primary); }
     .feed-tab { transition: all .15s; background:var(--surface); color:var(--muted); }
     .feed-tab.ativo { background:var(--primary); color:#fff; }
@@ -191,6 +208,19 @@
     <a href="#dashboard" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
       <i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i>Calendário
     </a>
+
+    <!-- Contagem regressiva — Artigo mais próximo -->
+    <div id="sidebar-artigo-countdown" class="hidden mx-1 mb-1 rounded-xl artigo-banner-pulse"
+      style="background:linear-gradient(135deg,#FEF2F2,#FFF0F0); border:1.5px solid #FECACA;">
+      <div class="px-3 py-2.5">
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="text-[9px] font-bold uppercase tracking-wider" style="color:#DC2626;">📝 Artigo</span>
+        </div>
+        <p class="text-[11px] font-semibold truncate mb-1.5 leading-tight" style="color:#991B1B;" id="sidebar-artigo-nome"></p>
+        <p class="font-mono text-xs font-bold tabular-nums" style="color:#DC2626;" id="sidebar-artigo-tempo"></p>
+      </div>
+    </div>
+
     <a href="#professores" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
       <i data-lucide="users" class="w-4 h-4 shrink-0"></i>Professores
     </a>
@@ -321,6 +351,26 @@
         <button id="btn-nova-aula-2" class="hidden btn-primary px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
           <i data-lucide="plus" class="w-4 h-4"></i>Nova Aula
         </button>
+      </div>
+
+      <!-- Banner contagem regressiva Artigo -->
+      <div id="artigo-countdown-banner" class="hidden mb-5 rounded-2xl overflow-hidden artigo-banner-pulse"
+        style="background:linear-gradient(135deg,#FEF2F2 0%,#FFF5F5 100%); border:1.5px solid #FECACA;">
+        <div class="px-5 py-4 flex items-center gap-4 flex-wrap">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style="background:#DC2626; box-shadow:0 4px 12px rgba(220,38,38,.35);">
+            <i data-lucide="file-edit" class="w-5 h-5 text-white"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5" style="color:#DC2626;">Próximo Artigo</p>
+            <p class="font-semibold text-sm truncate leading-tight" style="color:#7F1D1D;" id="banner-artigo-nome"></p>
+            <p class="text-xs mt-0.5" style="color:#B91C1C;" id="banner-artigo-data"></p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-[10px] uppercase tracking-widest mb-0.5" style="color:#DC2626;">Faltam</p>
+            <p class="font-mono text-2xl font-bold tabular-nums leading-none" style="color:#DC2626;" id="banner-artigo-tempo"></p>
+          </div>
+        </div>
       </div>
 
       <!-- Controles do calendário -->
@@ -1005,7 +1055,17 @@
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Local / Link</label>
         <input type="text" id="aula-local" class="input-field" placeholder="Sala 201 ou link da reunião" required>
       </div>
-      <div>
+      <!-- Tipo Artigo -->
+      <label class="flex items-center gap-3 rounded-xl p-3 cursor-pointer transition-colors hover:bg-red-50"
+        style="border:1.5px solid #FECACA; background:#FFF5F5;">
+        <input type="checkbox" id="aula-is-artigo" class="w-4 h-4 rounded accent-red-600 shrink-0">
+        <div>
+          <p class="text-sm font-semibold" style="color:#DC2626;">📝 Evento Artigo</p>
+          <p class="text-xs" style="color:#B91C1C;">Destaque vermelho + contagem regressiva no calendário</p>
+        </div>
+      </label>
+
+      <div id="aula-cor-wrap">
         <label class="block text-xs font-semibold mb-2 uppercase tracking-wider" style="color:var(--muted);">Cor</label>
         <div class="flex gap-2">
           <label class="cursor-pointer"><input type="radio" name="aula-cor" value="blue" class="hidden peer" checked><div class="w-8 h-8 rounded-full bg-blue-500 peer-checked:ring-4 ring-blue-200 transition-all"></div></label>
@@ -1013,11 +1073,12 @@
           <label class="cursor-pointer"><input type="radio" name="aula-cor" value="purple" class="hidden peer"><div class="w-8 h-8 rounded-full bg-purple-500 peer-checked:ring-4 ring-purple-200 transition-all"></div></label>
           <label class="cursor-pointer"><input type="radio" name="aula-cor" value="orange" class="hidden peer"><div class="w-8 h-8 rounded-full bg-orange-500 peer-checked:ring-4 ring-orange-200 transition-all"></div></label>
           <label class="cursor-pointer"><input type="radio" name="aula-cor" value="indigo" class="hidden peer"><div class="w-8 h-8 rounded-full bg-indigo-500 peer-checked:ring-4 ring-indigo-200 transition-all"></div></label>
+          <label class="cursor-pointer"><input type="radio" name="aula-cor" value="red" class="hidden peer"><div class="w-8 h-8 rounded-full bg-red-500 peer-checked:ring-4 ring-red-200 transition-all" title="Vermelho (Artigo)"></div></label>
         </div>
       </div>
       <div class="flex justify-end gap-2 pt-2">
         <button type="button" class="fechar-modal px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
-        <button type="submit" class="btn-primary px-5 py-2 rounded-xl text-sm font-semibold">Adicionar</button>
+        <button type="submit" id="btn-submit-aula" class="btn-primary px-5 py-2 rounded-xl text-sm font-semibold">Adicionar</button>
       </div>
     </form>
   </div>
@@ -1375,8 +1436,80 @@
     purple:'border-purple-400 bg-purple-50 text-purple-900',
     orange:'border-orange-400 bg-orange-50 text-orange-900',
     indigo:'border-indigo-400 bg-indigo-50 text-indigo-900',
+    red:   'border-red-500 bg-red-50 text-red-900',
   }
-  const COR_HEX = {blue:'#3B82F6',green:'#10B981',purple:'#8B5CF6',orange:'#F97316',indigo:'#6366F1'}
+  const COR_HEX = {blue:'#3B82F6',green:'#10B981',purple:'#8B5CF6',orange:'#F97316',indigo:'#6366F1',red:'#DC2626'}
+
+  // ── CONTAGEM REGRESSIVA — ARTIGO ─────────────────────
+  let artigoTimer = null
+
+  function iniciarContagemArtigo() {
+    if (artigoTimer) clearInterval(artigoTimer)
+    atualizarContagemArtigo()
+    artigoTimer = setInterval(atualizarContagemArtigo, 1000)
+  }
+
+  function atualizarContagemArtigo() {
+    const now    = new Date()
+    const hoje   = isoDate(now)
+    const artigos = todasAulas
+      .filter(a => a.is_artigo && a.data >= hoje)
+      .sort((a, b) => {
+        const toMs = x => new Date(x.data + 'T' + (x.hora || '23:59') + ':00').getTime()
+        return toMs(a) - toMs(b)
+      })
+
+    const proximo = artigos[0]
+    const sidebar = document.getElementById('sidebar-artigo-countdown')
+    const banner  = document.getElementById('artigo-countdown-banner')
+
+    if (!proximo) {
+      sidebar?.classList.add('hidden')
+      banner?.classList.add('hidden')
+      return
+    }
+
+    const deadline = new Date(proximo.data + 'T' + (proximo.hora || '23:59') + ':00')
+    const diff     = deadline - now
+
+    if (diff <= 0) {
+      // Evento já passou — mostrar "Hoje!"
+      const txt = '🎯 Hoje!'
+      document.getElementById('sidebar-artigo-tempo').textContent = txt
+      document.getElementById('banner-artigo-tempo').textContent  = txt
+      sidebar?.classList.remove('hidden')
+      banner?.classList.remove('hidden')
+      return
+    }
+
+    const dias  = Math.floor(diff / 86400000)
+    const horas = Math.floor((diff % 86400000) / 3600000)
+    const mins  = Math.floor((diff % 3600000) / 60000)
+    const segs  = Math.floor((diff % 60000) / 1000)
+
+    let countdownTxt = ''
+    if (dias > 0)       countdownTxt = `${dias}d ${String(horas).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m`
+    else if (horas > 0) countdownTxt = `${String(horas).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m ${String(segs).padStart(2,'0')}s`
+    else                countdownTxt = `${String(mins).padStart(2,'0')}m ${String(segs).padStart(2,'0')}s`
+
+    const dataFmt = new Date(proximo.data + 'T12:00:00')
+      .toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
+
+    // Sidebar
+    if (sidebar) {
+      document.getElementById('sidebar-artigo-nome').textContent  = proximo.titulo
+      document.getElementById('sidebar-artigo-tempo').textContent = countdownTxt
+      sidebar.classList.remove('hidden')
+    }
+    // Banner dashboard
+    if (banner) {
+      document.getElementById('banner-artigo-nome').textContent  = proximo.titulo
+      document.getElementById('banner-artigo-data').textContent  = dataFmt
+      document.getElementById('banner-artigo-tempo').textContent = countdownTxt
+      banner.classList.remove('hidden')
+      lucide.createIcons()
+    }
+  }
 
   function isoDate(d) { return d.toISOString().slice(0,10) }
   function fmtShort(d) { return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) }
@@ -1413,6 +1546,7 @@
     }
 
     renderCalendario()
+    iniciarContagemArtigo()
   }
 
   function renderCalendario() {
@@ -1443,7 +1577,7 @@
   }
 
   function aulaCard(a, hoje) {
-    const cls = COR_CLASS[a.cor] || COR_CLASS.blue
+    const cls = a.is_artigo ? 'artigo-card' : (COR_CLASS[a.cor] || COR_CLASS.blue)
     const del = isAdmin
       ? `<button onclick="removerAula('${a.id}')" class="text-[10px] text-red-400 hover:text-red-600 mt-1 flex items-center gap-0.5 transition-colors"><i data-lucide="trash-2" class="w-2.5 h-2.5"></i>Remover</button>`
       : ''
@@ -1464,12 +1598,16 @@
           <i data-lucide="calendar-clock" class="w-3 h-3"></i>
         </button>`
       : ''
+    const artigoBadge = a.is_artigo
+      ? `<span class="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+           style="background:#DC2626; color:#fff;">📝 ARTIGO</span>`
+      : ''
     return `
-      <div class="border-l-[3px] ${cls} rounded-r-xl px-2.5 py-2 shadow-sm group/card ${hoje ? 'hoje-pulse' : 'hover:shadow transition-shadow'}" ${tooltipConteudo}>
+      <div class="border-l-[3px] ${cls} rounded-r-xl px-2.5 py-2 shadow-sm group/card ${hoje && !a.is_artigo ? 'hoje-pulse' : 'hover:shadow transition-shadow'}" ${tooltipConteudo}>
         <div class="flex items-start gap-1 mb-0.5">
           <p class="font-semibold text-[11px] leading-snug flex-1">${a.titulo}</p>
           ${editDataBtn}
-          ${discTag(a.disciplina)}
+          ${a.is_artigo ? artigoBadge : discTag(a.disciplina)}
         </div>
         <p class="text-[10px] opacity-70">${a.hora} · ${a.local}</p>
         ${alunosHtml}
@@ -2572,19 +2710,26 @@
   // ── FORMS ────────────────────────────────────────────
   document.getElementById('form-aula').addEventListener('submit', async (e) => {
     e.preventDefault()
-    const cor   = document.querySelector('input[name="aula-cor"]:checked').value
-    const data  = document.getElementById('aula-data').value
-    const d     = new Date(data + 'T12:00:00')
-    const dias  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
-    const dia   = dias[d.getDay()]
+    const isArtigo = document.getElementById('aula-is-artigo').checked
+    const cor      = isArtigo ? 'red' : document.querySelector('input[name="aula-cor"]:checked').value
+    const data     = document.getElementById('aula-data').value
+    const d        = new Date(data + 'T12:00:00')
+    const dias     = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
+    const dia      = dias[d.getDay()]
     const { error } = await db.from('aulas').insert({
       dia, data,
-      hora:   document.getElementById('aula-hora').value,
-      titulo: document.getElementById('aula-titulo').value,
-      local:  document.getElementById('aula-local').value,
-      cor
+      hora:       document.getElementById('aula-hora').value,
+      titulo:     document.getElementById('aula-titulo').value,
+      local:      document.getElementById('aula-local').value,
+      cor,
+      is_artigo:  isArtigo
     })
-    if (!error) { document.getElementById('modal-aula').classList.add('hidden'); e.target.reset() }
+    if (!error) {
+      document.getElementById('modal-aula').classList.add('hidden')
+      document.getElementById('aula-is-artigo').checked = false
+      document.getElementById('aula-cor-wrap').style.opacity = '1'
+      e.target.reset()
+    }
   })
 
   document.getElementById('form-arquivo').addEventListener('submit', async (e) => {
@@ -2639,6 +2784,22 @@
   }
 
   function setupEventListeners() {
+    // Checkbox Artigo — auto-seleciona vermelho e oculta picker de cor
+    document.getElementById('aula-is-artigo').addEventListener('change', (e) => {
+      const wrap = document.getElementById('aula-cor-wrap')
+      if (e.target.checked) {
+        document.querySelector('input[name="aula-cor"][value="red"]').checked = true
+        wrap.style.opacity = '0.4'
+        wrap.style.pointerEvents = 'none'
+        document.getElementById('btn-submit-aula').style.background = '#DC2626'
+      } else {
+        document.querySelector('input[name="aula-cor"][value="blue"]').checked = true
+        wrap.style.opacity = '1'
+        wrap.style.pointerEvents = ''
+        document.getElementById('btn-submit-aula').style.background = ''
+      }
+    })
+
     // Botão nova subpasta na view-pasta
     document.getElementById('btn-nova-subpasta-view').addEventListener('click', (e) => {
       const parentId = e.currentTarget.dataset.parentId
