@@ -294,6 +294,23 @@
       </div>
     </div>
 
+    <!-- Disciplinas sidebar -->
+    <div class="pt-4">
+      <p class="px-3 pb-1 text-xs font-semibold uppercase tracking-widest" style="color:var(--muted);">Disciplinas</p>
+      <a href="#disciplina-1" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium" title="Fundamentos em Processos Inovadores e Culturas Digitais na Educação Básica">
+        <i data-lucide="book-open" class="w-3.5 h-3.5 shrink-0"></i>
+        <span class="truncate">Processos Inovadores</span>
+      </a>
+      <a href="#disciplina-2" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium" title="Métodos, Pesquisa Científica e Ética em Ciências e Humanidades">
+        <i data-lucide="book-open" class="w-3.5 h-3.5 shrink-0"></i>
+        <span class="truncate">Métodos e Pesquisa</span>
+      </a>
+      <a href="#disciplina-3" class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium" title="Fundamentos em Pesquisas e Tecnologias Educacionais na Educação Básica">
+        <i data-lucide="book-open" class="w-3.5 h-3.5 shrink-0"></i>
+        <span class="truncate">Pesquisas e Tecnologias</span>
+      </a>
+    </div>
+
     <!-- Professores sidebar -->
     <div id="sidebar-professores" class="hidden pt-4">
       <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style="color:var(--muted);">Professores</p>
@@ -625,6 +642,80 @@
         </div>
         <p class="font-semibold" style="color:var(--text);">Em desenvolvimento</p>
         <p class="text-sm mt-1" style="color:var(--muted);">Biblioteca de videoaulas em breve</p>
+      </div>
+    </div>
+
+    <!-- VIEW DISCIPLINA ──────────────────────────────── -->
+    <div id="view-disciplina" class="hidden">
+      <!-- Header -->
+      <div class="mb-6">
+        <div class="flex items-center gap-2 text-xs mb-3" style="color:var(--muted);">
+          <button onclick="navTo('dashboard',null)" class="hover:underline">Início</button>
+          <i data-lucide="chevron-right" class="w-3 h-3"></i>
+          <span>Disciplinas</span>
+          <i data-lucide="chevron-right" class="w-3 h-3"></i>
+          <span id="disc-breadcrumb" class="font-medium" style="color:var(--text);"></span>
+        </div>
+        <div class="rounded-2xl p-5" style="background:linear-gradient(135deg,#4338CA,#7C3AED); color:#fff;">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(255,255,255,.2);">
+              <i data-lucide="book-open" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold uppercase tracking-wider opacity-80 mb-0.5" id="disc-codigo"></p>
+              <h1 class="text-lg font-bold leading-snug" id="disc-nome"></h1>
+              <p class="text-sm opacity-80 mt-1" id="disc-docentes"></p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-4 mt-4 text-xs font-medium opacity-90">
+            <span id="disc-periodo" class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i></span>
+            <span id="disc-carga" class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i></span>
+            <span id="disc-turma" class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plano de Ensino -->
+      <div class="mb-6 rounded-2xl overflow-hidden" style="border:1px solid var(--border); background:var(--surface);">
+        <div class="px-5 py-3 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+          <p class="font-semibold text-sm flex items-center gap-2" style="color:var(--text);">
+            <i data-lucide="file-text" class="w-4 h-4" style="color:var(--primary);"></i>Plano de Ensino
+          </p>
+        </div>
+        <div class="px-5 py-4 flex items-center gap-4">
+          <div class="w-10 h-12 rounded-lg flex items-center justify-center shrink-0" style="background:#EEF2FF;">
+            <i data-lucide="file-text" class="w-5 h-5" style="color:var(--primary);"></i>
+          </div>
+          <div class="flex-1">
+            <p class="font-medium text-sm" style="color:var(--text);" id="disc-plano-nome"></p>
+            <p class="text-xs mt-0.5" style="color:var(--muted);">Plano de Ensino oficial — 2026/01</p>
+          </div>
+          <a id="disc-plano-url" href="#" target="_blank" download
+            class="btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>Baixar
+          </a>
+        </div>
+      </div>
+
+      <!-- Ementa -->
+      <div class="mb-6 rounded-2xl overflow-hidden" style="border:1px solid var(--border); background:var(--surface);">
+        <div class="px-5 py-3" style="border-bottom:1px solid var(--border);">
+          <p class="font-semibold text-sm flex items-center gap-2" style="color:var(--text);">
+            <i data-lucide="align-left" class="w-4 h-4" style="color:var(--primary);"></i>Ementa
+          </p>
+        </div>
+        <p class="px-5 py-4 text-sm leading-relaxed" style="color:var(--text);" id="disc-ementa"></p>
+      </div>
+
+      <!-- Materiais de Domínio Público -->
+      <div class="rounded-2xl overflow-hidden" style="border:1px solid var(--border); background:var(--surface);">
+        <div class="px-5 py-3" style="border-bottom:1px solid var(--border);">
+          <p class="font-semibold text-sm flex items-center gap-2" style="color:var(--text);">
+            <i data-lucide="external-link" class="w-4 h-4" style="color:var(--primary);"></i>Materiais com Acesso Aberto
+          </p>
+          <p class="text-xs mt-0.5" style="color:var(--muted);">Artigos, teses e e-books da bibliografia com acesso público</p>
+        </div>
+        <div id="disc-materiais" class="divide-y" style="divide-color:var(--border);"></div>
       </div>
     </div>
 
@@ -1444,6 +1535,8 @@
 
     if (isAdmin) {
       document.querySelectorAll('#btn-nova-aula, #btn-nova-aula-2').forEach(b => b.classList.remove('hidden'))
+    }
+    if (isAdmin || isTeacher) {
       document.getElementById('nav-usuarios').classList.remove('hidden')
     }
     if (isTeacher || currentProfile?.role === 'student') {
@@ -2877,7 +2970,10 @@
         if (target === 'professores') await carregarProfessores()
         if (target === 'feed') await carregarFeed()
         if (target === 'biblioteca') await carregarBiblioteca()
-        if (target === 'usuarios' && isAdmin) { await carregarUsuariosPendentes(); await carregarTodosUsuarios() }
+        if (target === 'disciplina-1') abrirDisciplina(0)
+        if (target === 'disciplina-2') abrirDisciplina(1)
+        if (target === 'disciplina-3') abrirDisciplina(2)
+        if (target === 'usuarios' && (isAdmin || isTeacher)) { await carregarUsuariosPendentes(); await carregarTodosUsuarios() }
       })
     })
 
@@ -3320,6 +3416,97 @@
     btn.disabled = false; btn.textContent = 'Salvar'
   }
 
+  // ── DISCIPLINAS ──────────────────────────────────────
+  const DISCIPLINAS = [
+    {
+      id: 1,
+      codigo: 'DPD 4008 · Turma FPICDEB_26',
+      nome: 'Fundamentos em Processos Inovadores e Culturas Digitais na Educação Básica',
+      docentes: 'Profa. Dra. Maria Luisa Furlan Costa · Prof. Dr. Flávio Rodrigues de Oliveira',
+      periodo: '10/04 a 26/06/2026',
+      carga: '60h (45h teórica + 15h prática)',
+      turma: 'Qui · Sex · Vespertino/Noturno',
+      planoNome: 'Planodeensino1.docx',
+      planoUrl: 'https://raw.githubusercontent.com/Prof-Diego-Prado/heraclito/main/Planodeensino1.docx',
+      ementa: 'Compreender os fundamentos teóricos, pedagógicos e socioculturais dos processos inovadores e das culturas digitais na educação básica, analisando criticamente seus impactos sobre o trabalho pedagógico, a formação docente e as práticas educativas, com vistas à produção de reflexão acadêmica sistematizada em forma de artigo científico.',
+      materiais: [
+        { nome: 'PRETTO, N.; PINTO, C. — Tecnologias e novas educações (RBDE, 2006)', url: 'https://doi.org/10.1590/S1413-24782006000100003', tipo: 'Artigo' },
+        { nome: 'SANTOS, R. O. — Políticas públicas de educação e as tecnologias digitais (Tese UEM, 2022)', url: 'http://old.ppe.uem.br/teses/2022/2022%20-%20RENATA%20OLIVEIRA%20DOS%20SANTOS.pdf', tipo: 'Tese PDF' },
+        { nome: 'SUANNO, J. H. — Educação como prática social com justiça social (Polyphonía, 2021)', url: 'https://revistas.ufg.br/sv/article/view/67392', tipo: 'Artigo' },
+        { nome: 'MODELSKI et al. — Tecnologias digitais, formação docente e práticas pedagógicas (2019)', url: 'https://doi.org/10.1590/S1517-9702201904183310', tipo: 'Artigo' },
+      ]
+    },
+    {
+      id: 2,
+      codigo: 'DPD 4004 · Turma MPTED_26',
+      nome: 'Métodos, Pesquisa Científica e Ética em Ciências e Humanidades',
+      docentes: 'Profª. Dra. Marli Delmonico de Araujo Futata',
+      periodo: '04/03 a 27/03/2026',
+      carga: '60h · 4 créditos',
+      turma: 'Qua · Qui · Sex · Vespertino/Noturno',
+      planoNome: 'planodeensino2.docx',
+      planoUrl: 'https://raw.githubusercontent.com/Prof-Diego-Prado/heraclito/main/planodeensino2.docx',
+      ementa: 'O que é ciência e conhecimento científico. Fundamentos do método científico. Como estruturar uma pesquisa. Processo de investigação científica nas ciências sociais. Abordagem qualitativa e quantitativa. Instrumentos de coleta e análise de dados na educação. Aspectos éticos da pesquisa em tecnologias educacionais.',
+      materiais: [
+        { nome: 'SUANNO, J. H. — Educação como prática social com justiça social (Polyphonía, 2021)', url: 'https://revistas.ufg.br/sv/article/view/67392', tipo: 'Artigo' },
+        { nome: 'FREIRE, P. — A importância do ato de ler (1989) — acervo SEER/CAPES', url: 'https://www.scielo.br/j/ccedes/', tipo: 'Referência' },
+        { nome: 'Portal de Periódicos CAPES — base de dados completa', url: 'https://www-periodicos-capes-gov-br.ezl.periodicos.capes.gov.br/', tipo: 'Base de Dados' },
+        { nome: 'SciELO — Scientific Electronic Library Online', url: 'https://scielo.org/', tipo: 'Base de Dados' },
+      ]
+    },
+    {
+      id: 3,
+      codigo: 'DPD 4004 · Turma FPTEEB',
+      nome: 'Fundamentos em Pesquisas e Tecnologias Educacionais na Educação Básica',
+      docentes: 'Profª. Dra. Marli D. A. Futata · Profª. Dra. Renata Oliveira dos Santos',
+      periodo: '10/04 a 26/06/2026',
+      carga: '60h · 4 créditos',
+      turma: 'Qua · Sex · Vespertino/Noturno',
+      planoNome: 'planodeensino3.pdf',
+      planoUrl: 'https://raw.githubusercontent.com/Prof-Diego-Prado/heraclito/main/planodeensino3.pdf',
+      ementa: 'Discussão sobre os métodos e abordagens de pesquisa utilizados na investigação de processos e tecnologias educacionais. Desenvolvimento de habilidades de pesquisas específicas para investigar o impacto das tecnologias educacionais na Educação Básica. Desafios éticos, práticas de investigação de ações inovadoras no processo ensino-aprendizagem mediado por tecnologias digitais.',
+      materiais: [
+        { nome: 'GIL, J. S. — Saberes en Acción para Repensar Nuestra Sociedad (Redoc, 2021)', url: 'https://www.e-publicacoes.uerj.br/re-doc/article/view/56473', tipo: 'Artigo' },
+        { nome: 'PAVÃO et al. — Tecnologias educacionais em rede (e-book FACOS-UFSM, 2023)', url: 'http://repositorio.ufsm.br/handle/1/29888', tipo: 'E-book' },
+        { nome: 'SILVA, C. C.; MENTGES, M. J. — A pesquisa-ação como agente transformador (2023)', url: 'https://doi.org/10.30681/reps.v14i1.10764', tipo: 'Artigo' },
+        { nome: 'ZUIN, A. A. S. — A IA, a Ética e a Relação Orgânica Entre Professores e Alunos (Educ. Soc., 2025)', url: 'https://doi.org/10.1590/ES.297394', tipo: 'Artigo' },
+        { nome: 'LEVY, P. — Cibercultura (Ed. 34, 1999) — acervo digital', url: 'https://plato.stanford.edu/entries/cyberspace/', tipo: 'Referência' },
+      ]
+    }
+  ]
+
+  function abrirDisciplina(idx) {
+    const d = DISCIPLINAS[idx]
+    document.getElementById('disc-breadcrumb').textContent = d.nome.length > 40 ? d.nome.slice(0,40)+'…' : d.nome
+    document.getElementById('disc-codigo').textContent = d.codigo
+    document.getElementById('disc-nome').textContent = d.nome
+    document.getElementById('disc-docentes').textContent = d.docentes
+    document.getElementById('disc-periodo').innerHTML = `<i data-lucide="calendar" class="w-3.5 h-3.5"></i>${d.periodo}`
+    document.getElementById('disc-carga').innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5"></i>${d.carga}`
+    document.getElementById('disc-turma').innerHTML = `<i data-lucide="users" class="w-3.5 h-3.5"></i>${d.turma}`
+    document.getElementById('disc-plano-nome').textContent = d.planoNome
+    document.getElementById('disc-plano-url').href = d.planoUrl
+    document.getElementById('disc-ementa').textContent = d.ementa
+
+    const mat = document.getElementById('disc-materiais')
+    mat.innerHTML = d.materiais.map(m => `
+      <a href="${m.url}" target="_blank" rel="noopener"
+        class="flex items-center gap-3 px-5 py-3.5 hover:bg-[#F0EDE6] transition-colors">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:#EEF2FF;">
+          <i data-lucide="external-link" class="w-4 h-4" style="color:var(--primary);"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium leading-snug" style="color:var(--text);">${m.nome}</p>
+          <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md mt-0.5 inline-block"
+            style="background:#EEF2FF; color:var(--primary);">${m.tipo}</span>
+        </div>
+        <i data-lucide="arrow-up-right" class="w-4 h-4 shrink-0 opacity-40"></i>
+      </a>`).join('')
+
+    navTo('disciplina', null)
+    lucide.createIcons()
+  }
+
   // ── GLOBAL ───────────────────────────────────────────
   // ── BIBLIOTECA ───────────────────────────────────────
   const BIBLIOTECA_FOLDER_ID = '15ac3Hmg3ujAHhNUJdn1UKuw4AqaaBzuc'
@@ -3424,8 +3611,7 @@
   // ══════════════════════════════════════════════════════
   //  ORÁCULO — Assistente IA (Gemini)
   // ══════════════════════════════════════════════════════
-  const GEMINI_API_KEY  = ['AQ.Ab8RN6Jtb','KRwqFJgXHwJaa-VA','zRnSrkdP2VwHDqMra75ILiYcQ'].join('')
-  const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+  // Oráculo — respostas baseadas nos dados reais da plataforma (sem IA externa)
 
   let oraculoAberto    = false
   let oraculoHistorico = []   // { role:'user'|'model', parts:[{text}] }
@@ -3506,49 +3692,91 @@
     document.getElementById('oraculo-typing-indicator')?.remove()
   }
 
-  async function oraculoConstruirContexto() {
-    const nome  = currentProfile?.name || 'Usuário'
-    const role  = currentProfile?.role === 'admin' ? 'administrador' : currentProfile?.role === 'teacher' ? 'professor' : 'aluno'
-    const hoje  = new Date()
-    const dataStr = hoje.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
+  // ── Motor de respostas local — sem IA externa ──────────
+  async function responderOraculoLocal(pergunta) {
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    const p    = norm(pergunta)
+    const nome = currentProfile?.name?.split(' ')[0] || 'você'
+    const agora = new Date()
+    const hoje  = agora.toISOString().slice(0,10)
 
-    // Próximos compromissos (até 10)
-    const proximos = (todasAulas || [])
-      .filter(a => a.data >= hoje.toISOString().slice(0,10))
-      .sort((a,b) => a.data.localeCompare(b.data))
-      .slice(0, 10)
-      .map(a => `• ${new Date(a.data + 'T12:00:00').toLocaleDateString('pt-BR')}${a.hora ? ' às ' + a.hora : ''} — ${a.titulo}${a.is_artigo ? ' [ARTIGO/PRAZO]' : ''}`)
-      .join('\n')
+    const fmtData = d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})
+    const proximos = (todasAulas||[]).filter(a => a.data >= hoje).sort((a,b) => a.data.localeCompare(b.data))
 
-    // Materiais recentes (últimos 8)
-    let matRecentes = ''
-    try {
-      const { data } = await db.from('arquivos')
-        .select('nome, tipo, created_at')
-        .is('parent_id', null)
-        .order('created_at', { ascending: false })
-        .limit(8)
-      matRecentes = (data || []).map(m => `• ${m.nome} (${m.tipo?.toUpperCase()})`).join('\n')
-    } catch(e) { matRecentes = '(não disponível)' }
+    // ── Saudação ───────────────────────────────────────────
+    if (p.match(/^(oi|ola|hey|bom dia|boa tarde|boa noite|tudo bem|ola oraculo)/)) {
+      return `${getSaudacao()}, ${nome}! Pergunte-me sobre:\n• 📅 Próximas aulas e compromissos\n• ⏳ Prazos de artigos\n• 📚 Materiais disponíveis\n• 🏛️ Disciplinas do curso`
+    }
 
-    return `Você é o Oráculo, assistente inteligente da plataforma educacional Heráclito da UEM (Universidade Estadual de Maringá), criada para o projeto ProfEduCatec 2026.
-Seu gênero é ${oraculoGenero === 'F' ? 'feminino' : 'masculino'}.
-Sempre se refira ao usuário pelo nome "${nome.split(' ')[0]}".
-Responda em português brasileiro, de forma amigável, concisa e útil.
-Evite respostas muito longas — prefira bullet points quando listar itens.
-Não repita a saudação em respostas subsequentes, apenas na primeira mensagem.
+    // ── Hoje ──────────────────────────────────────────────
+    if (p.match(/\bhoje\b/)) {
+      const it = proximos.filter(a => a.data === hoje)
+      if (!it.length) return `Hoje não há compromissos cadastrados, ${nome}. 😊`
+      return `Hoje você tem:\n${it.map(a=>`• ${a.hora||''}${a.hora?' — ':''}**${a.titulo}**${a.is_artigo?' 📝':''}`).join('\n')}`
+    }
 
-=== CONTEXTO ATUAL ===
-Data/hora: ${dataStr} (${getSaudacao().toLowerCase()})
-Usuário: ${nome} (${role})
+    // ── Amanhã ────────────────────────────────────────────
+    if (p.match(/\bamanha\b/)) {
+      const d = new Date(agora); d.setDate(d.getDate()+1)
+      const it = proximos.filter(a => a.data === d.toISOString().slice(0,10))
+      if (!it.length) return `Amanhã não há compromissos cadastrados, ${nome}.`
+      return `Amanhã você tem:\n${it.map(a=>`• ${a.hora||''}${a.hora?' — ':''}**${a.titulo}**`).join('\n')}`
+    }
 
-PRÓXIMOS COMPROMISSOS:
-${proximos || 'Nenhum compromisso cadastrado.'}
+    // ── Esta semana ───────────────────────────────────────
+    if (p.match(/semana|essa semana|proximos dias/)) {
+      const fim = new Date(agora); fim.setDate(fim.getDate()+7)
+      const it  = proximos.filter(a => a.data <= fim.toISOString().slice(0,10))
+      if (!it.length) return `Nenhum compromisso nos próximos 7 dias, ${nome}.`
+      return `Compromissos desta semana:\n${it.map(a=>`• **${a.titulo}**\n  📅 ${fmtData(a.data)}${a.hora?' às '+a.hora:''}`).join('\n')}`
+    }
 
-MATERIAIS RECENTES NA PLATAFORMA:
-${matRecentes || 'Nenhum material disponível.'}
+    // ── Artigos / prazos ──────────────────────────────────
+    if (p.match(/artigo|prazo|deadline|entrega|submiss/)) {
+      const arts = proximos.filter(a => a.is_artigo)
+      if (!arts.length) return `Não há artigos com prazo cadastrados, ${nome}.`
+      const prox = arts[0]
+      const dias = Math.floor((new Date(prox.data+'T23:59:59') - agora)/(1000*60*60*24))
+      return `Próximo prazo de artigo:\n\n📝 **${prox.titulo}**\n📅 ${fmtData(prox.data)}${prox.hora?' às '+prox.hora:''}\n⏳ ${dias<=0?'Hoje!':dias===1?'Amanhã!':'Faltam '+dias+' dias'}`
+    }
 
-A plataforma possui: calendário de aulas/compromissos, materiais em pastas por professor, biblioteca com PDFs, bate-papo entre usuários e diretório de professores.`
+    // ── Próxima aula / compromisso ────────────────────────
+    if (p.match(/proximo|proxim|quando|aula|compromisso|agenda|horario|data/)) {
+      if (!proximos.length) return `Não há compromissos cadastrados, ${nome}.`
+      const lista = proximos.slice(0,5).map((a,i)=>
+        `${i+1}. **${a.titulo}**${a.is_artigo?' 📝':''}\n   📅 ${fmtData(a.data)}${a.hora?' às '+a.hora:''}`
+      ).join('\n')
+      return `Próximos compromissos, ${nome}:\n\n${lista}`
+    }
+
+    // ── Materiais ─────────────────────────────────────────
+    if (p.match(/material|arquivo|pdf|apostila|texto|disponivel|recurso/)) {
+      let mats = []
+      try {
+        const { data } = await db.from('arquivos').select('nome,tipo').is('parent_id',null).order('created_at',{ascending:false}).limit(8)
+        mats = data || []
+      } catch(e) {}
+      if (!mats.length) return `Nenhum material cadastrado ainda, ${nome}.`
+      return `Últimos materiais adicionados:\n${mats.map(m=>`• ${m.nome} (${(m.tipo||'').toUpperCase()})`).join('\n')}\n\nAcesse o menu "Material" na barra lateral para explorar por pasta.`
+    }
+
+    // ── Biblioteca ────────────────────────────────────────
+    if (p.match(/biblioteca|livro|acervo|colecao/)) {
+      return `A Biblioteca contém PDFs acadêmicos do acervo compartilhado do curso. Clique em **Biblioteca** na barra lateral para acessar os documentos com opção de download.`
+    }
+
+    // ── Disciplinas ───────────────────────────────────────
+    if (p.match(/disciplina|materia|cadeira|curso/)) {
+      return `O curso possui 3 disciplinas cadastradas:\n\n1. **Fundamentos em Processos Inovadores e Culturas Digitais na Educação Básica** (DPD 4008)\n2. **Métodos, Pesquisa Científica e Ética em Ciências e Humanidades** (DPD 4004)\n3. **Fundamentos em Pesquisas e Tecnologias Educacionais na Educação Básica** (DPD 4004)\n\nAcesse o menu **Disciplinas** na barra lateral para ver planos de ensino e materiais.`
+    }
+
+    // ── Professores ───────────────────────────────────────
+    if (p.match(/professor|docente|instrutor/)) {
+      return `Acesse o menu **Professores** na barra lateral para ver o diretório completo de professores do curso com seus perfis e materiais.`
+    }
+
+    // ── Ajuda / padrão ────────────────────────────────────
+    return `Posso te ajudar com, ${nome}:\n\n• 📅 **Próximas aulas** — "Quais as próximas aulas?"\n• 📝 **Artigos** — "Quando é o próximo prazo?"\n• 📚 **Materiais** — "Quais materiais estão disponíveis?"\n• 🏛️ **Disciplinas** — "Quais as disciplinas do curso?"\n• 📖 **Biblioteca** — "O que tem na biblioteca?"`
   }
 
   window.enviarMsgOraculo = async () => {
@@ -3563,26 +3791,11 @@ A plataforma possui: calendário de aulas/compromissos, materiais em pastas por 
     oraculoRenderizar()
     oraculoMostrarTyping()
 
-    try {
-      const systemPrompt = await oraculoConstruirContexto()
-      const resp = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: oraculoHistorico,
-          generationConfig: { maxOutputTokens: 600, temperature: 0.7 }
-        })
-      })
-      const json = await resp.json()
-      if (json.error) throw new Error(`API ${resp.status}: ${json.error.message}`)
-      const resposta = json.candidates?.[0]?.content?.parts?.[0]?.text || 'Não consegui gerar uma resposta. Tente novamente.'
-      oraculoRemoverTyping()
-      oraculoAdicionarMensagem('model', resposta)
-    } catch (err) {
-      oraculoRemoverTyping()
-      oraculoAdicionarMensagem('model', `⚠️ Erro técnico: ${err.message}`)
-    }
+    // Simular pequena pausa para UX (typing indicator)
+    await new Promise(r => setTimeout(r, 400))
+    const resposta = await responderOraculoLocal(texto)
+    oraculoRemoverTyping()
+    oraculoAdicionarMensagem('model', resposta)
     oraculoRenderizar()
   }
 
