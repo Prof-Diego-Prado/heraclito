@@ -3379,11 +3379,12 @@
   async function salvarAnotacoes() {
     if (!annotationMgr || !leitorPdfUrl || !currentUser) return
     try {
-      const result = await annotationMgr.exportAnnotations()
+      const result = await annotationMgr.getAnnotations({ annotationTypes: ['allAnnotation'] })
+      const dados = Array.isArray(result) ? result : (result?.data ?? [])
       const { error } = await db.from('pdf_annotations').upsert({
         user_id: currentUser.id,
         pdf_url: leitorPdfUrl,
-        dados: result.data,
+        dados: dados,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id,pdf_url' })
       if (error) throw error
