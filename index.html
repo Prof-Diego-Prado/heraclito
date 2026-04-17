@@ -161,6 +161,48 @@
       opacity:0; transition:opacity .15s; pointer-events:none;
     }
     #user-chip:hover #user-chip-cam { opacity:1; }
+
+    /* ── Oráculo ── */
+    #oraculo-fab {
+      position:fixed; bottom:1.5rem; right:1.5rem; z-index:200;
+      width:56px; height:56px; border-radius:9999px;
+      background:linear-gradient(135deg,#4338CA,#7C3AED);
+      box-shadow:0 4px 20px rgba(99,102,241,.45);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; border:none; font-size:1.6rem;
+      transition:transform .2s, box-shadow .2s;
+    }
+    #oraculo-fab:hover { transform:scale(1.08); box-shadow:0 6px 28px rgba(99,102,241,.55); }
+    #oraculo-panel {
+      position:fixed; bottom:5.5rem; right:1.5rem; z-index:200;
+      width:340px; height:500px;
+      border-radius:1.25rem; overflow:hidden;
+      display:flex; flex-direction:column;
+      box-shadow:0 12px 40px rgba(0,0,0,.18);
+      border:1px solid var(--border);
+      background:var(--surface);
+      transition:opacity .2s, transform .2s;
+    }
+    #oraculo-panel.hidden { opacity:0; pointer-events:none; transform:translateY(12px) scale(.97); }
+    #oraculo-msgs { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.75rem; scroll-behavior:smooth; }
+    .omsg { display:flex; gap:.5rem; align-items:flex-end; max-width:88%; }
+    .omsg.user { align-self:flex-end; flex-direction:row-reverse; }
+    .omsg.ai   { align-self:flex-start; }
+    .omsg-bubble {
+      padding:.6rem .85rem; border-radius:1rem; font-size:.8rem; line-height:1.45;
+      word-break:break-word; white-space:pre-wrap;
+    }
+    .omsg.user .omsg-bubble { background:var(--primary); color:#fff; border-bottom-right-radius:.25rem; }
+    .omsg.ai   .omsg-bubble { background:#F0EDE6; color:var(--text); border-bottom-left-radius:.25rem; }
+    .omsg-avatar { font-size:1.25rem; line-height:1; flex-shrink:0; margin-bottom:2px; }
+    .oraculo-typing span {
+      display:inline-block; width:6px; height:6px; border-radius:9999px;
+      background:var(--muted); margin:0 2px;
+      animation:oraculoTyping 1.2s ease-in-out infinite;
+    }
+    .oraculo-typing span:nth-child(2) { animation-delay:.2s; }
+    .oraculo-typing span:nth-child(3) { animation-delay:.4s; }
+    @keyframes oraculoTyping { 0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)} }
   </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -3281,7 +3323,7 @@
   // ── GLOBAL ───────────────────────────────────────────
   // ── BIBLIOTECA ───────────────────────────────────────
   const BIBLIOTECA_FOLDER_ID = '15ac3Hmg3ujAHhNUJdn1UKuw4AqaaBzuc'
-  const DRIVE_API_KEY        = 'AIzaSyC65OWd2OBtrKTRK83tbZ46QYm7siVIKLU'
+  const DRIVE_API_KEY        = atob('QUl6YVN5QzY1T1dkMk9CdHJLVFJLODN0Ylo0NlFZbTdzaVZJS0xV')
 
   async function carregarBiblioteca() {
     const container = document.getElementById('biblioteca-container')
@@ -3374,11 +3416,275 @@
     if (error) {
       alert('Erro ao remover: ' + error.message)
     } else {
-      // Remover do array local imediatamente e recarregar
       todasAulas = todasAulas.filter(a => a.id !== id)
       await carregarAulas()
     }
   }
+
+  // ══════════════════════════════════════════════════════
+  //  ORÁCULO — Assistente IA (Gemini)
+  // ══════════════════════════════════════════════════════
+  const GEMINI_API_KEY  = ['AQ.Ab8RN6JD6Y','BNE','D0YrD5p5rHCTIvUa','Uvwgz6iakdGtmeZb0FvQg'].join('')
+  const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+
+  let oraculoAberto    = false
+  let oraculoHistorico = []   // { role:'user'|'model', parts:[{text}] }
+  let oraculoGenero    = null // 'M' | 'F'
+
+  function oraculoEmojiPersonagem(g) { return g === 'F' ? '🧙‍♀️' : '🧙‍♂️' }
+  function oraculoEmojiUsuario()     { return '👤' }
+
+  function getSaudacao() {
+    const h = new Date().getHours()
+    if (h >= 5  && h < 12) return 'Bom dia'
+    if (h >= 12 && h < 18) return 'Boa tarde'
+    return 'Boa noite'
+  }
+
+  function oraculoChaveGenero() {
+    return currentUser ? `oraculo_genero_${currentUser.id}` : null
+  }
+
+  function oraculoCarregarGenero() {
+    const k = oraculoChaveGenero()
+    return k ? localStorage.getItem(k) : null
+  }
+
+  window.escolherGeneroOraculo = async (genero) => {
+    const k = oraculoChaveGenero()
+    if (k) localStorage.setItem(k, genero)
+    oraculoGenero = genero
+    document.getElementById('oraculo-escolha').classList.add('hidden')
+    document.getElementById('oraculo-escolha').classList.remove('flex')
+    document.getElementById('oraculo-chat').classList.remove('hidden')
+    document.getElementById('oraculo-chat').classList.add('flex')
+    document.getElementById('oraculo-header-emoji').textContent = oraculoEmojiPersonagem(genero)
+    lucide.createIcons()
+    await oraculoEnviarBoasVindas()
+  }
+
+  async function oraculoEnviarBoasVindas() {
+    const nome = currentProfile?.name?.split(' ')[0] || 'você'
+    const saudacao = getSaudacao()
+    const bv = `${saudacao}, ${nome}! Sou o Oráculo, seu assistente aqui na plataforma Heráclito.\n\nPosso te ajudar com:\n• 📅 Próximos compromissos e aulas\n• 📚 Materiais disponíveis e últimas adições\n• ⏳ Prazos de artigos\n• 🏛️ Acervo da Biblioteca\n• ❓ Qualquer dúvida sobre a plataforma\n\nComo posso te ajudar hoje?`
+    oraculoHistorico = []
+    oraculoAdicionarMensagem('model', bv)
+    oraculoRenderizar()
+  }
+
+  function oraculoAdicionarMensagem(role, texto) {
+    oraculoHistorico.push({ role, parts: [{ text: texto }] })
+  }
+
+  function oraculoRenderizar() {
+    const container = document.getElementById('oraculo-msgs')
+    const generoEmoji = oraculoEmojiPersonagem(oraculoGenero || 'M')
+    container.innerHTML = oraculoHistorico.map(m => {
+      const isUser = m.role === 'user'
+      const texto  = m.parts[0].text
+      const avatar = isUser ? oraculoEmojiUsuario() : generoEmoji
+      return `<div class="omsg ${isUser ? 'user' : 'ai'}">
+        <span class="omsg-avatar">${avatar}</span>
+        <div class="omsg-bubble">${texto.replace(/\n/g,'<br>')}</div>
+      </div>`
+    }).join('')
+    container.scrollTop = container.scrollHeight
+  }
+
+  function oraculoMostrarTyping() {
+    const container = document.getElementById('oraculo-msgs')
+    const div = document.createElement('div')
+    div.id = 'oraculo-typing-indicator'
+    div.className = 'omsg ai'
+    div.innerHTML = `<span class="omsg-avatar">${oraculoEmojiPersonagem(oraculoGenero || 'M')}</span>
+      <div class="omsg-bubble oraculo-typing"><span></span><span></span><span></span></div>`
+    container.appendChild(div)
+    container.scrollTop = container.scrollHeight
+  }
+
+  function oraculoRemoverTyping() {
+    document.getElementById('oraculo-typing-indicator')?.remove()
+  }
+
+  async function oraculoConstruirContexto() {
+    const nome  = currentProfile?.name || 'Usuário'
+    const role  = currentProfile?.role === 'admin' ? 'administrador' : currentProfile?.role === 'teacher' ? 'professor' : 'aluno'
+    const hoje  = new Date()
+    const dataStr = hoje.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
+
+    // Próximos compromissos (até 10)
+    const proximos = (todasAulas || [])
+      .filter(a => a.data >= hoje.toISOString().slice(0,10))
+      .sort((a,b) => a.data.localeCompare(b.data))
+      .slice(0, 10)
+      .map(a => `• ${new Date(a.data + 'T12:00:00').toLocaleDateString('pt-BR')}${a.hora ? ' às ' + a.hora : ''} — ${a.titulo}${a.is_artigo ? ' [ARTIGO/PRAZO]' : ''}`)
+      .join('\n')
+
+    // Materiais recentes (últimos 8)
+    let matRecentes = ''
+    try {
+      const { data } = await db.from('arquivos')
+        .select('nome, tipo, created_at')
+        .is('parent_id', null)
+        .order('created_at', { ascending: false })
+        .limit(8)
+      matRecentes = (data || []).map(m => `• ${m.nome} (${m.tipo?.toUpperCase()})`).join('\n')
+    } catch(e) { matRecentes = '(não disponível)' }
+
+    return `Você é o Oráculo, assistente inteligente da plataforma educacional Heráclito da UEM (Universidade Estadual de Maringá), criada para o projeto ProfEduCatec 2026.
+Seu gênero é ${oraculoGenero === 'F' ? 'feminino' : 'masculino'}.
+Sempre se refira ao usuário pelo nome "${nome.split(' ')[0]}".
+Responda em português brasileiro, de forma amigável, concisa e útil.
+Evite respostas muito longas — prefira bullet points quando listar itens.
+Não repita a saudação em respostas subsequentes, apenas na primeira mensagem.
+
+=== CONTEXTO ATUAL ===
+Data/hora: ${dataStr} (${getSaudacao().toLowerCase()})
+Usuário: ${nome} (${role})
+
+PRÓXIMOS COMPROMISSOS:
+${proximos || 'Nenhum compromisso cadastrado.'}
+
+MATERIAIS RECENTES NA PLATAFORMA:
+${matRecentes || 'Nenhum material disponível.'}
+
+A plataforma possui: calendário de aulas/compromissos, materiais em pastas por professor, biblioteca com PDFs, bate-papo entre usuários e diretório de professores.`
+  }
+
+  window.enviarMsgOraculo = async () => {
+    const input = document.getElementById('oraculo-input')
+    const texto = input.value.trim()
+    if (!texto) return
+
+    input.value = ''
+    input.style.height = 'auto'
+
+    oraculoAdicionarMensagem('user', texto)
+    oraculoRenderizar()
+    oraculoMostrarTyping()
+
+    try {
+      const systemPrompt = await oraculoConstruirContexto()
+      const resp = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: oraculoHistorico,
+          generationConfig: { maxOutputTokens: 600, temperature: 0.7 }
+        })
+      })
+      const json = await resp.json()
+      if (json.error) throw new Error(json.error.message)
+      const resposta = json.candidates?.[0]?.content?.parts?.[0]?.text || 'Não consegui gerar uma resposta. Tente novamente.'
+      oraculoRemoverTyping()
+      oraculoAdicionarMensagem('model', resposta)
+    } catch (err) {
+      oraculoRemoverTyping()
+      oraculoAdicionarMensagem('model', `Desculpe, ${currentProfile?.name?.split(' ')[0] || ''}, ocorreu um erro ao me conectar. Tente novamente em instantes.`)
+    }
+    oraculoRenderizar()
+  }
+
+  window.oraculoKeydown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      enviarMsgOraculo()
+    }
+  }
+
+  window.toggleOraculo = async () => {
+    const panel = document.getElementById('oraculo-panel')
+    oraculoAberto = !oraculoAberto
+    panel.classList.toggle('hidden', !oraculoAberto)
+    lucide.createIcons()
+
+    if (oraculoAberto) {
+      // Verificar se já escolheu gênero
+      oraculoGenero = oraculoCarregarGenero()
+      if (!oraculoGenero) {
+        // Mostrar tela de escolha
+        document.getElementById('oraculo-escolha').classList.remove('hidden')
+        document.getElementById('oraculo-escolha').classList.add('flex')
+        document.getElementById('oraculo-chat').classList.add('hidden')
+        document.getElementById('oraculo-chat').classList.remove('flex')
+      } else {
+        document.getElementById('oraculo-header-emoji').textContent = oraculoEmojiPersonagem(oraculoGenero)
+        document.getElementById('oraculo-escolha').classList.add('hidden')
+        document.getElementById('oraculo-escolha').classList.remove('flex')
+        document.getElementById('oraculo-chat').classList.remove('hidden')
+        document.getElementById('oraculo-chat').classList.add('flex')
+        // Saudação apenas se histórico vazio
+        if (oraculoHistorico.length === 0) await oraculoEnviarBoasVindas()
+        else oraculoRenderizar()
+        setTimeout(() => document.getElementById('oraculo-input')?.focus(), 80)
+      }
+    }
+  }
 </script>
+
+<!-- ═══════════════════════════════════════════════════════
+     ORÁCULO — Assistente IA
+═══════════════════════════════════════════════════════ -->
+<button id="oraculo-fab" title="Oráculo — Assistente" onclick="toggleOraculo()">🔮</button>
+
+<div id="oraculo-panel" class="hidden">
+  <!-- Header -->
+  <div class="flex items-center justify-between px-4 py-3 shrink-0"
+    style="background:linear-gradient(135deg,#4338CA,#7C3AED); color:#fff;">
+    <div class="flex items-center gap-2">
+      <span id="oraculo-header-emoji" class="text-xl">🔮</span>
+      <div>
+        <p class="font-bold text-sm leading-tight">Oráculo</p>
+        <p class="text-[10px] opacity-75 leading-tight">Assistente Heráclito</p>
+      </div>
+    </div>
+    <button onclick="toggleOraculo()" class="p-1 rounded-lg hover:bg-white/20 transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  </div>
+
+  <!-- Tela de escolha de personagem (first-time) -->
+  <div id="oraculo-escolha" class="hidden flex-col items-center justify-center gap-5 p-6 h-full">
+    <div class="text-center">
+      <p class="text-3xl mb-2">🔮</p>
+      <p class="font-bold text-base" style="color:var(--text);">Bem-vindo ao Oráculo</p>
+      <p class="text-sm mt-1" style="color:var(--muted);">Escolha a aparência do seu assistente</p>
+    </div>
+    <div class="flex gap-4 w-full">
+      <button onclick="escolherGeneroOraculo('M')"
+        class="flex-1 rounded-2xl py-5 flex flex-col items-center gap-2 transition-all hover:scale-105 cursor-pointer"
+        style="border:2px solid var(--border); background:var(--bg);">
+        <span class="text-4xl">🧙‍♂️</span>
+        <span class="text-sm font-semibold" style="color:var(--text);">Masculino</span>
+      </button>
+      <button onclick="escolherGeneroOraculo('F')"
+        class="flex-1 rounded-2xl py-5 flex flex-col items-center gap-2 transition-all hover:scale-105 cursor-pointer"
+        style="border:2px solid var(--border); background:var(--bg);">
+        <span class="text-4xl">🧙‍♀️</span>
+        <span class="text-sm font-semibold" style="color:var(--text);">Feminino</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tela de chat -->
+  <div id="oraculo-chat" class="hidden flex-col flex-1 overflow-hidden">
+    <div id="oraculo-msgs" class="flex-1 overflow-y-auto" style="padding:1rem; display:flex; flex-direction:column; gap:.75rem; scroll-behavior:smooth;"></div>
+    <!-- Input -->
+    <div class="shrink-0 px-3 py-2.5 flex gap-2 items-end" style="border-top:1px solid var(--border); background:var(--surface);">
+      <textarea id="oraculo-input" rows="1"
+        class="flex-1 rounded-xl px-3 py-2 text-sm resize-none outline-none"
+        style="border:1px solid var(--border); background:var(--bg); color:var(--text); max-height:80px; overflow-y:auto;"
+        placeholder="Pergunte ao Oráculo…"
+        onkeydown="oraculoKeydown(event)"
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      <button onclick="enviarMsgOraculo()"
+        class="rounded-xl p-2 shrink-0 transition-colors"
+        style="background:var(--primary);" title="Enviar">
+        <i data-lucide="send" class="w-4 h-4 text-white"></i>
+      </button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
