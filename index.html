@@ -3400,7 +3400,6 @@
     modal.classList.remove('hidden')
     modal.classList.add('flex')
     lucide.createIcons()
-
     setLeitorStatus('Carregando…', 'rgba(255,255,255,.5)')
 
     // Aguardar SDK estar pronto
@@ -3410,17 +3409,30 @@
     })
 
     // Limpar viewer anterior
-    const container = document.getElementById('adobe-dc-view')
-    container.innerHTML = ''
+    document.getElementById('adobe-dc-view').innerHTML = ''
     annotationMgr = null
 
-    const pdfUrl = url.startsWith('http') ? url : (location.origin + (url.startsWith('/') ? '' : '/') + url)
-    const fileId = btoa(encodeURIComponent(url)).replace(/[^a-zA-Z0-9]/g,'').slice(0, 32)
+    // Resolver URL absoluta corretamente (cobre subpastas do GitHub Pages)
+    const fullUrl = url.startsWith('http') ? url : new URL(url, location.href).href
+    const fileId  = url.replace(/[^a-zA-Z0-9]/g,'').slice(-32) || 'pdf'
+
+    // Buscar o PDF como ArrayBuffer (mesmo domínio → sem CORS)
+    // e passar o binário direto para o Adobe SDK
+    let pdfPromise
+    try {
+      const resp = await fetch(fullUrl)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const buffer = await resp.arrayBuffer()
+      pdfPromise = Promise.resolve(buffer)
+    } catch(fetchErr) {
+      setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
+      return
+    }
 
     adobeViewer = new AdobeDC.View({ clientId: ADOBE_CLIENT_ID, divId: 'adobe-dc-view' })
 
     const previewPromise = adobeViewer.previewFile(
-      { content: { location: { url: pdfUrl } }, metaData: { fileName: titulo, id: fileId } },
+      { content: { promise: pdfPromise }, metaData: { fileName: titulo, id: fileId } },
       {
         embedMode: 'FULL_WINDOW',
         showAnnotationTools: true,
@@ -3445,16 +3457,19 @@
           .maybeSingle()
         if (data?.dados?.length > 0) {
           await annotationMgr.importAnnotations({ annotations: data.dados })
-          setLeitorStatus(`✎ ${data.dados.length} anotação${data.dados.length > 1 ? 'ões' : ''} carregada${data.dados.length > 1 ? 's' : ''}`, '#a5b4fc')
+          const n = data.dados.length
+          setLeitorStatus(`✎ ${n} anotaç${n>1?'ões':'ão'} carregada${n>1?'s':''}`, '#a5b4fc')
           setTimeout(() => setLeitorStatus(''), 3000)
         } else {
           setLeitorStatus('')
         }
+      } else {
+        setLeitorStatus('')
       }
 
-      // Salvar automaticamente ao anotar (debounce 2s)
+      // Auto-salvar ao anotar (debounce 2s)
       annotationMgr.registerEventListener(
-        function(event) {
+        function() {
           setLeitorStatus('💾 Salvando…', 'rgba(255,255,255,.5)')
           clearTimeout(annotationTimer)
           annotationTimer = setTimeout(salvarAnotacoes, 2000)
@@ -3462,7 +3477,7 @@
         { listenOn: ['ANNOTATION_ADDED', 'ANNOTATION_UPDATED', 'ANNOTATION_DELETED'] }
       )
     }).catch(err => {
-      setLeitorStatus('Erro ao carregar PDF', '#fca5a5')
+      setLeitorStatus('Erro Adobe SDK: ' + (err?.message || err), '#fca5a5')
       console.error('Adobe PDF Embed error:', err)
     })
   }
