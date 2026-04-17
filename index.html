@@ -204,6 +204,8 @@
     .oraculo-typing span:nth-child(3) { animation-delay:.4s; }
     @keyframes oraculoTyping { 0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)} }
   </style>
+  <!-- Adobe PDF Embed API — gratuito, anotações por usuário -->
+  <script src="https://acrobatservices.adobe.com/view-sdk/viewer.js"></script>
 </head>
 <body class="flex h-screen overflow-hidden">
 
@@ -1244,32 +1246,30 @@
      MODAL FOTO DE PERFIL
 ═══════════════════════════════════════════════════════ -->
 <!-- ═══════════════════════════════════════════════════════
-     MODAL LEITOR DE PDF (PDF.js)
+     MODAL LEITOR DE PDF — Adobe PDF Embed API
 ═══════════════════════════════════════════════════════ -->
-<div id="modal-leitor-pdf" class="fixed inset-0 z-[300] hidden flex-col" style="background:#1a1a2e;">
+<div id="modal-leitor-pdf" class="fixed inset-0 z-[300] hidden flex-col" style="background:#1e1e2e;">
   <!-- Toolbar -->
-  <div class="flex items-center justify-between px-4 py-2.5 shrink-0" style="background:#16213e; border-bottom:1px solid rgba(255,255,255,.1);">
-    <div class="flex items-center gap-3 min-w-0">
+  <div class="flex items-center justify-between px-4 py-2.5 shrink-0" style="background:#16213e; border-bottom:1px solid rgba(255,255,255,.12);">
+    <div class="flex items-center gap-2.5 min-w-0">
       <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background:var(--primary);">
         <i data-lucide="book-open" class="w-3.5 h-3.5 text-white"></i>
       </div>
-      <p id="leitor-titulo" class="text-sm font-semibold text-white truncate max-w-[280px]"></p>
+      <p id="leitor-titulo" class="text-sm font-semibold text-white truncate max-w-[300px]"></p>
     </div>
     <div class="flex items-center gap-2 shrink-0">
-      <a id="leitor-download-btn" href="#" download
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-        style="background:rgba(255,255,255,.1); color:rgba(255,255,255,.8);">
-        <i data-lucide="download" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Baixar</span>
-      </a>
+      <!-- Status de salvamento -->
+      <span id="leitor-save-status" class="hidden text-xs font-medium px-2 py-1 rounded-lg"
+        style="background:rgba(255,255,255,.08); color:rgba(255,255,255,.6);"></span>
       <button onclick="fecharLeitorPdf()"
-        class="p-1.5 rounded-lg transition-colors hover:bg-red-500/20"
-        style="color:rgba(255,255,255,.7);">
+        class="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:rgba(255,255,255,.7);" title="Fechar (Esc)">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
   </div>
-  <!-- Frame -->
-  <iframe id="leitor-iframe" src="" class="flex-1 w-full border-none"></iframe>
+  <!-- Adobe PDF viewer container -->
+  <div id="adobe-dc-view" class="flex-1 w-full overflow-hidden"></div>
 </div>
 
 <div id="modal-foto-perfil" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
@@ -3361,40 +3361,123 @@
     btn.disabled = false; btn.textContent = 'Salvar foto'
   }
 
-  // ── LEITOR DE PDF ────────────────────────────────────
-  // Usa PDF.js viewer via Mozilla CDN — grátis, sem backend, funciona com PDFs locais
-  const PDFJS_VIEWER = 'https://mozilla.github.io/pdf.js/web/viewer.html'
+  // ── LEITOR DE PDF — Adobe PDF Embed API ──────────────
+  const ADOBE_CLIENT_ID   = '610280e8b94e45e4b5666bb4e9d5216f'
+  let   adobeViewer       = null   // instância atual
+  let   annotationMgr     = null   // annotation manager
+  let   annotationTimer   = null   // debounce save
+  let   leitorPdfUrl      = null   // URL do PDF aberto
 
-  window.abrirLeitorPdf = (url, titulo) => {
-    const modal   = document.getElementById('modal-leitor-pdf')
-    const iframe  = document.getElementById('leitor-iframe')
-    const tituloEl= document.getElementById('leitor-titulo')
-    const dlBtn   = document.getElementById('leitor-download-btn')
+  function setLeitorStatus(msg, cor) {
+    const el = document.getElementById('leitor-save-status')
+    if (!el) return
+    el.textContent = msg
+    el.style.color = cor || 'rgba(255,255,255,.6)'
+    el.classList.toggle('hidden', !msg)
+  }
 
-    // PDF.js viewer recebe o PDF como parâmetro ?file=
-    // Para PDFs locais (mesmo domínio) funciona diretamente
-    const pdfUrl  = url.startsWith('http') ? url : (location.origin + '/' + url)
-    iframe.src    = `${PDFJS_VIEWER}?file=${encodeURIComponent(pdfUrl)}`
-    tituloEl.textContent = titulo
-    dlBtn.href    = url
+  async function salvarAnotacoes() {
+    if (!annotationMgr || !leitorPdfUrl || !currentUser) return
+    try {
+      const result = await annotationMgr.exportAnnotations()
+      await db.from('pdf_annotations').upsert({
+        user_id: currentUser.id,
+        pdf_url: leitorPdfUrl,
+        dados: result.data,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,pdf_url' })
+      setLeitorStatus('✓ Anotações salvas', '#86efac')
+      setTimeout(() => setLeitorStatus(''), 2500)
+    } catch(e) {
+      setLeitorStatus('⚠ Erro ao salvar', '#fca5a5')
+    }
+  }
 
+  window.abrirLeitorPdf = async (url, titulo) => {
+    leitorPdfUrl = url
+    document.getElementById('leitor-titulo').textContent = titulo
+    const modal = document.getElementById('modal-leitor-pdf')
     modal.classList.remove('hidden')
     modal.classList.add('flex')
     lucide.createIcons()
+
+    setLeitorStatus('Carregando…', 'rgba(255,255,255,.5)')
+
+    // Aguardar SDK estar pronto
+    await new Promise(resolve => {
+      if (window.AdobeDC) { resolve(); return }
+      document.addEventListener('adobe_dc_view_sdk.ready', resolve, { once: true })
+    })
+
+    // Limpar viewer anterior
+    const container = document.getElementById('adobe-dc-view')
+    container.innerHTML = ''
+    annotationMgr = null
+
+    const pdfUrl = url.startsWith('http') ? url : (location.origin + (url.startsWith('/') ? '' : '/') + url)
+    const fileId = btoa(encodeURIComponent(url)).replace(/[^a-zA-Z0-9]/g,'').slice(0, 32)
+
+    adobeViewer = new AdobeDC.View({ clientId: ADOBE_CLIENT_ID, divId: 'adobe-dc-view' })
+
+    const previewPromise = adobeViewer.previewFile(
+      { content: { location: { url: pdfUrl } }, metaData: { fileName: titulo, id: fileId } },
+      {
+        embedMode: 'FULL_WINDOW',
+        showAnnotationTools: true,
+        enableAnnotationAPIs: true,
+        showDownloadPDF: true,
+        showPrintPDF: true,
+        showLeftHandPanel: true,
+        showPageControls: true,
+        defaultViewMode: 'FIT_PAGE',
+      }
+    )
+
+    previewPromise.then(async viewer => {
+      annotationMgr = await viewer.getAnnotationManager()
+
+      // Carregar anotações salvas do usuário
+      if (currentUser) {
+        const { data } = await db.from('pdf_annotations')
+          .select('dados')
+          .eq('user_id', currentUser.id)
+          .eq('pdf_url', url)
+          .maybeSingle()
+        if (data?.dados?.length > 0) {
+          await annotationMgr.importAnnotations({ annotations: data.dados })
+          setLeitorStatus(`✎ ${data.dados.length} anotação${data.dados.length > 1 ? 'ões' : ''} carregada${data.dados.length > 1 ? 's' : ''}`, '#a5b4fc')
+          setTimeout(() => setLeitorStatus(''), 3000)
+        } else {
+          setLeitorStatus('')
+        }
+      }
+
+      // Salvar automaticamente ao anotar (debounce 2s)
+      annotationMgr.registerEventListener(
+        function(event) {
+          setLeitorStatus('💾 Salvando…', 'rgba(255,255,255,.5)')
+          clearTimeout(annotationTimer)
+          annotationTimer = setTimeout(salvarAnotacoes, 2000)
+        },
+        { listenOn: ['ANNOTATION_ADDED', 'ANNOTATION_UPDATED', 'ANNOTATION_DELETED'] }
+      )
+    }).catch(err => {
+      setLeitorStatus('Erro ao carregar PDF', '#fca5a5')
+      console.error('Adobe PDF Embed error:', err)
+    })
   }
 
   window.fecharLeitorPdf = () => {
-    const modal  = document.getElementById('modal-leitor-pdf')
-    const iframe = document.getElementById('leitor-iframe')
-    iframe.src   = '' // Para o carregamento do PDF
+    clearTimeout(annotationTimer)
+    if (annotationMgr) salvarAnotacoes() // salva ao fechar
+    const modal = document.getElementById('modal-leitor-pdf')
     modal.classList.add('hidden')
     modal.classList.remove('flex')
+    document.getElementById('adobe-dc-view').innerHTML = ''
+    adobeViewer = null; annotationMgr = null; leitorPdfUrl = null
   }
 
-  // Fechar com ESC
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharLeitorPdf?.()
-  })
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharLeitorPdf?.() })
 
   // ── ALTERAR USERNAME ─────────────────────────────────
   window.abrirAlterarUsername = () => {
