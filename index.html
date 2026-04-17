@@ -1243,6 +1243,35 @@
 <!-- ═══════════════════════════════════════════════════════
      MODAL FOTO DE PERFIL
 ═══════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════
+     MODAL LEITOR DE PDF (PDF.js)
+═══════════════════════════════════════════════════════ -->
+<div id="modal-leitor-pdf" class="fixed inset-0 z-[300] hidden flex-col" style="background:#1a1a2e;">
+  <!-- Toolbar -->
+  <div class="flex items-center justify-between px-4 py-2.5 shrink-0" style="background:#16213e; border-bottom:1px solid rgba(255,255,255,.1);">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background:var(--primary);">
+        <i data-lucide="book-open" class="w-3.5 h-3.5 text-white"></i>
+      </div>
+      <p id="leitor-titulo" class="text-sm font-semibold text-white truncate max-w-[280px]"></p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <a id="leitor-download-btn" href="#" download
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+        style="background:rgba(255,255,255,.1); color:rgba(255,255,255,.8);">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Baixar</span>
+      </a>
+      <button onclick="fecharLeitorPdf()"
+        class="p-1.5 rounded-lg transition-colors hover:bg-red-500/20"
+        style="color:rgba(255,255,255,.7);">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+  <!-- Frame -->
+  <iframe id="leitor-iframe" src="" class="flex-1 w-full border-none"></iframe>
+</div>
+
 <div id="modal-foto-perfil" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
   <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
     <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
@@ -2069,16 +2098,30 @@
         const ic = icMap[item.tipo] || '#6B7280'
         const ln = icName[item.tipo] || 'file'
         const lb = label[item.tipo] || item.tipo
+        const nomeEsc = (item.nome||'').replace(/'/g,"\\'")
+        const lerBtn = item.tipo === 'pdf' ? `
+          <button onclick="event.preventDefault();event.stopPropagation();abrirLeitorPdf('${item.url}','${nomeEsc}')"
+            class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold"
+            style="background:#EEF2FF; color:var(--primary);">
+            <i data-lucide="book-open" class="w-3 h-3"></i>Ler
+          </button>` : ''
         return `
-          <a href="${item.url}" target="_blank"
-            class="rounded-xl p-3 transition-shadow hover:shadow-md block"
+          <div class="rounded-xl overflow-hidden transition-shadow hover:shadow-md"
             style="background:var(--surface); border:1px solid var(--border);">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style="background:${ic}22;">
-              <i data-lucide="${ln}" class="w-4 h-4" style="color:${ic};"></i>
-            </div>
-            <p class="text-xs font-semibold truncate" style="color:var(--text);">${item.nome}</p>
-            <p class="text-[10px] mt-0.5 font-medium" style="color:${ic};">${lb}</p>
-          </a>`
+            <a href="${item.url}" target="_blank" class="block p-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style="background:${ic}22;">
+                <i data-lucide="${ln}" class="w-4 h-4" style="color:${ic};"></i>
+              </div>
+              <p class="text-xs font-semibold truncate" style="color:var(--text);">${item.nome}</p>
+              <p class="text-[10px] mt-0.5 font-medium" style="color:${ic};">${lb}</p>
+            </a>
+            ${lerBtn ? `<div class="px-2 pb-2 flex gap-1.5">${lerBtn}
+              <a href="${item.url}" target="_blank" download
+                class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold"
+                style="background:#F0FDF4; color:#065F46;">
+                <i data-lucide="download" class="w-3 h-3"></i>Baixar
+              </a></div>` : ''}
+          </div>`
       }).join('')
     }
     lucide.createIcons()
@@ -2970,9 +3013,9 @@
         if (target === 'professores') await carregarProfessores()
         if (target === 'feed') await carregarFeed()
         if (target === 'biblioteca') await carregarBiblioteca()
-        if (target === 'disciplina-1') abrirDisciplina(0)
-        if (target === 'disciplina-2') abrirDisciplina(1)
-        if (target === 'disciplina-3') abrirDisciplina(2)
+        if (target === 'disciplina-1') { abrirDisciplina(0); return }
+        if (target === 'disciplina-2') { abrirDisciplina(1); return }
+        if (target === 'disciplina-3') { abrirDisciplina(2); return }
         if (target === 'usuarios' && (isAdmin || isTeacher)) { await carregarUsuariosPendentes(); await carregarTodosUsuarios() }
       })
     })
@@ -3318,6 +3361,41 @@
     btn.disabled = false; btn.textContent = 'Salvar foto'
   }
 
+  // ── LEITOR DE PDF ────────────────────────────────────
+  // Usa PDF.js viewer via Mozilla CDN — grátis, sem backend, funciona com PDFs locais
+  const PDFJS_VIEWER = 'https://mozilla.github.io/pdf.js/web/viewer.html'
+
+  window.abrirLeitorPdf = (url, titulo) => {
+    const modal   = document.getElementById('modal-leitor-pdf')
+    const iframe  = document.getElementById('leitor-iframe')
+    const tituloEl= document.getElementById('leitor-titulo')
+    const dlBtn   = document.getElementById('leitor-download-btn')
+
+    // PDF.js viewer recebe o PDF como parâmetro ?file=
+    // Para PDFs locais (mesmo domínio) funciona diretamente
+    const pdfUrl  = url.startsWith('http') ? url : (location.origin + '/' + url)
+    iframe.src    = `${PDFJS_VIEWER}?file=${encodeURIComponent(pdfUrl)}`
+    tituloEl.textContent = titulo
+    dlBtn.href    = url
+
+    modal.classList.remove('hidden')
+    modal.classList.add('flex')
+    lucide.createIcons()
+  }
+
+  window.fecharLeitorPdf = () => {
+    const modal  = document.getElementById('modal-leitor-pdf')
+    const iframe = document.getElementById('leitor-iframe')
+    iframe.src   = '' // Para o carregamento do PDF
+    modal.classList.add('hidden')
+    modal.classList.remove('flex')
+  }
+
+  // Fechar com ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fecharLeitorPdf?.()
+  })
+
   // ── ALTERAR USERNAME ─────────────────────────────────
   window.abrirAlterarUsername = () => {
     document.getElementById('user-chip-menu').classList.add('hidden')
@@ -3476,6 +3554,12 @@
 
   function abrirDisciplina(idx) {
     const d = DISCIPLINAS[idx]
+    // Oculta todas as views e mostra a de disciplina
+    document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'))
+    document.getElementById('view-disciplina').classList.remove('hidden')
+    // Marca nav item correto como ativo
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'))
+    document.querySelector(`a[href="#disciplina-${idx+1}"]`)?.classList.add('active')
     document.getElementById('disc-breadcrumb').textContent = d.nome.length > 40 ? d.nome.slice(0,40)+'…' : d.nome
     document.getElementById('disc-codigo').textContent = d.codigo
     document.getElementById('disc-nome').textContent = d.nome
@@ -3494,21 +3578,35 @@
       const bg    = isPdf ? '#F0FDF4' : '#EEF2FF'
       const color = isPdf ? '#065F46'  : 'var(--primary)'
       const badge = isPdf ? '#DCFCE7'  : '#EEF2FF'
+      const nomeEsc = m.nome.replace(/'/g,"\\'")
       return `
-      <a href="${m.url}" ${isPdf ? 'download' : 'target="_blank" rel="noopener"'}
-        class="flex items-center gap-3 px-5 py-3.5 hover:bg-[#F0EDE6] transition-colors">
+      <div class="flex items-center gap-3 px-5 py-3.5" style="border-bottom:1px solid var(--border);">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:${bg};">
           <i data-lucide="${icon}" class="w-4 h-4" style="color:${color};"></i>
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium leading-snug" style="color:var(--text);">${m.nome}</p>
           <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md mt-0.5 inline-block"
-            style="background:${badge}; color:${color};">${isPdf ? '⬇ PDF' : m.tipo}</span>
+            style="background:${badge}; color:${color};">${isPdf ? 'PDF' : m.tipo}</span>
         </div>
-        <i data-lucide="${isPdf ? 'download' : 'arrow-up-right'}" class="w-4 h-4 shrink-0 opacity-40"></i>
-      </a>`}).join('')
+        <div class="flex gap-2 shrink-0">
+          ${isPdf ? `<button onclick="abrirLeitorPdf('${m.url}','${nomeEsc}')"
+            class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            style="background:#EEF2FF; color:var(--primary);">
+            <i data-lucide="book-open" class="w-3 h-3"></i>Ler
+          </button>` : ''}
+          <a href="${m.url}" ${isPdf ? 'download' : 'target="_blank" rel="noopener"'}
+            class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            style="background:#F0FDF4; color:#065F46;">
+            <i data-lucide="${isPdf ? 'download' : 'arrow-up-right'}" class="w-3 h-3"></i>${isPdf ? 'Baixar' : 'Abrir'}
+          </a>
+        </div>
+      </div>`}).join('')
 
-    navTo('disciplina', null)
+    // Botão Ler também no plano de ensino
+    document.getElementById('disc-plano-url').setAttribute('onclick',
+      `abrirLeitorPdf('${d.planoUrl}','${d.planoNome}'); return false;`)
+
     lucide.createIcons()
   }
 
@@ -3582,9 +3680,11 @@
               <div class="p-3">
                 <p class="text-xs font-semibold line-clamp-2 leading-snug mb-2.5" style="color:var(--text);" title="${nome}">${nome}</p>
                 <div class="flex gap-1.5">
-                  <a href="${f.webViewLink}" target="_blank"
-                    class="flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
-                    style="background:#EEF2FF; color:var(--primary);">Abrir</a>
+                  <button onclick="abrirLeitorPdf('https://drive.google.com/uc?export=download&id=${f.id}','${nome.replace(/'/g,"\\'")}')"
+                    class="flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 flex items-center justify-center gap-1"
+                    style="background:#EEF2FF; color:var(--primary);">
+                    <i data-lucide="book-open" class="w-3 h-3"></i>Ler
+                  </button>
                   <a href="https://drive.google.com/uc?export=download&id=${f.id}" target="_blank"
                     class="flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 flex items-center justify-center gap-1"
                     style="background:#F0FDF4; color:#065F46;">
