@@ -3380,16 +3380,19 @@
     if (!annotationMgr || !leitorPdfUrl || !currentUser) return
     try {
       const result = await annotationMgr.exportAnnotations()
-      await db.from('pdf_annotations').upsert({
+      const { error } = await db.from('pdf_annotations').upsert({
         user_id: currentUser.id,
         pdf_url: leitorPdfUrl,
         dados: result.data,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id,pdf_url' })
+      if (error) throw error
       setLeitorStatus('✓ Anotações salvas', '#86efac')
       setTimeout(() => setLeitorStatus(''), 2500)
     } catch(e) {
-      setLeitorStatus('⚠ Erro ao salvar', '#fca5a5')
+      const msg = e?.message || e?.code || JSON.stringify(e)
+      setLeitorStatus('⚠ ' + msg, '#fca5a5')
+      console.error('Erro ao salvar anotações:', e)
     }
   }
 
