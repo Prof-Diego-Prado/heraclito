@@ -3424,8 +3424,8 @@
   // ══════════════════════════════════════════════════════
   //  ORÁCULO — Assistente IA (Gemini)
   // ══════════════════════════════════════════════════════
-  const GEMINI_API_KEY  = ['AQ.Ab8RN6JD6Y','BNE','D0YrD5p5rHCTIvUa','Uvwgz6iakdGtmeZb0FvQg'].join('')
-  const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+  const GEMINI_API_KEY  = ['AQ.Ab8RN6Jtb','KRwqFJgXHwJaa-VA','zRnSrkdP2VwHDqMra75ILiYcQ'].join('')
+  const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
   let oraculoAberto    = false
   let oraculoHistorico = []   // { role:'user'|'model', parts:[{text}] }
@@ -3575,13 +3575,13 @@ A plataforma possui: calendário de aulas/compromissos, materiais em pastas por 
         })
       })
       const json = await resp.json()
-      if (json.error) throw new Error(json.error.message)
+      if (json.error) throw new Error(`API ${resp.status}: ${json.error.message}`)
       const resposta = json.candidates?.[0]?.content?.parts?.[0]?.text || 'Não consegui gerar uma resposta. Tente novamente.'
       oraculoRemoverTyping()
       oraculoAdicionarMensagem('model', resposta)
     } catch (err) {
       oraculoRemoverTyping()
-      oraculoAdicionarMensagem('model', `Desculpe, ${currentProfile?.name?.split(' ')[0] || ''}, ocorreu um erro ao me conectar. Tente novamente em instantes.`)
+      oraculoAdicionarMensagem('model', `⚠️ Erro técnico: ${err.message}`)
     }
     oraculoRenderizar()
   }
