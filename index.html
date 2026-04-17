@@ -3460,7 +3460,7 @@
           .eq('pdf_url', url)
           .maybeSingle()
         if (data?.dados?.length > 0) {
-          await annotationMgr.importAnnotations({ annotations: data.dados })
+          await annotationMgr.addAnnotations(data.dados)
           const n = data.dados.length
           setLeitorStatus(`✎ ${n} anotaç${n>1?'ões':'ão'} carregada${n>1?'s':''}`, '#a5b4fc')
           setTimeout(() => setLeitorStatus(''), 3000)
