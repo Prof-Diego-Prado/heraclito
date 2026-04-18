@@ -203,6 +203,13 @@
     .oraculo-typing span:nth-child(2) { animation-delay:.2s; }
     .oraculo-typing span:nth-child(3) { animation-delay:.4s; }
     @keyframes oraculoTyping { 0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)} }
+
+    /* Próxima Aula — pulso índigo suave */
+    @keyframes proximaAulaGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,.35); }
+      55%       { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
+    }
+    .proxima-aula-pulse { animation: proximaAulaGlow 3s ease-in-out infinite; }
   </style>
   <!-- Adobe PDF Embed API — gratuito, anotações por usuário -->
   <script src="https://acrobatservices.adobe.com/view-sdk/viewer.js"></script>
@@ -262,6 +269,18 @@
         </div>
         <p class="text-[11px] font-semibold truncate mb-1.5 leading-tight" style="color:#991B1B;" id="sidebar-artigo-nome"></p>
         <p class="font-mono text-xs font-bold tabular-nums" style="color:#DC2626;" id="sidebar-artigo-tempo"></p>
+      </div>
+    </div>
+
+    <!-- Próxima aula na sidebar -->
+    <div id="sidebar-proxima-aula" class="hidden mx-1 mb-1 rounded-xl proxima-aula-pulse"
+      style="background:linear-gradient(135deg,#EEF2FF,#F5F3FF); border:1.5px solid #C7D2FE;">
+      <div class="px-3 py-2.5">
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="text-[9px] font-bold uppercase tracking-wider" style="color:#4338CA;">📅 Próxima Aula</span>
+        </div>
+        <p class="text-[11px] font-semibold truncate mb-1.5 leading-tight" style="color:#312E81;" id="sidebar-proxima-nome"></p>
+        <p class="font-mono text-xs font-bold tabular-nums" style="color:#4338CA;" id="sidebar-proxima-tempo"></p>
       </div>
     </div>
 
@@ -443,6 +462,32 @@
           <div class="text-right shrink-0">
             <p class="text-[10px] uppercase tracking-widest mb-0.5" style="color:#DC2626;">Faltam</p>
             <p class="font-mono text-2xl font-bold tabular-nums leading-none" style="color:#DC2626;" id="banner-artigo-tempo"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner próxima aula -->
+      <div id="proxima-aula-banner" class="hidden mb-4 rounded-2xl overflow-hidden proxima-aula-pulse"
+        style="background:linear-gradient(135deg,#EEF2FF 0%,#F5F3FF 100%); border:1.5px solid #C7D2FE;">
+        <div class="px-5 py-3.5 flex items-center gap-4 flex-wrap">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style="background:#4338CA; box-shadow:0 4px 12px rgba(67,56,202,.3);">
+            <i data-lucide="calendar-clock" class="w-5 h-5 text-white"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-0.5" style="color:#4338CA;">Próxima Aula</p>
+            <p class="font-semibold text-sm truncate leading-tight" style="color:#312E81;" id="banner-proxima-nome"></p>
+            <p class="text-xs mt-0.5" style="color:#4F46E5;" id="banner-proxima-data"></p>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <div class="text-right">
+              <p class="text-[10px] uppercase tracking-widest mb-0.5" style="color:#4338CA;">Faltam</p>
+              <p class="font-mono text-xl font-bold tabular-nums leading-none" style="color:#4338CA;" id="banner-proxima-tempo"></p>
+            </div>
+            <a id="banner-proxima-pdf" href="#" onclick="return false;" class="hidden items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              style="background:#4338CA; color:#fff;">
+              <i data-lucide="file-text" class="w-3 h-3"></i>Ver PDF
+            </a>
           </div>
         </div>
       </div>
@@ -710,7 +755,7 @@
       </div>
 
       <!-- Materiais de Domínio Público -->
-      <div class="rounded-2xl overflow-hidden" style="border:1px solid var(--border); background:var(--surface);">
+      <div class="mb-6 rounded-2xl overflow-hidden" style="border:1px solid var(--border); background:var(--surface);">
         <div class="px-5 py-3" style="border-bottom:1px solid var(--border);">
           <p class="font-semibold text-sm flex items-center gap-2" style="color:var(--text);">
             <i data-lucide="external-link" class="w-4 h-4" style="color:var(--primary);"></i>Materiais com Acesso Aberto
@@ -718,6 +763,27 @@
           <p class="text-xs mt-0.5" style="color:var(--muted);">Artigos, teses e e-books da bibliografia com acesso público</p>
         </div>
         <div id="disc-materiais" class="divide-y" style="divide-color:var(--border);"></div>
+      </div>
+
+      <!-- Materiais por Aula (Supabase) -->
+      <div class="rounded-2xl overflow-hidden" style="border:1px solid var(--border); background:var(--surface);">
+        <div class="px-5 py-3 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+          <div>
+            <p class="font-semibold text-sm flex items-center gap-2" style="color:var(--text);">
+              <i data-lucide="calendar-check" class="w-4 h-4" style="color:var(--primary);"></i>Materiais por Aula
+            </p>
+            <p class="text-xs mt-0.5" style="color:var(--muted);">Arquivos organizados por data de aula e professor</p>
+          </div>
+          <button id="btn-add-mat-disc" class="hidden btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>Adicionar
+          </button>
+        </div>
+        <div id="disc-mat-aulas" class="divide-y" style="divide-color:var(--border);">
+          <div class="flex flex-col items-center py-10" style="color:var(--muted);">
+            <i data-lucide="loader" class="w-8 h-8 mb-2 opacity-20 animate-spin"></i>
+            <p class="text-sm">Carregando…</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1242,6 +1308,61 @@
   </div>
 </div>
 
+<!-- MODAL MATERIAL DISCIPLINA -->
+<div id="modal-mat-disc" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] overflow-y-auto fade-in">
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2" style="color:var(--text);">
+        <i data-lucide="calendar-check" class="w-5 h-5" style="color:var(--primary);"></i>
+        <span id="mat-disc-titulo-modal">Adicionar Material à Disciplina</span>
+      </p>
+      <button onclick="fecharModalMatDisc()" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <form id="form-mat-disc" class="p-6 space-y-4">
+      <input type="hidden" id="mat-disc-idx">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Data da Aula</label>
+          <input type="date" id="mat-disc-data" class="input-field" required>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Tipo</label>
+          <select id="mat-disc-tipo" class="input-field">
+            <option value="pdf">PDF</option>
+            <option value="doc">Word / Doc</option>
+            <option value="ppt">Apresentação</option>
+            <option value="link">Link</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Professor Responsável</label>
+        <input type="text" id="mat-disc-prof" class="input-field" placeholder="Ex: Prof. Dr. Flávio Rodrigues de Oliveira" required>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome do Material</label>
+        <input type="text" id="mat-disc-nome" class="input-field" placeholder="Ex: Slides — Culturas Digitais e Docência" required>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">URL do Arquivo</label>
+        <input type="url" id="mat-disc-url" class="input-field" placeholder="https://..." required>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Texto / Conteúdo da Aula <span class="normal-case font-normal">(opcional)</span></label>
+        <textarea id="mat-disc-descricao" rows="3" class="input-field resize-none"
+          placeholder="Descreva o conteúdo abordado nesta aula…"></textarea>
+      </div>
+      <div id="mat-disc-erro" class="hidden rounded-xl px-3 py-2 text-sm" style="background:#FEF2F2; color:#B91C1C;"></div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="fecharModalMatDisc()" class="px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
+        <button type="submit" id="btn-submit-mat-disc" class="btn-primary px-5 py-2 rounded-xl text-sm font-semibold">Publicar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════
      MODAL FOTO DE PERFIL
 ═══════════════════════════════════════════════════════ -->
@@ -1676,6 +1797,249 @@
     }
   }
 
+  // ── CONTAGEM REGRESSIVA — PRÓXIMA AULA ──────────────
+  let proximaAulaTimer = null
+  let discArquivosCache = {}  // { discId: [ ...arquivos ] }
+
+  function iniciarContagemProximaAula() {
+    if (proximaAulaTimer) clearInterval(proximaAulaTimer)
+    atualizarContagemProximaAula()
+    proximaAulaTimer = setInterval(atualizarContagemProximaAula, 1000)
+  }
+
+  function atualizarContagemProximaAula() {
+    const now  = new Date()
+    const hoje = isoDate(now)
+    const proximos = (todasAulas||[])
+      .filter(a => a.data >= hoje)
+      .sort((a,b) => {
+        const toMs = x => new Date(x.data+'T'+(x.hora||'23:59')+':00').getTime()
+        return toMs(a) - toMs(b)
+      })
+
+    const proximo = proximos[0]
+    const sidebarEl = document.getElementById('sidebar-proxima-aula')
+    const bannerEl  = document.getElementById('proxima-aula-banner')
+
+    if (!proximo) {
+      sidebarEl?.classList.add('hidden')
+      bannerEl?.classList.add('hidden')
+      return
+    }
+
+    const deadline = new Date(proximo.data+'T'+(proximo.hora||'23:59')+':00')
+    const diff     = deadline - now
+
+    const txt = diff <= 0 ? '🎯 Agora!' : (() => {
+      const dias  = Math.floor(diff/86400000)
+      const horas = Math.floor((diff%86400000)/3600000)
+      const mins  = Math.floor((diff%3600000)/60000)
+      const segs  = Math.floor((diff%60000)/1000)
+      if (dias > 0)       return `${dias}d ${String(horas).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m`
+      if (horas > 0)      return `${String(horas).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m ${String(segs).padStart(2,'0')}s`
+      return `${String(mins).padStart(2,'0')}m ${String(segs).padStart(2,'0')}s`
+    })()
+
+    const dataFmt = new Date(proximo.data+'T12:00:00')
+      .toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+
+    if (sidebarEl) {
+      document.getElementById('sidebar-proxima-nome').textContent = proximo.titulo
+      document.getElementById('sidebar-proxima-tempo').textContent = txt
+      sidebarEl.classList.remove('hidden')
+    }
+    if (bannerEl) {
+      document.getElementById('banner-proxima-nome').textContent = proximo.titulo
+      document.getElementById('banner-proxima-data').textContent = dataFmt + (proximo.hora ? ' às ' + proximo.hora : '')
+      document.getElementById('banner-proxima-tempo').textContent = txt
+      // Link ao PDF se houver arquivo com aula_data correspondente
+      const pdfBtn = document.getElementById('banner-proxima-pdf')
+      let pdfEncontrado = false
+      for (const id of [1,2,3]) {
+        const arqs = discArquivosCache[id] || []
+        const arq = arqs.find(a => a.aula_data === proximo.data && a.tipo === 'pdf')
+        if (arq) {
+          pdfBtn.href = arq.url
+          pdfBtn.onclick = (e) => { e.preventDefault(); abrirLeitorPdf(arq.url, arq.nome) }
+          pdfBtn.classList.remove('hidden')
+          pdfBtn.classList.add('flex')
+          pdfEncontrado = true; break
+        }
+      }
+      if (!pdfEncontrado) { pdfBtn.classList.add('hidden'); pdfBtn.classList.remove('flex') }
+      bannerEl.classList.remove('hidden')
+      lucide.createIcons()
+    }
+  }
+
+  // ── MATERIAIS POR AULA — DISCIPLINAS ─────────────────
+  async function carregarMatDisc(discIdx) {
+    const discId = discIdx + 1
+    const container = document.getElementById('disc-mat-aulas')
+    if (!container) return
+
+    container.innerHTML = `<div class="flex flex-col items-center py-10" style="color:var(--muted);">
+      <i data-lucide="loader" class="w-8 h-8 mb-2 opacity-20 animate-spin"></i>
+      <p class="text-sm">Carregando materiais…</p></div>`
+    lucide.createIcons()
+
+    try {
+      const { data, error } = await db.from('arquivos')
+        .select('*')
+        .eq('disc_id', discId)
+        .order('aula_data', { ascending: true })
+
+      if (error) throw error
+      discArquivosCache[discId] = data || []
+      renderMatDisc(discIdx, data || [])
+    } catch(e) {
+      container.innerHTML = `<p class="text-sm text-center py-8" style="color:var(--muted);">Erro ao carregar materiais.</p>`
+    }
+  }
+
+  function renderMatDisc(discIdx, arquivos) {
+    const container = document.getElementById('disc-mat-aulas')
+    const btnAdd = document.getElementById('btn-add-mat-disc')
+    if (btnAdd) btnAdd.classList.toggle('hidden', !(isAdmin || isTeacher))
+    btnAdd && (btnAdd.onclick = () => abrirModalMatDisc(discIdx))
+
+    if (!arquivos.length) {
+      container.innerHTML = `<div class="flex flex-col items-center py-10" style="color:var(--muted);">
+        <i data-lucide="inbox" class="w-8 h-8 mb-2 opacity-20"></i>
+        <p class="text-sm">Nenhum material cadastrado para esta disciplina.</p>
+        ${(isAdmin||isTeacher) ? '<p class="text-xs mt-1">Use o botão "Adicionar" acima.</p>' : ''}</div>`
+      lucide.createIcons()
+      return
+    }
+
+    const fmtData = d => {
+      if (!d) return '—'
+      return new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})
+    }
+    const tipoIcon = t => ({'pdf':'file-text','doc':'file','ppt':'presentation','link':'link'}[t]||'file')
+    const tipoBg   = t => ({'pdf':'#FEE2E2','doc':'#DBEAFE','ppt':'#FFEDD5','link':'#D1FAE5'}[t]||'#F3F4F6')
+    const tipoColor= t => ({'pdf':'#B91C1C','doc':'#1D4ED8','ppt':'#C2410C','link':'#065F46'}[t]||'#6B7280')
+
+    container.innerHTML = arquivos.map(a => {
+      const isPdf = a.tipo === 'pdf'
+      const icon = tipoIcon(a.tipo)
+      const bg   = tipoBg(a.tipo)
+      const cl   = tipoColor(a.tipo)
+      const nomeEsc = (a.nome||'').replace(/'/g,"\\'")
+      const delBtn = isAdmin
+        ? `<button onclick="removerMatDisc('${a.id}')"
+            class="p-1 rounded-lg opacity-40 hover:opacity-100 hover:bg-red-50 transition-opacity"
+            style="color:#DC2626;" title="Remover">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>` : ''
+      return `
+      <div class="px-5 py-4" style="border-bottom:1px solid var(--border);">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style="background:${bg};">
+            <i data-lucide="${icon}" class="w-4 h-4" style="color:${cl};"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-0.5">
+              ${a.aula_data ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#EEF2FF; color:#4338CA;">📅 ${fmtData(a.aula_data)}</span>` : ''}
+              ${a.professor_nome ? `<span class="text-[10px] font-medium" style="color:var(--muted);">👤 ${a.professor_nome}</span>` : ''}
+            </div>
+            <p class="text-sm font-semibold leading-snug" style="color:var(--text);">${a.nome||'Material'}</p>
+            ${a.descricao_aula ? `<p class="text-xs mt-1 leading-relaxed line-clamp-2" style="color:var(--muted);">${a.descricao_aula}</p>` : ''}
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${isPdf ? `<button onclick="abrirLeitorPdf('${a.url}','${nomeEsc}')"
+              class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+              style="background:#EEF2FF; color:var(--primary);">
+              <i data-lucide="book-open" class="w-3 h-3"></i>Ler
+            </button>` : ''}
+            <a href="${a.url}" ${isPdf ? 'download' : 'target="_blank" rel="noopener"'}
+              class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+              style="background:#F0FDF4; color:#065F46;">
+              <i data-lucide="${isPdf?'download':'arrow-up-right'}" class="w-3 h-3"></i>${isPdf?'Baixar':'Abrir'}
+            </a>
+            ${delBtn}
+          </div>
+        </div>
+      </div>`
+    }).join('')
+    lucide.createIcons()
+  }
+
+  window.removerMatDisc = async (id) => {
+    if (!confirm('Remover este material?')) return
+    const { error } = await db.from('arquivos').delete().eq('id', id)
+    if (!error) {
+      // Atualiza cache e re-renderiza
+      for (const k of [1,2,3]) {
+        if (discArquivosCache[k]) discArquivosCache[k] = discArquivosCache[k].filter(a => a.id !== id)
+      }
+      const cont = document.getElementById('disc-mat-aulas')
+      if (cont) {
+        const discIdx = parseInt(document.getElementById('mat-disc-idx')?.value||'0') || 0
+        renderMatDisc(discIdx, discArquivosCache[discIdx+1]||[])
+      }
+    }
+  }
+
+  function abrirModalMatDisc(discIdx) {
+    const modal = document.getElementById('modal-mat-disc')
+    document.getElementById('mat-disc-idx').value = discIdx
+    document.getElementById('mat-disc-titulo-modal').textContent =
+      `Adicionar Material — Disciplina ${discIdx+1}`
+    const d = DISCIPLINAS[discIdx]
+    document.getElementById('mat-disc-prof').value = d?.docentes?.split('·')[0]?.trim() || ''
+    document.getElementById('mat-disc-data').value = ''
+    document.getElementById('mat-disc-nome').value = ''
+    document.getElementById('mat-disc-url').value  = ''
+    document.getElementById('mat-disc-descricao').value = ''
+    document.getElementById('mat-disc-erro').classList.add('hidden')
+    modal.classList.remove('hidden')
+    modal.classList.add('flex')
+    lucide.createIcons()
+  }
+
+  window.fecharModalMatDisc = () => {
+    const modal = document.getElementById('modal-mat-disc')
+    modal.classList.add('hidden')
+    modal.classList.remove('flex')
+  }
+
+  document.getElementById('form-mat-disc')?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const btn   = document.getElementById('btn-submit-mat-disc')
+    const erro  = document.getElementById('mat-disc-erro')
+    const discIdx = parseInt(document.getElementById('mat-disc-idx').value)
+    erro.classList.add('hidden')
+    btn.disabled = true; btn.textContent = 'Publicando…'
+
+    const payload = {
+      nome:          document.getElementById('mat-disc-nome').value.trim(),
+      tipo:          document.getElementById('mat-disc-tipo').value,
+      url:           document.getElementById('mat-disc-url').value.trim(),
+      disc_id:       discIdx + 1,
+      aula_data:     document.getElementById('mat-disc-data').value || null,
+      professor_nome:document.getElementById('mat-disc-prof').value.trim() || null,
+      descricao_aula:document.getElementById('mat-disc-descricao').value.trim() || null,
+      created_by:    currentUser.id,
+    }
+
+    const { data, error } = await db.from('arquivos').insert(payload).select().single()
+    btn.disabled = false; btn.textContent = 'Publicar'
+
+    if (error) {
+      erro.textContent = error.message
+      erro.classList.remove('hidden')
+      return
+    }
+
+    fecharModalMatDisc()
+    // Adiciona ao cache e re-renderiza
+    if (!discArquivosCache[discIdx+1]) discArquivosCache[discIdx+1] = []
+    discArquivosCache[discIdx+1].push(data)
+    discArquivosCache[discIdx+1].sort((a,b) => (a.aula_data||'').localeCompare(b.aula_data||''))
+    renderMatDisc(discIdx, discArquivosCache[discIdx+1])
+  })
+
   function isoDate(d) { return d.toISOString().slice(0,10) }
   function fmtShort(d) { return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) }
   function weekOf(d) {
@@ -1712,6 +2076,7 @@
 
     renderCalendario()
     iniciarContagemArtigo()
+    iniciarContagemProximaAula()
   }
 
   function renderCalendario() {
@@ -3710,6 +4075,9 @@
       `abrirLeitorPdf('${d.planoUrl}','${d.planoNome}'); return false;`)
 
     lucide.createIcons()
+
+    // Carregar materiais por aula do Supabase
+    carregarMatDisc(idx)
   }
 
   // ── GLOBAL ───────────────────────────────────────────
@@ -3956,15 +4324,78 @@
       return `Próximos compromissos, ${nome}:\n\n${lista}`
     }
 
+    // ── Próxima aula (não artigo) ─────────────────────────
+    if (p.match(/proxima aula|qual aula|quando.*aula|aula.*quando/)) {
+      const proximas = (todasAulas||[])
+        .filter(a => a.data >= hoje && !a.is_artigo)
+        .sort((a,b) => a.data.localeCompare(b.data))
+      if (!proximas.length) return `Não há aulas cadastradas próximas, ${nome}.`
+      const pa = proximas[0]
+      const dias = Math.floor((new Date(pa.data+'T23:59:59') - agora)/(1000*60*60*24))
+      let arqInfo = ''
+      // Verificar se há material vinculado
+      for (const id of [1,2,3]) {
+        const arqs = discArquivosCache[id] || []
+        const arq = arqs.find(a => a.aula_data === pa.data)
+        if (arq) {
+          arqInfo = `\n📎 Material disponível: **${arq.nome}**${arq.professor_nome ? ' — ' + arq.professor_nome : ''}`
+          break
+        }
+      }
+      return `Próxima aula:\n\n📅 **${pa.titulo}**\n🗓️ ${fmtData(pa.data)}${pa.hora ? ' às ' + pa.hora : ''}\n⏳ ${dias <= 0 ? 'Hoje!' : dias === 1 ? 'Amanhã!' : 'Faltam ' + dias + ' dias'}${arqInfo}`
+    }
+
+    // ── Material da próxima aula ──────────────────────────
+    if (p.match(/material.*proxim|proxim.*material|texto.*proxim|proxim.*texto/)) {
+      const proximas = (todasAulas||[])
+        .filter(a => a.data >= hoje)
+        .sort((a,b) => a.data.localeCompare(b.data))
+      if (!proximas.length) return `Não há aulas cadastradas, ${nome}.`
+      const pa = proximas[0]
+      let arqs = []
+      for (const id of [1,2,3]) {
+        const cache = discArquivosCache[id] || []
+        const found = cache.filter(a => a.aula_data === pa.data)
+        arqs = arqs.concat(found)
+      }
+      if (!arqs.length) return `Para a próxima aula (**${pa.titulo}** — ${fmtData(pa.data)}), ainda não há materiais cadastrados.`
+      return `Material para a próxima aula (**${pa.titulo}**):\n${arqs.map(a=>`• ${a.nome}${a.professor_nome ? ' — ' + a.professor_nome : ''}${a.descricao_aula ? '\n  ' + a.descricao_aula.slice(0,80) + (a.descricao_aula.length>80?'…':'') : ''}`).join('\n')}`
+    }
+
+    // ── Textos/materiais por professor ───────────────────
+    if (p.match(/professor|docente|prof\.|texto.*prof|prof.*texto|material.*prof|quem.*prof/)) {
+      // Coletar todos os arquivos com professor_nome preenchido
+      let todos = []
+      for (const id of [1,2,3]) { todos = todos.concat(discArquivosCache[id] || []) }
+      const comProf = todos.filter(a => a.professor_nome)
+      if (comProf.length) {
+        // Agrupar por professor
+        const mapa = {}
+        comProf.forEach(a => {
+          const k = a.professor_nome
+          if (!mapa[k]) mapa[k] = []
+          mapa[k].push(a.nome)
+        })
+        const lista = Object.entries(mapa).map(([prof, nomes]) =>
+          `👤 **${prof}**\n${nomes.slice(0,3).map(n=>`  • ${n}`).join('\n')}`
+        ).join('\n\n')
+        return `Textos por professor:\n\n${lista}\n\nAcesse as **Disciplinas** para abrir e baixar cada material.`
+      }
+      return `Acesse o menu **Professores** na barra lateral para ver perfis e materiais dos docentes do curso.`
+    }
+
     // ── Materiais ─────────────────────────────────────────
     if (p.match(/material|arquivo|pdf|apostila|texto|disponivel|recurso/)) {
-      let mats = []
-      try {
-        const { data } = await db.from('arquivos').select('nome,tipo').is('parent_id',null).order('created_at',{ascending:false}).limit(8)
-        mats = data || []
-      } catch(e) {}
-      if (!mats.length) return `Nenhum material cadastrado ainda, ${nome}.`
-      return `Últimos materiais adicionados:\n${mats.map(m=>`• ${m.nome} (${(m.tipo||'').toUpperCase()})`).join('\n')}\n\nAcesse o menu "Material" na barra lateral para explorar por pasta.`
+      let todos = []
+      for (const id of [1,2,3]) { todos = todos.concat(discArquivosCache[id] || []) }
+      if (!todos.length) {
+        try {
+          const { data } = await db.from('arquivos').select('nome,tipo').order('created_at',{ascending:false}).limit(8)
+          todos = data || []
+        } catch(e) {}
+      }
+      if (!todos.length) return `Nenhum material cadastrado nas disciplinas ainda, ${nome}.`
+      return `Materiais disponíveis nas disciplinas:\n${todos.slice(0,8).map(m=>`• ${m.nome}${m.professor_nome ? ' — ' + m.professor_nome : ''} (${(m.tipo||'').toUpperCase()})`).join('\n')}\n\nAcesse o menu **Disciplinas** para ver todos os materiais organizados por aula.`
     }
 
     // ── Biblioteca ────────────────────────────────────────
@@ -3974,16 +4405,15 @@
 
     // ── Disciplinas ───────────────────────────────────────
     if (p.match(/disciplina|materia|cadeira|curso/)) {
-      return `O curso possui 3 disciplinas cadastradas:\n\n1. **Fundamentos em Processos Inovadores e Culturas Digitais na Educação Básica** (DPD 4008)\n2. **Métodos, Pesquisa Científica e Ética em Ciências e Humanidades** (DPD 4004)\n3. **Fundamentos em Pesquisas e Tecnologias Educacionais na Educação Básica** (DPD 4004)\n\nAcesse o menu **Disciplinas** na barra lateral para ver planos de ensino e materiais.`
-    }
-
-    // ── Professores ───────────────────────────────────────
-    if (p.match(/professor|docente|instrutor/)) {
-      return `Acesse o menu **Professores** na barra lateral para ver o diretório completo de professores do curso com seus perfis e materiais.`
+      const infos = DISCIPLINAS.map((d,i) => {
+        const arqs = discArquivosCache[i+1] || []
+        return `${i+1}. **${d.nome}** (${d.codigo.split('·')[0].trim()})\n   👤 ${d.docentes}\n   📅 ${d.periodo}${arqs.length ? `\n   📎 ${arqs.length} material(is) cadastrado(s)` : ''}`
+      }).join('\n\n')
+      return `O curso possui 3 disciplinas:\n\n${infos}\n\nAcesse o menu **Disciplinas** na barra lateral para ver planos de ensino e materiais.`
     }
 
     // ── Ajuda / padrão ────────────────────────────────────
-    return `Posso te ajudar com, ${nome}:\n\n• 📅 **Próximas aulas** — "Quais as próximas aulas?"\n• 📝 **Artigos** — "Quando é o próximo prazo?"\n• 📚 **Materiais** — "Quais materiais estão disponíveis?"\n• 🏛️ **Disciplinas** — "Quais as disciplinas do curso?"\n• 📖 **Biblioteca** — "O que tem na biblioteca?"`
+    return `Posso te ajudar com, ${nome}:\n\n• 📅 **Próximas aulas** — "Qual a próxima aula?"\n• 📎 **Material da aula** — "Tem material para a próxima aula?"\n• 📝 **Artigos** — "Quando é o próximo prazo?"\n• 👤 **Prof e textos** — "Quais textos do Prof. Flávio?"\n• 🏛️ **Disciplinas** — "Quais as disciplinas do curso?"\n• 📖 **Biblioteca** — "O que tem na biblioteca?"`
   }
 
   window.enviarMsgOraculo = async () => {
@@ -4020,6 +4450,13 @@
     lucide.createIcons()
 
     if (oraculoAberto) {
+      // Pré-carregar materiais das disciplinas para o Oráculo (se ainda não foram carregados)
+      for (const id of [1,2,3]) {
+        if (!discArquivosCache[id]) {
+          db.from('arquivos').select('*').eq('disc_id', id).order('aula_data')
+            .then(({ data }) => { if (data) discArquivosCache[id] = data })
+        }
+      }
       // Verificar se já escolheu gênero
       oraculoGenero = oraculoCarregarGenero()
       if (!oraculoGenero) {
