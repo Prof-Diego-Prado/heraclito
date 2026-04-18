@@ -204,6 +204,21 @@
     .oraculo-typing span:nth-child(3) { animation-delay:.4s; }
     @keyframes oraculoTyping { 0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)} }
 
+    /* Badge feed — pulso */
+    @keyframes badgePop {
+      0%   { transform: scale(0.7); }
+      60%  { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    .badge-pop { animation: badgePop .3s ease forwards; }
+
+    /* Toast feed — slide-in */
+    @keyframes toastIn {
+      from { opacity:0; transform:translateX(24px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    .toast-feed { animation: toastIn .28s ease; }
+
     /* Próxima Aula — pulso índigo suave */
     @keyframes proximaAulaGlow {
       0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,.35); }
@@ -289,6 +304,7 @@
     </a>
     <a href="#feed" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
       <i data-lucide="newspaper" class="w-4 h-4 shrink-0"></i>Feed
+      <span id="badge-feed" class="hidden ml-auto text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full badge-pop" style="background:var(--primary); min-width:18px; text-align:center;"></span>
     </a>
     <a href="#videos" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
       <i data-lucide="play-circle" class="w-4 h-4 shrink-0"></i>Videoaulas
@@ -598,10 +614,12 @@
         <button id="tab-materiais" onclick="setFeedTab('material')"
           class="feed-tab ativo flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-l-xl">
           <i data-lucide="paperclip" class="w-4 h-4"></i>Materiais
+          <span id="badge-tab-material" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded-full badge-pop" style="background:#DC2626; color:#fff; min-width:18px; text-align:center;"></span>
         </button>
         <button id="tab-chat" onclick="setFeedTab('chat')"
           class="feed-tab flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-r-xl">
           <i data-lucide="message-circle" class="w-4 h-4"></i>Bate-papo
+          <span id="badge-tab-chat" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded-full badge-pop" style="background:#DC2626; color:#fff; min-width:18px; text-align:center;"></span>
         </button>
       </div>
 
@@ -638,6 +656,21 @@
                 <i data-lucide="link" class="w-4 h-4 mx-auto mb-1 text-emerald-500"></i><p class="text-xs font-semibold text-gray-700">Link</p></div></label>
           </div>
           <input type="url" id="compose-url" class="input-field text-sm" placeholder="https://...">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold mb-1 uppercase tracking-wider" style="color:var(--muted);">Professor <span class="normal-case font-normal">(opcional)</span></label>
+              <input type="text" id="compose-prof-nome" class="input-field text-sm" placeholder="Nome do professor">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1 uppercase tracking-wider" style="color:var(--muted);">Salvar na Disciplina <span class="normal-case font-normal">(opcional)</span></label>
+              <select id="compose-disc-id" class="input-field text-sm">
+                <option value="">— Não vincular —</option>
+                <option value="1">Disc. 1 — Processos Inovadores</option>
+                <option value="2">Disc. 2 — Métodos e Pesquisa</option>
+                <option value="3">Disc. 3 — Pesquisas e Tecnologias</option>
+              </select>
+            </div>
+          </div>
           <div id="compose-cooldown" class="hidden flex items-center gap-2 text-xs rounded-xl px-3 py-2.5"
             style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;">
             <i data-lucide="timer" class="w-3.5 h-3.5 shrink-0"></i>
@@ -1703,6 +1736,7 @@
     document.querySelector('a[href="#dashboard"]').classList.add('active')
 
     await Promise.all([ carregarAulas(), carregarSidebarPastas(), carregarProfessoresSidebar() ])
+    calcularNaoLidos()
     if (isAdmin) await carregarUsuariosPendentes()
     setupRealtime()
     lucide.createIcons()
@@ -2664,6 +2698,106 @@
     lucide.createIcons()
   }
 
+  // ── FEED — não lidos + toasts ────────────────────────
+  let feedNaoLidos = { material: 0, chat: 0 }
+
+  const feedLidoKey = () => currentUser ? `feed_lido_${currentUser.id}` : null
+
+  function marcarFeedLido() {
+    const k = feedLidoKey()
+    if (k) localStorage.setItem(k, new Date().toISOString())
+    feedNaoLidos = { material: 0, chat: 0 }
+    atualizarBadgesFeed()
+  }
+
+  function atualizarBadgesFeed() {
+    const total = feedNaoLidos.material + feedNaoLidos.chat
+    const b = document.getElementById('badge-feed')
+    const bm = document.getElementById('badge-tab-material')
+    const bc = document.getElementById('badge-tab-chat')
+    const set = (el, n) => {
+      if (!el) return
+      if (n > 0) {
+        el.textContent = n > 99 ? '99+' : n
+        el.classList.remove('hidden')
+        el.classList.add('badge-pop')
+      } else {
+        el.classList.add('hidden')
+        el.classList.remove('badge-pop')
+      }
+    }
+    set(b, total)
+    set(bm, feedNaoLidos.material)
+    set(bc, feedNaoLidos.chat)
+  }
+
+  async function calcularNaoLidos() {
+    const k = feedLidoKey()
+    if (!k) return
+    const desde = localStorage.getItem(k)
+    if (!desde) { marcarFeedLido(); return }
+    const { data } = await db.from('arquivos')
+      .select('categoria')
+      .in('categoria', ['material', 'chat'])
+      .gt('created_at', desde)
+      .is('parent_id', null)
+      .neq('created_by', currentUser.id)
+    feedNaoLidos = { material: 0, chat: 0 }
+    ;(data||[]).forEach(a => {
+      if (a.categoria === 'material') feedNaoLidos.material++
+      else if (a.categoria === 'chat') feedNaoLidos.chat++
+    })
+    atualizarBadgesFeed()
+  }
+
+  function mostrarToastFeed(item, creator) {
+    const container = document.getElementById('feed-notif-container')
+    if (!container) return
+    const av    = avatarUrl(creator || {})
+    const nome  = (creator||{}).name || 'Usuário'
+    const texto = item.descricao || item.nome || 'Novo conteúdo publicado'
+    const isChat = item.categoria === 'chat'
+    const toastId = 'toast-' + Date.now()
+
+    const div = document.createElement('div')
+    div.id = toastId
+    div.className = 'toast-feed pointer-events-auto rounded-2xl cursor-pointer'
+    div.style.cssText = 'background:var(--surface);border:1px solid var(--border);box-shadow:0 8px 30px rgba(0,0,0,.15);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;min-width:260px;max-width:300px;'
+    div.innerHTML = `
+      <img src="${av}" class="avatar w-9 h-9 shrink-0" style="border:2px solid var(--border);">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 mb-0.5">
+          <span class="text-xs font-bold" style="color:var(--text);">${nome}</span>
+          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+            style="background:${isChat?'#EEF2FF':'#F0FDF4'};color:${isChat?'#4338CA':'#065F46'};">
+            ${isChat?'Chat':'Material'}
+          </span>
+        </div>
+        <p class="text-xs leading-snug" style="color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+          ${texto.slice(0,90)}${texto.length>90?'…':''}
+        </p>
+      </div>
+      <button id="close-${toastId}" class="shrink-0 p-0.5 rounded-lg hover:bg-gray-100" style="color:var(--muted);">
+        <i data-lucide="x" class="w-3 h-3"></i>
+      </button>`
+
+    const dismiss = () => {
+      div.style.transition = 'opacity .3s, transform .3s'
+      div.style.opacity = '0'; div.style.transform = 'translateX(20px)'
+      setTimeout(() => div.remove(), 320)
+    }
+    div.onclick = (e) => {
+      if (e.target.closest(`#close-${toastId}`)) { dismiss(); return }
+      dismiss()
+      navTo('feed', document.querySelector('a[href="#feed"]'))
+      setFeedTab(isChat ? 'chat' : 'material')
+      marcarFeedLido()
+    }
+    container.appendChild(div)
+    lucide.createIcons()
+    setTimeout(dismiss, 7000)
+  }
+
   // ── FEED ─────────────────────────────────────────────
   let feedTab = 'material'
 
@@ -2678,6 +2812,11 @@
     document.getElementById('chat-compose').classList.toggle('hidden', !canPost || tab !== 'chat')
     fecharCompose()
     carregarFeed()
+    // Marcar aba como lida
+    if (tab === 'material') feedNaoLidos.material = 0
+    else if (tab === 'chat') feedNaoLidos.chat = 0
+    atualizarBadgesFeed()
+    marcarFeedLido()
   }
 
   async function carregarFeed() {
@@ -3247,7 +3386,25 @@
   // ── REALTIME ─────────────────────────────────────────
   function setupRealtime() {
     db.channel('aulas').on('postgres_changes',{event:'*',schema:'public',table:'aulas'}, carregarAulas).subscribe()
-    db.channel('arquivos').on('postgres_changes',{event:'*',schema:'public',table:'arquivos'}, () => { carregarFeed() }).subscribe()
+    db.channel('arquivos').on('postgres_changes',{event:'*',schema:'public',table:'arquivos'}, async (payload) => {
+      if (payload.eventType === 'INSERT') {
+        const item = payload.new
+        const isFeedPost = ['material','chat'].includes(item.categoria) && !item.parent_id
+        const naoEuMesmo = item.created_by !== currentUser?.id
+        if (isFeedPost && naoEuMesmo) {
+          const cat = item.categoria === 'chat' ? 'chat' : 'material'
+          feedNaoLidos[cat] = (feedNaoLidos[cat] || 0) + 1
+          atualizarBadgesFeed()
+          // Toast apenas se o feed não estiver visível
+          const feedVisible = !document.getElementById('view-feed')?.classList.contains('hidden')
+          if (!feedVisible) {
+            const { data: creator } = await db.from('users').select('id,name,username,avatar_url').eq('id', item.created_by).single()
+            mostrarToastFeed(item, creator)
+          }
+        }
+      }
+      carregarFeed()
+    }).subscribe()
     db.channel('folders').on('postgres_changes',{event:'*',schema:'public',table:'folders'}, () => { carregarSidebarPastas() }).subscribe()
     if (isAdmin) db.channel('users').on('postgres_changes',{event:'*',schema:'public',table:'users'}, carregarUsuariosPendentes).subscribe()
   }
@@ -3377,7 +3534,7 @@
         const target = e.currentTarget.getAttribute('href').substring(1)
         navTo(target, e.currentTarget)
         if (target === 'professores') await carregarProfessores()
-        if (target === 'feed') await carregarFeed()
+        if (target === 'feed') { await carregarFeed(); marcarFeedLido() }
         if (target === 'biblioteca') await carregarBiblioteca()
         if (target === 'disciplina-1') { abrirDisciplina(0); return }
         if (target === 'disciplina-2') { abrirDisciplina(1); return }
@@ -3573,6 +3730,8 @@
     document.getElementById('compose-texto').value  = ''
     document.getElementById('compose-titulo').value = ''
     document.getElementById('compose-url').value    = ''
+    const el1 = document.getElementById('compose-prof-nome'); if (el1) el1.value = ''
+    const el2 = document.getElementById('compose-disc-id');   if (el2) el2.value = ''
     const pdf = document.querySelector('input[name="compose-tipo"][value="pdf"]')
     if (pdf) pdf.checked = true
     const btn = document.getElementById('btn-compose-publicar')
@@ -3603,10 +3762,15 @@
 
     btn.disabled = true; btn.textContent = 'Publicando…'
 
+    const profNome = document.getElementById('compose-prof-nome')?.value.trim() || null
+    const discId   = parseInt(document.getElementById('compose-disc-id')?.value) || null
+
     const { error } = await db.from('arquivos').insert({
       nome: titulo, tipo, fonte: 'web', url, categoria: 'material',
       created_by: currentUser.id,
-      ...(texto && { descricao: texto })
+      ...(texto    && { descricao: texto }),
+      ...(profNome && { professor_nome: profNome }),
+      ...(discId   && { disc_id: discId }),
     })
 
     if (error) {
@@ -4544,5 +4708,9 @@
     </div>
   </div>
 </div>
+<!-- Container toasts feed (estilo WhatsApp) -->
+<div id="feed-notif-container"
+  class="fixed z-[250] flex flex-col gap-2 items-end pointer-events-none"
+  style="bottom:6rem; right:1.25rem; max-width:300px;"></div>
 </body>
 </html>
