@@ -2047,15 +2047,20 @@
     erro.classList.add('hidden')
     btn.disabled = true; btn.textContent = 'Publicando…'
 
+    const profNomeDisc = document.getElementById('mat-disc-prof').value.trim() || null
+    const discIdDisc   = discIdx + 1
+    const folderIdDisc = await garantirPastaDiscProf(discIdDisc, profNomeDisc)
+
     const payload = {
       nome:          document.getElementById('mat-disc-nome').value.trim(),
       tipo:          document.getElementById('mat-disc-tipo').value,
       url:           document.getElementById('mat-disc-url').value.trim(),
-      disc_id:       discIdx + 1,
+      disc_id:       discIdDisc,
       aula_data:     document.getElementById('mat-disc-data').value || null,
-      professor_nome:document.getElementById('mat-disc-prof').value.trim() || null,
+      professor_nome:profNomeDisc,
       descricao_aula:document.getElementById('mat-disc-descricao').value.trim() || null,
       created_by:    currentUser.id,
+      ...(folderIdDisc && { folder_id: folderIdDisc }),
     }
 
     const { data, error } = await db.from('arquivos').insert(payload).select().single()
@@ -2583,6 +2588,52 @@
     if (error) return null
     await carregarSidebarPastas()
     return folder.id
+  }
+
+  // Cria (ou encontra) o caminho: Disciplinas > [disc name] > [prof nome]
+  // Retorna o folder_id mais específico disponível
+  async function garantirPastaDiscProf(discId, profNome) {
+    const discNomes = [
+      'Disc. 1 — Processos Inovadores',
+      'Disc. 2 — Métodos e Pesquisa',
+      'Disc. 3 — Pesquisas e Tecnologias',
+    ]
+    const discNome = discNomes[(discId || 1) - 1] || `Disciplina ${discId}`
+
+    // 1. Pasta raiz "Disciplinas"
+    let { data: roots } = await db.from('folders').select('id').eq('name','Disciplinas').is('parent_id', null).limit(1)
+    let rootId = roots?.[0]?.id
+    if (!rootId) {
+      const { data: nr } = await db.from('folders')
+        .insert({ name:'Disciplinas', tipo:'global', created_by: currentUser.id })
+        .select('id').single()
+      rootId = nr?.id
+      if (!rootId) return null
+    }
+
+    // 2. Pasta da disciplina
+    let { data: discArr } = await db.from('folders').select('id').eq('name', discNome).eq('parent_id', rootId).limit(1)
+    let discFolderId = discArr?.[0]?.id
+    if (!discFolderId) {
+      const { data: nd } = await db.from('folders')
+        .insert({ name: discNome, tipo:'sub', parent_id: rootId, created_by: currentUser.id })
+        .select('id').single()
+      discFolderId = nd?.id
+      if (!discFolderId) return rootId
+    }
+
+    // 3. Pasta do professor (se fornecido)
+    if (!profNome) return discFolderId
+    let { data: profArr } = await db.from('folders').select('id').eq('name', profNome).eq('parent_id', discFolderId).limit(1)
+    let profFolderId = profArr?.[0]?.id
+    if (!profFolderId) {
+      const { data: np } = await db.from('folders')
+        .insert({ name: profNome, tipo:'sub', parent_id: discFolderId, created_by: currentUser.id })
+        .select('id').single()
+      profFolderId = np?.id
+    }
+    await carregarSidebarPastas()
+    return profFolderId || discFolderId
   }
 
   async function carregarFolderSelect() {
@@ -3765,12 +3816,17 @@
     const profNome = document.getElementById('compose-prof-nome')?.value.trim() || null
     const discId   = parseInt(document.getElementById('compose-disc-id')?.value) || null
 
+    // Criar caminho Disciplinas > Disc. X > Professor automaticamente
+    let folderId = null
+    if (discId) folderId = await garantirPastaDiscProf(discId, profNome)
+
     const { error } = await db.from('arquivos').insert({
       nome: titulo, tipo, fonte: 'web', url, categoria: 'material',
       created_by: currentUser.id,
       ...(texto    && { descricao: texto }),
       ...(profNome && { professor_nome: profNome }),
       ...(discId   && { disc_id: discId }),
+      ...(folderId && { folder_id: folderId }),
     })
 
     if (error) {
