@@ -3540,8 +3540,14 @@
     }
   })
 
-  // Popular folder select ao abrir o modal
-  document.getElementById('btn-novo-arquivo').addEventListener('click', () => {
+  // Popular folder select ao abrir o modal — garante pastas das disciplinas
+  document.getElementById('btn-novo-arquivo').addEventListener('click', async () => {
+    // Cria hierarquia de disciplinas se ainda não existir
+    await Promise.all([
+      garantirPastaDiscProf(1, null),
+      garantirPastaDiscProf(2, null),
+      garantirPastaDiscProf(3, null),
+    ])
     carregarFolderSelect()
   }, { capture: true })
 
