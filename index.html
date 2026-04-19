@@ -1420,6 +1420,13 @@
       <!-- Status de salvamento -->
       <span id="leitor-save-status" class="hidden text-xs font-medium px-2 py-1 rounded-lg"
         style="background:rgba(255,255,255,.08); color:rgba(255,255,255,.6);"></span>
+      <!-- Botão ABNT -->
+      <button onclick="togglePainelAbnt()"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors hover:bg-white/10"
+        style="color:#a5f3a5; border:1px solid rgba(165,243,165,.3);" title="Gerador de citações ABNT">
+        <i data-lucide="book-marked" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Citar ABNT</span>
+      </button>
       <button onclick="fecharLeitorPdf()"
         class="p-1.5 rounded-lg transition-colors hover:bg-white/10"
         style="color:rgba(255,255,255,.7);" title="Fechar (Esc)">
@@ -1427,8 +1434,56 @@
       </button>
     </div>
   </div>
-  <!-- Adobe PDF viewer container -->
-  <div id="adobe-dc-view" class="flex-1 w-full overflow-hidden"></div>
+  <!-- Corpo: PDF + painel ABNT lado a lado -->
+  <div class="flex flex-1 overflow-hidden">
+    <div id="adobe-dc-view" class="flex-1 w-full overflow-hidden"></div>
+    <!-- Painel ABNT -->
+    <div id="painel-abnt" class="hidden flex-col shrink-0 overflow-y-auto"
+      style="width:340px;background:#0f172a;border-left:1px solid rgba(255,255,255,.1);">
+      <!-- Header painel -->
+      <div class="px-4 py-3 flex items-center justify-between shrink-0"
+        style="border-bottom:1px solid rgba(255,255,255,.1);background:#1e293b;">
+        <div class="flex items-center gap-2">
+          <i data-lucide="book-marked" class="w-4 h-4" style="color:#a5f3a5;"></i>
+          <span class="text-sm font-bold text-white">Citação ABNT</span>
+        </div>
+        <button onclick="togglePainelAbnt()" class="p-1 rounded hover:bg-white/10 text-white/50">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+      <!-- Busca -->
+      <div class="p-4 shrink-0" style="border-bottom:1px solid rgba(255,255,255,.08);">
+        <label class="block text-xs font-semibold mb-2" style="color:rgba(255,255,255,.5);letter-spacing:.05em;">BUSCAR POR TÍTULO, AUTOR OU DOI</label>
+        <div class="flex gap-2">
+          <input id="abnt-query" type="text" placeholder="Ex: Pierre Lévy Cibercultura…"
+            class="flex-1 text-sm rounded-xl px-3 py-2 outline-none"
+            style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:white;"
+            oninput="agendarBuscaAbnt()"
+            onkeydown="if(event.key==='Enter') buscarAbnt()">
+          <button onclick="buscarAbnt()" class="px-3 py-2 rounded-xl text-xs font-bold"
+            style="background:#166534;color:#a5f3a5;">Buscar</button>
+        </div>
+        <p class="text-[10px] mt-2" style="color:rgba(255,255,255,.3);">Cole um trecho do PDF, título ou DOI — busca automática via CrossRef</p>
+      </div>
+      <!-- Resultados -->
+      <div id="abnt-resultados" class="flex-1 p-3 space-y-3">
+        <p class="text-xs text-center py-8" style="color:rgba(255,255,255,.3);">Digite para buscar uma referência…</p>
+      </div>
+      <!-- Minha Bibliografia -->
+      <div id="abnt-biblio-wrap" style="border-top:1px solid rgba(255,255,255,.1);">
+        <button onclick="toggleBiblio()" class="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold hover:bg-white/5"
+          style="color:#a5f3a5;">
+          <span class="flex items-center gap-1.5"><i data-lucide="list" class="w-3.5 h-3.5"></i>Minha Bibliografia</span>
+          <span id="biblio-count" class="text-white/40"></span>
+        </button>
+        <div id="biblio-lista" class="hidden px-3 pb-3 space-y-2 max-h-64 overflow-y-auto"></div>
+        <div class="hidden px-3 pb-3" id="biblio-export-wrap">
+          <button onclick="exportarBiblio()" class="w-full py-1.5 rounded-lg text-[11px] font-semibold hover:opacity-80"
+            style="background:#1e3a5f;color:#93c5fd;">⬇ Exportar .txt</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="modal-foto-perfil" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
@@ -4024,6 +4079,204 @@
   let   annotationMgr     = null   // annotation manager
   let   annotationTimer   = null   // debounce save
   let   leitorPdfUrl      = null   // URL do PDF aberto
+  let   abntBuscaTimer   = null
+
+  // ── PAINEL ABNT ───────────────────────────────────────
+  window.togglePainelAbnt = () => {
+    const p = document.getElementById('painel-abnt')
+    const aberto = !p.classList.contains('hidden')
+    p.classList.toggle('hidden', aberto)
+    p.classList.toggle('flex', !aberto)
+    if (!aberto) { lucide.createIcons(); renderBiblio() }
+  }
+
+  window.agendarBuscaAbnt = () => {
+    clearTimeout(abntBuscaTimer)
+    abntBuscaTimer = setTimeout(buscarAbnt, 600)
+  }
+
+  window.buscarAbnt = async () => {
+    const q = document.getElementById('abnt-query')?.value?.trim()
+    const res = document.getElementById('abnt-resultados')
+    if (!q || q.length < 5) return
+    res.innerHTML = `<div class="flex justify-center py-8"><svg class="animate-spin w-5 h-5" style="color:#a5f3a5" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="60" stroke-dashoffset="20"/></svg></div>`
+
+    // Detecta DOI
+    const doiMatch = q.match(/10\.\d{4,}\/\S+/)
+    let url = doiMatch
+      ? `https://api.crossref.org/works/${encodeURIComponent(doiMatch[0])}`
+      : `https://api.crossref.org/works?query=${encodeURIComponent(q)}&rows=5&select=DOI,title,author,container-title,published-print,published-online,volume,issue,page,publisher,publisher-location,type,ISBN,edition-number`
+
+    try {
+      const resp = await fetch(url, { headers: { 'User-Agent': 'Heraclito/1.0 (heraclito@uem.br)' } })
+      if (!resp.ok) throw new Error('CrossRef ' + resp.status)
+      const json = await resp.json()
+      const items = doiMatch ? [json.message] : (json.message?.items || [])
+      if (!items.length) { res.innerHTML = `<p class="text-xs text-center py-8" style="color:rgba(255,255,255,.4);">Nenhum resultado encontrado.<br>Tente com o título completo ou DOI.</p>`; return }
+      res.innerHTML = items.map((it, i) => renderAbntCard(it, i)).join('')
+      lucide.createIcons()
+    } catch(e) {
+      res.innerHTML = `<p class="text-xs text-center py-6" style="color:#fca5a5;">Erro ao buscar: ${e.message}</p>`
+    }
+  }
+
+  function fmtAutorAbnt(authors) {
+    if (!authors?.length) return 'AUTOR DESCONHECIDO'
+    return authors.map((a, i) => {
+      const fam = (a.family || '').toUpperCase()
+      const giv = a.given || ''
+      return i === 0 ? `${fam}, ${giv}` : `${fam}, ${giv}`
+    }).join('; ')
+  }
+
+  function fmtAnoAbnt(item) {
+    const dp = item['published-print']?.['date-parts']?.[0] || item['published-online']?.['date-parts']?.[0]
+    return dp?.[0] || 'S.D.'
+  }
+
+  function fmtAbnt(item) {
+    const type = item.type || ''
+    const autores = fmtAutorAbnt(item.author)
+    const titulo  = (item.title?.[0] || 'S.T.').replace(/\.$/, '')
+    const ano     = fmtAnoAbnt(item)
+    const doi     = item.DOI ? `DOI: ${item.DOI}.` : ''
+
+    if (type === 'journal-article') {
+      const journal = item['container-title']?.[0] || 'S.L.'
+      const vol  = item.volume  ? `v. ${item.volume},` : ''
+      const num  = item.issue   ? `n. ${item.issue},`  : ''
+      const pag  = item.page    ? `p. ${item.page},`   : ''
+      return `${autores}. ${titulo}. **${journal}**, ${vol} ${num} ${pag} ${ano}. ${doi}`.replace(/\s+/g,' ').replace(/ ,/g,',').trim()
+    }
+    if (type === 'book' || type === 'monograph') {
+      const local = item['publisher-location'] || 'S.L.'
+      const edit  = item.publisher || 'S.N.'
+      const ed    = item['edition-number'] ? `${item['edition-number']}. ed. ` : ''
+      return `${autores}. **${titulo}**. ${ed}${local}: ${edit}, ${ano}. ${doi}`.replace(/\s+/g,' ').trim()
+    }
+    if (type === 'book-chapter') {
+      const livro = item['container-title']?.[0] || 'S.T.'
+      const local = item['publisher-location'] || 'S.L.'
+      const edit  = item.publisher || 'S.N.'
+      const pag   = item.page ? `p. ${item.page}.` : ''
+      return `${autores}. ${titulo}. In: **${livro}**. ${local}: ${edit}, ${ano}. ${pag} ${doi}`.replace(/\s+/g,' ').trim()
+    }
+    // Genérico
+    return `${autores}. ${titulo}. ${ano}. ${doi}`.replace(/\s+/g,' ').trim()
+  }
+
+  function renderAbntCard(item, idx) {
+    const abnt = fmtAbnt(item)
+    const abntHtml = abnt.replace(/\*\*(.+?)\*\*/g, '<em>$1</em>')
+    const abntTxt  = abnt.replace(/\*\*/g, '')
+    const titulo   = item.title?.[0] || 'Sem título'
+    const tipo     = ({ 'journal-article':'Artigo', 'book':'Livro', 'book-chapter':'Capítulo', 'proceedings-article':'Anais' })[item.type] || 'Ref.'
+    const corTipo  = ({ 'journal-article':'#6ee7b7', 'book':'#93c5fd', 'book-chapter':'#c4b5fd' })[item.type] || '#e5e7eb'
+    const doi      = item.DOI || ''
+    return `
+    <div class="rounded-xl p-3 space-y-2" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
+      <div class="flex items-start justify-between gap-2">
+        <p class="text-xs font-semibold leading-snug" style="color:white;">${titulo.slice(0,100)}${titulo.length>100?'…':''}</p>
+        <span class="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded" style="background:rgba(255,255,255,.1);color:${corTipo};">${tipo}</span>
+      </div>
+      <p class="text-[11px] leading-relaxed" style="color:rgba(255,255,255,.55);">${abntHtml}</p>
+      ${doi ? `<a href="https://doi.org/${doi}" target="_blank" class="text-[10px]" style="color:#6ee7b7;">🔗 ${doi}</a>` : ''}
+      <div class="flex gap-2 pt-1">
+        <button onclick="copiarAbnt(${idx})" data-abnt="${encodeURIComponent(abntTxt)}"
+          class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-semibold hover:opacity-80"
+          style="background:#14532d;color:#a5f3a5;">
+          <i data-lucide="copy" class="w-3 h-3"></i>Copiar
+        </button>
+        <button onclick="salvarBiblio(${idx})" data-abnt="${encodeURIComponent(abntTxt)}" data-titulo="${encodeURIComponent(titulo.slice(0,80))}"
+          class="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-semibold hover:opacity-80"
+          style="background:#1e3a5f;color:#93c5fd;">
+          <i data-lucide="bookmark-plus" class="w-3 h-3"></i>Salvar
+        </button>
+      </div>
+    </div>`
+  }
+
+  window.copiarAbnt = (idx) => {
+    const btn = document.querySelectorAll('[data-abnt]')[idx * 2]
+    if (!btn) return
+    const txt = decodeURIComponent(btn.dataset.abnt)
+    navigator.clipboard.writeText(txt).then(() => {
+      const orig = btn.innerHTML
+      btn.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>Copiado!'
+      lucide.createIcons()
+      setTimeout(() => { btn.innerHTML = orig; lucide.createIcons() }, 2000)
+    })
+  }
+
+  window.salvarBiblio = (idx) => {
+    const btns = document.querySelectorAll('[data-abnt]')
+    const btn  = btns[idx * 2 + 1]
+    if (!btn) return
+    const abnt   = decodeURIComponent(btn.dataset.abnt)
+    const titulo = decodeURIComponent(btn.dataset.titulo)
+    const key    = `biblio_${currentUser?.id || 'anon'}`
+    const lista  = JSON.parse(localStorage.getItem(key) || '[]')
+    if (lista.some(e => e.abnt === abnt)) {
+      btn.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>Já salvo'; lucide.createIcons()
+      setTimeout(() => { btn.innerHTML = '<i data-lucide="bookmark-plus" class="w-3 h-3"></i>Salvar'; lucide.createIcons() }, 2000)
+      return
+    }
+    lista.unshift({ abnt, titulo, ts: new Date().toISOString() })
+    localStorage.setItem(key, JSON.stringify(lista))
+    renderBiblio()
+    btn.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>Salvo!'; lucide.createIcons()
+    setTimeout(() => { btn.innerHTML = '<i data-lucide="bookmark-plus" class="w-3 h-3"></i>Salvar'; lucide.createIcons() }, 2000)
+  }
+
+  function biblioKey() { return `biblio_${currentUser?.id || 'anon'}` }
+
+  function renderBiblio() {
+    const lista = JSON.parse(localStorage.getItem(biblioKey()) || '[]')
+    const count = document.getElementById('biblio-count')
+    if (count) count.textContent = lista.length ? `${lista.length}` : ''
+    const el = document.getElementById('biblio-lista')
+    if (!el) return
+    if (!lista.length) { el.innerHTML = `<p class="text-xs text-center py-4" style="color:rgba(255,255,255,.3);">Nenhuma referência salva ainda.</p>`; return }
+    el.innerHTML = lista.map((e, i) => `
+      <div class="rounded-lg p-2.5 text-[11px] leading-relaxed" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.65);">
+        ${e.abnt.replace(/\*\*/g,'')}
+        <div class="flex gap-1 mt-1.5">
+          <button onclick="copiarBiblio(${i})" data-bib="${encodeURIComponent(e.abnt.replace(/\*\*/g,''))}"
+            class="px-2 py-0.5 rounded text-[10px] hover:opacity-80" style="background:#14532d;color:#a5f3a5;">Copiar</button>
+          <button onclick="removerBiblio(${i})"
+            class="px-2 py-0.5 rounded text-[10px] hover:opacity-80" style="background:#7f1d1d;color:#fca5a5;">Remover</button>
+        </div>
+      </div>`).join('')
+    lucide.createIcons()
+  }
+
+  window.toggleBiblio = () => {
+    const el = document.getElementById('biblio-lista')
+    el.classList.toggle('hidden')
+    if (!el.classList.contains('hidden')) renderBiblio()
+  }
+
+  window.copiarBiblio = (i) => {
+    const lista = JSON.parse(localStorage.getItem(biblioKey()) || '[]')
+    navigator.clipboard.writeText(lista[i]?.abnt?.replace(/\*\*/g,'') || '')
+  }
+
+  window.removerBiblio = (i) => {
+    const lista = JSON.parse(localStorage.getItem(biblioKey()) || '[]')
+    lista.splice(i, 1)
+    localStorage.setItem(biblioKey(), JSON.stringify(lista))
+    renderBiblio()
+  }
+
+  window.exportarBiblio = () => {
+    const lista = JSON.parse(localStorage.getItem(biblioKey()) || '[]')
+    if (!lista.length) return
+    const txt = 'REFERÊNCIAS\n\n' + lista.map(e => e.abnt.replace(/\*\*/g,'')).join('\n\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }))
+    a.download = 'referencias_abnt.txt'
+    a.click()
+  }
 
   function setLeitorStatus(msg, cor) {
     const el = document.getElementById('leitor-save-status')
@@ -4130,10 +4383,24 @@
 
       // Auto-salvar ao anotar (debounce 2s)
       annotationMgr.registerEventListener(
-        function() {
+        function(event) {
           setLeitorStatus('💾 Salvando…', 'rgba(255,255,255,.5)')
           clearTimeout(annotationTimer)
           annotationTimer = setTimeout(salvarAnotacoes, 2000)
+          // Se for highlight, popula busca ABNT automaticamente
+          if (event?.type === 'ANNOTATION_ADDED') {
+            const body = event.data?.body
+            const txt  = (Array.isArray(body) ? body.find(b => b.value) : body)?.value?.trim()
+            if (txt && txt.length > 10) {
+              const inp = document.getElementById('abnt-query')
+              if (inp && !inp.value) {
+                inp.value = txt.slice(0, 200)
+                const painel = document.getElementById('painel-abnt')
+                if (painel.classList.contains('hidden')) togglePainelAbnt()
+                agendarBuscaAbnt()
+              }
+            }
+          }
         },
         { listenOn: ['ANNOTATION_ADDED', 'ANNOTATION_UPDATED', 'ANNOTATION_DELETED'] }
       )
