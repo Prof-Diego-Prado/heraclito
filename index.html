@@ -4075,22 +4075,29 @@
     const fullUrl = url.startsWith('http') ? url : new URL(url, location.href).href
     const fileId  = url.replace(/[^a-zA-Z0-9]/g,'').slice(-32) || 'pdf'
 
-    // Buscar o PDF como ArrayBuffer (mesmo domínio → sem CORS)
-    // e passar o binário direto para o Adobe SDK
-    let pdfPromise
-    try {
-      const resp = await fetch(fullUrl)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const buffer = await resp.arrayBuffer()
-    } catch(fetchErr) {
-      setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
-      return
-    }
-
     adobeViewer = new AdobeDC.View({ clientId: ADOBE_CLIENT_ID, divId: 'adobe-dc-view' })
 
+    // URLs externas (Google Drive, DOI, etc.) → modo URL direto (sem fetch CORS)
+    // URLs do mesmo domínio → ArrayBuffer para suportar anotações
+    const isExterno = fullUrl.startsWith('http') && !fullUrl.startsWith(location.origin)
+    let conteudo
+    if (isExterno) {
+      conteudo = { location: { url: fullUrl } }
+      setLeitorStatus('')
+    } else {
+      try {
+        const resp = await fetch(fullUrl)
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        const buffer = await resp.arrayBuffer()
+        conteudo = { promise: Promise.resolve(buffer) }
+      } catch(fetchErr) {
+        setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
+        return
+      }
+    }
+
     const previewPromise = adobeViewer.previewFile(
-      { content: { promise: pdfPromise }, metaData: { fileName: titulo, id: fileId } },
+      { content: conteudo, metaData: { fileName: titulo, id: fileId } },
       {
         embedMode: 'FULL_WINDOW',
         showAnnotationTools: true,
