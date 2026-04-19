@@ -1463,7 +1463,7 @@
           <button onclick="buscarAbnt()" class="px-3 py-2 rounded-xl text-xs font-bold"
             style="background:#166534;color:#a5f3a5;">Buscar</button>
         </div>
-        <p class="text-[10px] mt-2" style="color:rgba(255,255,255,.3);">Cole um trecho do PDF, título ou DOI — busca automática via OpenAlex</p>
+        <p class="text-[10px] mt-2" style="color:rgba(255,255,255,.3);">Cole um trecho do PDF, título ou DOI — busca via Semantic Scholar</p>
       </div>
       <!-- Resultados -->
       <div id="abnt-resultados" class="flex-1 p-3 space-y-3">
@@ -4101,20 +4101,22 @@
     if (!q || q.length < 5) return
     res.innerHTML = `<div class="flex justify-center py-8"><svg class="animate-spin w-5 h-5" style="color:#a5f3a5" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="60" stroke-dashoffset="20"/></svg></div>`
 
-    // Detecta DOI
-    const doiMatch = q.match(/10\.\d{4,}\/\S+/)
-    const BASE = 'https://api.openalex.org'
-    const MAIL = 'mailto=heraclito@uem.br'
+    const FIELDS = 'title,authors,year,venue,journal,externalIds,openAccessPdf,publicationTypes'
+    const BASE   = 'https://api.semanticscholar.org/graph/v1/paper'
+    const doiMatch = q.match(/10\.\d{4,}\/[^\s]+/)
     let url = doiMatch
-      ? `${BASE}/works/https://doi.org/${encodeURIComponent(doiMatch[0])}?${MAIL}`
-      : `${BASE}/works?search=${encodeURIComponent(q)}&per-page=5&${MAIL}`
+      ? `${BASE}/DOI:${encodeURIComponent(doiMatch[0])}?fields=${FIELDS}`
+      : `${BASE}/search?query=${encodeURIComponent(q)}&limit=5&fields=${FIELDS}`
 
     try {
       const resp = await fetch(url)
-      if (!resp.ok) throw new Error('OpenAlex ' + resp.status)
+      if (!resp.ok) throw new Error(`Semantic Scholar ${resp.status}`)
       const json = await resp.json()
-      const items = doiMatch ? [json] : (json.results || [])
-      if (!items.length) { res.innerHTML = `<p class="text-xs text-center py-8" style="color:rgba(255,255,255,.4);">Nenhum resultado encontrado.<br>Tente com o título completo ou DOI.</p>`; return }
+      const items = doiMatch ? [json] : (json.data || [])
+      if (!items.length) {
+        res.innerHTML = `<p class="text-xs text-center py-8" style="color:rgba(255,255,255,.4);">Nenhum resultado encontrado.<br>Tente com o título completo ou DOI.</p>`
+        return
+      }
       res.innerHTML = items.map((it, i) => renderAbntCard(it, i)).join('')
       lucide.createIcons()
     } catch(e) {
@@ -4122,63 +4124,62 @@
     }
   }
 
-  // OpenAlex: authorships[].author.display_name → "Pierre Lévy" → "LÉVY, Pierre"
-  function fmtAutorAbnt(authorships) {
-    if (!authorships?.length) return 'AUTOR DESCONHECIDO'
-    return authorships.slice(0, 3).map(a => {
-      const nome = a.author?.display_name || ''
-      const partes = nome.trim().split(/\s+/)
+  // Semantic Scholar: authors[].name → "Pierre Lévy" → "LÉVY, Pierre"
+  function fmtAutorAbnt(authors) {
+    if (!authors?.length) return 'AUTOR DESCONHECIDO'
+    return authors.slice(0, 3).map(a => {
+      const partes = (a.name || '').trim().split(/\s+/)
       if (partes.length === 1) return partes[0].toUpperCase()
       const sobrenome = partes[partes.length - 1].toUpperCase()
       const prenome   = partes.slice(0, -1).join(' ')
       return `${sobrenome}, ${prenome}`
-    }).join('; ') + (authorships.length > 3 ? ' et al.' : '')
+    }).join('; ') + (authors.length > 3 ? ' et al.' : '')
   }
 
   function fmtAbnt(item) {
-    const type    = item.type || ''
-    const autores = fmtAutorAbnt(item.authorships)
-    const titulo  = (item.title || item.display_name || 'S.T.').replace(/\.$/, '')
-    const ano     = item.publication_year || 'S.D.'
-    const doiRaw  = item.doi ? item.doi.replace('https://doi.org/', '') : ''
-    const doi     = doiRaw ? `DOI: ${doiRaw}.` : ''
+    const types   = item.publicationTypes || []
+    const autores = fmtAutorAbnt(item.authors)
+    const titulo  = (item.title || 'S.T.').replace(/\.$/, '')
+    const ano     = item.year || 'S.D.'
+    const doi     = item.externalIds?.DOI ? `DOI: ${item.externalIds.DOI}.` : ''
+    const journal = item.journal?.name || item.venue || ''
+    const vol     = item.journal?.volume ? `v. ${item.journal.volume},` : ''
+    const pag     = item.journal?.pages  ? `p. ${item.journal.pages},`  : ''
 
-    const loc     = item.primary_location
-    const journal = loc?.source?.display_name || ''
-    const edit    = loc?.source?.host_organization_name || item.publisher || 'S.N.'
-    const vol     = item.biblio?.volume  ? `v. ${item.biblio.volume},`  : ''
-    const num     = item.biblio?.issue   ? `n. ${item.biblio.issue},`   : ''
-    const fp      = item.biblio?.first_page
-    const lp      = item.biblio?.last_page
-    const pag     = fp ? `p. ${fp}${lp && lp !== fp ? `-${lp}` : ''},` : ''
-
-    if (type === 'journal-article' || type === 'article') {
-      return `${autores}. ${titulo}. **${journal || 'S.L.'}**, ${vol} ${num} ${pag} ${ano}. ${doi}`.replace(/\s+/g,' ').replace(/ ,/g,',').trim()
+    if (types.includes('JournalArticle') || types.includes('Review')) {
+      return `${autores}. ${titulo}. **${journal || 'S.L.'}**, ${vol} ${pag} ${ano}. ${doi}`.replace(/\s+/g,' ').replace(/ ,/g,',').trim()
     }
-    if (type === 'book' || type === 'monograph') {
-      const local = item.locations?.[0]?.source?.host_organization_name || 'S.L.'
-      return `${autores}. **${titulo}**. ${local}: ${edit}, ${ano}. ${doi}`.replace(/\s+/g,' ').trim()
+    if (types.includes('Book')) {
+      return `${autores}. **${titulo}**. S.L.: S.N., ${ano}. ${doi}`.replace(/\s+/g,' ').trim()
     }
-    if (type === 'book-chapter') {
-      const livro = loc?.source?.display_name || 'S.T.'
-      return `${autores}. ${titulo}. In: **${livro}**. ${edit}, ${ano}. ${pag} ${doi}`.replace(/\s+/g,' ').trim()
+    if (types.includes('BookSection')) {
+      return `${autores}. ${titulo}. In: **${journal || 'S.T.'}**. S.L.: S.N., ${ano}. ${pag} ${doi}`.replace(/\s+/g,' ').trim()
     }
-    if (type === 'dissertation' || type === 'thesis') {
-      return `${autores}. **${titulo}**. ${ano}. Tese (Doutorado) — ${edit}. ${doi}`.replace(/\s+/g,' ').trim()
+    if (types.includes('Thesis')) {
+      return `${autores}. **${titulo}**. ${ano}. Tese — ${journal || 'S.N.'}. ${doi}`.replace(/\s+/g,' ').trim()
     }
-    // Genérico / proceedings
+    if (types.includes('Conference')) {
+      return `${autores}. ${titulo}. In: **${journal || 'Anais…'}**, ${ano}. ${pag} ${doi}`.replace(/\s+/g,' ').trim()
+    }
+    // Genérico
     return `${autores}. ${titulo}. ${journal ? `**${journal}**,` : ''} ${ano}. ${doi}`.replace(/\s+/g,' ').trim()
   }
 
   function renderAbntCard(item, idx) {
-    const abnt = fmtAbnt(item)
+    const abnt    = fmtAbnt(item)
     const abntHtml = abnt.replace(/\*\*(.+?)\*\*/g, '<em>$1</em>')
     const abntTxt  = abnt.replace(/\*\*/g, '')
-    const titulo   = item.title || item.display_name || 'Sem título'
-    const tipo     = ({ 'journal-article':'Artigo', 'article':'Artigo', 'book':'Livro', 'book-chapter':'Capítulo', 'proceedings-article':'Anais', 'dissertation':'Tese', 'thesis':'Tese' })[item.type] || 'Ref.'
-    const corTipo  = ({ 'journal-article':'#6ee7b7', 'article':'#6ee7b7', 'book':'#93c5fd', 'book-chapter':'#c4b5fd', 'dissertation':'#fde68a', 'thesis':'#fde68a' })[item.type] || '#e5e7eb'
-    const doiRaw   = item.doi ? item.doi.replace('https://doi.org/', '') : ''
-    const oaUrl    = item.open_access?.oa_url || ''
+    const titulo   = item.title || 'Sem título'
+    const types    = item.publicationTypes || []
+    const tipo     = types.includes('JournalArticle')||types.includes('Review') ? 'Artigo'
+                   : types.includes('Book')        ? 'Livro'
+                   : types.includes('BookSection') ? 'Capítulo'
+                   : types.includes('Conference')  ? 'Anais'
+                   : types.includes('Thesis')      ? 'Tese'
+                   : 'Ref.'
+    const corTipo  = tipo==='Artigo' ? '#6ee7b7' : tipo==='Livro' ? '#93c5fd' : tipo==='Capítulo' ? '#c4b5fd' : tipo==='Tese' ? '#fde68a' : '#e5e7eb'
+    const doiRaw   = item.externalIds?.DOI || ''
+    const oaUrl    = item.openAccessPdf?.url || ''
     return `
     <div class="rounded-xl p-3 space-y-2" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
       <div class="flex items-start justify-between gap-2">
@@ -4188,7 +4189,7 @@
       <p class="text-[11px] leading-relaxed" style="color:rgba(255,255,255,.55);">${abntHtml}</p>
       <div class="flex gap-3 flex-wrap">
         ${doiRaw ? `<a href="https://doi.org/${doiRaw}" target="_blank" class="text-[10px]" style="color:#6ee7b7;">🔗 DOI</a>` : ''}
-        ${oaUrl  ? `<a href="${oaUrl}" target="_blank" class="text-[10px]" style="color:#fde68a;">📄 Acesso aberto</a>` : ''}
+        ${oaUrl  ? `<a href="${oaUrl}" target="_blank" class="text-[10px]" style="color:#fde68a;">📄 PDF gratuito</a>` : ''}
       </div>
       <div class="flex gap-2 pt-1">
         <button onclick="copiarAbnt(${idx})" data-abnt="${encodeURIComponent(abntTxt)}"
