@@ -1928,7 +1928,10 @@
       discArquivosCache[discId] = data || []
       renderMatDisc(discIdx, data || [])
     } catch(e) {
-      container.innerHTML = `<p class="text-sm text-center py-8" style="color:var(--muted);">Erro ao carregar materiais.</p>`
+      const msg = e?.message?.includes('column') || e?.message?.includes('disc_id')
+        ? 'Execute o SQL <code>disciplina-arquivos.sql</code> no Supabase para ativar esta seção.'
+        : (e?.message || 'Erro ao carregar materiais.')
+      container.innerHTML = `<p class="text-sm text-center py-8 px-4" style="color:var(--muted);">${msg}</p>`
     }
   }
 
@@ -2055,6 +2058,7 @@
       nome:          document.getElementById('mat-disc-nome').value.trim(),
       tipo:          document.getElementById('mat-disc-tipo').value,
       url:           document.getElementById('mat-disc-url').value.trim(),
+      fonte:         'web',
       disc_id:       discIdDisc,
       aula_data:     document.getElementById('mat-disc-data').value || null,
       professor_nome:profNomeDisc,
