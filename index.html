@@ -4061,55 +4061,35 @@
     lucide.createIcons()
     setLeitorStatus('Carregando…', 'rgba(255,255,255,.5)')
 
-    // Limpar viewer anterior
-    const dcView = document.getElementById('adobe-dc-view')
-    dcView.innerHTML = ''
-    annotationMgr = null
-
-    // Resolver URL absoluta
-    const fullUrl = url.startsWith('http') ? url : new URL(url, location.href).href
-
-    // ── Google Drive: usa iframe nativo (Adobe SDK não suporta redirecionamentos Drive)
-    const driveIdMatch = fullUrl.match(/[?&]id=([a-zA-Z0-9_-]{10,})/) ||
-                         fullUrl.match(/\/d\/([a-zA-Z0-9_-]{10,})\//)
-    if (driveIdMatch) {
-      const driveId = driveIdMatch[1]
-      const previewUrl = `https://drive.google.com/file/d/${driveId}/preview`
-      dcView.innerHTML = `<iframe src="${previewUrl}" class="w-full h-full" style="border:none;" allowfullscreen></iframe>`
-      setLeitorStatus('')
-      return
-    }
-
-    // ── Arquivos do mesmo domínio → ArrayBuffer → Adobe (suporta anotações)
-    const isExterno = fullUrl.startsWith('http') && !fullUrl.startsWith(location.origin)
-    let conteudo
-    if (isExterno) {
-      // Outros externos → Adobe URL mode
-      conteudo = { location: { url: fullUrl } }
-      setLeitorStatus('')
-    } else {
-      try {
-        const resp = await fetch(fullUrl)
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-        const buffer = await resp.arrayBuffer()
-        conteudo = { promise: Promise.resolve(buffer) }
-      } catch(fetchErr) {
-        setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
-        return
-      }
-    }
-
     // Aguardar SDK estar pronto
     await new Promise(resolve => {
       if (window.AdobeDC) { resolve(); return }
       document.addEventListener('adobe_dc_view_sdk.ready', resolve, { once: true })
     })
 
-    const fileId = url.replace(/[^a-zA-Z0-9]/g,'').slice(-32) || 'pdf'
+    // Limpar viewer anterior
+    document.getElementById('adobe-dc-view').innerHTML = ''
+    annotationMgr = null
+
+    // Resolver URL absoluta
+    const fullUrl = url.startsWith('http') ? url : new URL(url, location.href).href
+    const fileId  = url.replace(/[^a-zA-Z0-9]/g,'').slice(-32) || 'pdf'
+
+    // Buscar o PDF como ArrayBuffer e passar para o Adobe SDK
+    let pdfBuffer
+    try {
+      const resp = await fetch(fullUrl, { credentials: 'omit' })
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      pdfBuffer = await resp.arrayBuffer()
+    } catch(fetchErr) {
+      setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
+      return
+    }
+
     adobeViewer = new AdobeDC.View({ clientId: ADOBE_CLIENT_ID, divId: 'adobe-dc-view' })
 
     const previewPromise = adobeViewer.previewFile(
-      { content: conteudo, metaData: { fileName: titulo, id: fileId } },
+      { content: { promise: Promise.resolve(pdfBuffer) }, metaData: { fileName: titulo, id: fileId } },
       {
         embedMode: 'FULL_WINDOW',
         showAnnotationTools: true,
