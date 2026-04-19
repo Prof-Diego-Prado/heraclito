@@ -436,6 +436,9 @@
           <button onclick="abrirFotoPerfil()" class="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm hover:bg-[#F0EDE6] transition-colors" style="color:var(--text);">
             <i data-lucide="camera" class="w-4 h-4 shrink-0" style="color:var(--primary);"></i>Alterar foto
           </button>
+          <button onclick="abrirAlterarNome()" class="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm hover:bg-[#F0EDE6] transition-colors" style="color:var(--text);">
+            <i data-lucide="user-pen" class="w-4 h-4 shrink-0" style="color:var(--primary);"></i>Alterar nome
+          </button>
           <button onclick="abrirAlterarUsername()" class="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm hover:bg-[#F0EDE6] transition-colors" style="color:var(--text);">
             <i data-lucide="at-sign" class="w-4 h-4 shrink-0" style="color:var(--primary);"></i>Alterar nome de usuário
           </button>
@@ -1465,6 +1468,31 @@
 <!-- ═══════════════════════════════════════════════════════
      MODAL ALTERAR USERNAME
 ═══════════════════════════════════════════════════════ -->
+<div id="modal-alterar-nome" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2" style="color:var(--text);">
+        <i data-lucide="user-pen" class="w-4 h-4" style="color:var(--primary);"></i>Alterar nome
+      </p>
+      <button onclick="document.getElementById('modal-alterar-nome').classList.remove('flex');document.getElementById('modal-alterar-nome').classList.add('hidden')" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome completo</label>
+        <input type="text" id="novo-nome-input" class="input-field" placeholder="Ex: Maria Silva" maxlength="80" autocomplete="off">
+      </div>
+      <div id="alterar-nome-erro" class="hidden text-sm rounded-xl px-3 py-2.5"
+        style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA;"></div>
+      <button id="btn-salvar-nome" onclick="salvarNome()"
+        class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold">
+        Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="modal-alterar-username" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
   <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
     <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
@@ -4126,6 +4154,36 @@
   }
 
   document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharLeitorPdf?.() })
+
+  // ── ALTERAR NOME ─────────────────────────────────────
+  window.abrirAlterarNome = () => {
+    document.getElementById('user-chip-menu').classList.add('hidden')
+    const modal = document.getElementById('modal-alterar-nome')
+    const input = document.getElementById('novo-nome-input')
+    const erroEl = document.getElementById('alterar-nome-erro')
+    input.value = currentProfile?.name || ''
+    erroEl.classList.add('hidden')
+    modal.classList.remove('hidden')
+    modal.classList.add('flex')
+    lucide.createIcons()
+    input.focus()
+  }
+
+  window.salvarNome = async () => {
+    const btn   = document.getElementById('btn-salvar-nome')
+    const erroEl= document.getElementById('alterar-nome-erro')
+    const novoNome = document.getElementById('novo-nome-input').value.trim()
+    erroEl.classList.add('hidden')
+    if (!novoNome) { erroEl.textContent = 'Digite um nome.'; erroEl.classList.remove('hidden'); return }
+    btn.disabled = true; btn.textContent = 'Salvando…'
+    const { error } = await db.from('users').update({ name: novoNome }).eq('id', currentUser.id)
+    btn.disabled = false; btn.textContent = 'Salvar'
+    if (error) { erroEl.textContent = error.message; erroEl.classList.remove('hidden'); return }
+    currentProfile.name = novoNome
+    document.getElementById('user-name').textContent = novoNome
+    document.getElementById('modal-alterar-nome').classList.remove('flex')
+    document.getElementById('modal-alterar-nome').classList.add('hidden')
+  }
 
   // ── ALTERAR USERNAME ─────────────────────────────────
   window.abrirAlterarUsername = () => {
