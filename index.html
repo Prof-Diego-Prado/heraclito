@@ -4407,6 +4407,7 @@
       arquivo: 'castells-m-a-sociedade-em-rede.pdf',
       titulo:  'A Sociedade em Rede',
       autor:   'Manuel Castells',
+      busca:   'A Sociedade em Rede Castells',
       cor:     'linear-gradient(135deg,#1e3a5f,#2d6a9f)',
       corTexto:'#bfdbfe',
     },
@@ -4414,6 +4415,7 @@
       arquivo: 'castells_redes-de-indignacao-e-esperanca.pdf',
       titulo:  'Redes de Indignação e Esperança',
       autor:   'Manuel Castells',
+      busca:   'Redes de Indignacao e Esperanca Castells',
       cor:     'linear-gradient(135deg,#3b1f5e,#7c3aed)',
       corTexto:'#ddd6fe',
     },
@@ -4421,28 +4423,65 @@
       arquivo: 'cibercultura-pierre-levy.pdf',
       titulo:  'Cibercultura',
       autor:   'Pierre Lévy',
+      busca:   'Cibercultura Pierre Levy',
       cor:     'linear-gradient(135deg,#064e3b,#059669)',
       corTexto:'#a7f3d0',
     },
+    {
+      arquivo: 'Metodologia e técnicas de pesquisa nas áreas de ciências Humanas.pdf',
+      titulo:  'Metodologia e Técnicas de Pesquisa nas Ciências Humanas',
+      autor:   'Ivani Fazenda',
+      busca:   'Metodologia tecnicas pesquisa ciencias humanas Fazenda',
+      cor:     'linear-gradient(135deg,#7c2d12,#ea580c)',
+      corTexto:'#fed7aa',
+    },
+    {
+      arquivo: 'Sociedadecansaco.pdf',
+      titulo:  'Sociedade do Cansaço',
+      autor:   'Byung-Chul Han',
+      busca:   'Sociedade Cansaco Byung-Chul Han',
+      cor:     'linear-gradient(135deg,#1c1917,#57534e)',
+      corTexto:'#d6d3d1',
+    },
   ]
+
+  async function buscarCapaOpenLibrary(busca, imgId) {
+    try {
+      const q = encodeURIComponent(busca)
+      const r = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1&fields=cover_i`)
+      const j = await r.json()
+      const coverId = j?.docs?.[0]?.cover_i
+      if (coverId) {
+        const img = document.getElementById(imgId)
+        if (img) img.src = `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`
+      }
+    } catch(_) { /* mantém fallback */ }
+  }
 
   async function carregarBiblioteca() {
     const container = document.getElementById('biblioteca-container')
 
     container.innerHTML = `
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        ${BIBLIOTECA_LIVROS.map(l => {
-          const url  = BIBLIOTECA_BASE + l.arquivo
+        ${BIBLIOTECA_LIVROS.map((l, i) => {
+          const url     = BIBLIOTECA_BASE + encodeURIComponent(l.arquivo)
           const nomeEsc = l.titulo.replace(/'/g,"\\'")
+          const imgId   = `capa-livro-${i}`
           return `
           <div class="group rounded-2xl overflow-hidden transition-shadow hover:shadow-lg cursor-pointer"
             style="background:var(--surface); border:1px solid var(--border);"
             onclick="abrirLeitorPdf('${url}','${nomeEsc}')">
-            <div class="aspect-[3/4] flex flex-col items-center justify-center p-4 text-center relative"
-              style="background:${l.cor};">
-              <i data-lucide="book-open" class="w-10 h-10 mb-3 opacity-40" style="color:${l.corTexto};"></i>
-              <p class="text-sm font-bold leading-snug" style="color:white;">${l.titulo}</p>
-              <p class="text-xs mt-1.5 opacity-75" style="color:${l.corTexto};">${l.autor}</p>
+            <div class="aspect-[3/4] overflow-hidden relative" style="background:${l.cor};">
+              <img id="${imgId}" src="" alt="${l.titulo}"
+                class="w-full h-full object-cover absolute inset-0 transition-transform group-hover:scale-105"
+                style="display:none;"
+                onload="this.style.display='block';this.nextElementSibling.style.display='none'"
+                onerror="this.style.display='none'">
+              <div class="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                <i data-lucide="book-open" class="w-10 h-10 mb-3 opacity-40" style="color:${l.corTexto};"></i>
+                <p class="text-sm font-bold leading-snug" style="color:white;">${l.titulo}</p>
+                <p class="text-xs mt-1.5 opacity-75" style="color:${l.corTexto};">${l.autor}</p>
+              </div>
             </div>
             <div class="p-3">
               <p class="text-xs font-semibold line-clamp-1 leading-snug mb-2.5" style="color:var(--text);">${l.autor}</p>
@@ -4459,10 +4498,13 @@
                 </a>
               </div>
             </div>
-            </div>`
-          }).join('')}
-        </div>`
+          </div>`
+        }).join('')}
+      </div>`
+
     lucide.createIcons()
+    // Busca capas em paralelo após renderizar
+    BIBLIOTECA_LIVROS.forEach((l, i) => buscarCapaOpenLibrary(l.busca, `capa-livro-${i}`))
   }
 
   window.removerAula = async (id) => {
