@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Referências ABNT — Heráclito</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="stylesheet" href="referencias.css">
+</head>
+<body class="bg-slate-50">
+
+<!-- Header -->
+<header class="bg-indigo-700 text-white px-6 py-3 flex items-center justify-between shadow-md">
+  <div class="flex items-center gap-2">
+    <i data-lucide="book-open" class="w-5 h-5"></i>
+    <span class="font-semibold text-lg">Referências ABNT</span>
+    <span class="text-indigo-300 text-sm ml-1">— Heráclito</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <span id="auth-badge" class="text-xs font-medium text-indigo-300">○ Verificando…</span>
+    <button id="btn-logout" class="hidden text-xs bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded transition-colors">
+      Sair
+    </button>
+  </div>
+</header>
+
+<!-- Login Panel -->
+<div id="login-panel" class="hidden max-w-sm mx-auto mt-16 bg-white rounded-2xl shadow-lg p-8 border border-slate-200">
+  <div class="text-center mb-6">
+    <i data-lucide="lock" class="w-8 h-8 text-indigo-500 mx-auto mb-2"></i>
+    <h2 class="text-lg font-semibold text-gray-800">Entrar na plataforma</h2>
+    <p class="text-sm text-gray-500 mt-1">Use suas credenciais do Heráclito</p>
+  </div>
+  <div class="space-y-3">
+    <input id="login-email" type="email" placeholder="seu@email.com"
+      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+    <input id="login-senha" type="password" placeholder="Senha"
+      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+    <p id="login-erro" class="text-xs text-red-500 min-h-[16px]"></p>
+    <button id="btn-login"
+      class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-sm transition-colors">
+      Entrar
+    </button>
+  </div>
+</div>
+
+<!-- Main Panel -->
+<div id="main-panel" class="hidden max-w-7xl mx-auto px-4 py-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Coluna esquerda: Formulário -->
+    <div class="space-y-4">
+
+      <!-- Upload PDF -->
+      <div class="bg-white rounded-xl border border-dashed border-gray-300 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i> Extrair metadados do PDF
+        </p>
+        <div id="pdf-dropzone" class="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
+          <i data-lucide="file-text" class="w-8 h-8 text-gray-300 mx-auto mb-2"></i>
+          <p class="text-sm text-gray-500">Arraste o PDF aqui ou <span class="text-indigo-600 font-medium">clique para selecionar</span></p>
+          <p class="text-xs text-gray-400 mt-1">Extrai título, autor, ano e DOI automaticamente</p>
+        </div>
+        <input id="pdf-input" type="file" accept=".pdf" class="hidden">
+        <p id="pdf-status" class="text-xs mt-2 min-h-[16px]"></p>
+      </div>
+
+      <!-- Formulário -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Dados da referência
+        </p>
+
+        <form id="form-ref" class="space-y-3" onsubmit="return false;">
+
+          <!-- Tipo -->
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+            <select id="tipo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="livro">Livro</option>
+              <option value="artigo">Artigo em periódico</option>
+              <option value="tese">Tese (Doutorado)</option>
+              <option value="dissertacao">Dissertação (Mestrado)</option>
+              <option value="capitulo">Capítulo de livro</option>
+              <option value="site">Site / Página web</option>
+            </select>
+          </div>
+
+          <!-- Autores -->
+          <div class="campo-ref" data-campo="autores">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+              Autores <span class="text-gray-400 font-normal">(separe por ponto-e-vírgula)</span>
+            </label>
+            <input id="campo-autores" type="text" placeholder="Ex: Silva, João; Santos, Maria"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Título -->
+          <div class="campo-ref" data-campo="titulo">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Título</label>
+            <input id="campo-titulo" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Título do capítulo -->
+          <div class="campo-ref hidden" data-campo="titulo_cap">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Título do capítulo</label>
+            <input id="campo-titulo_cap" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Autores organizadores -->
+          <div class="campo-ref hidden" data-campo="autores_org">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Organizadores da obra</label>
+            <input id="campo-autores_org" type="text" placeholder="Ex: Oliveira, Paulo"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Título do livro (capítulo) -->
+          <div class="campo-ref hidden" data-campo="titulo_livro">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Título da obra</label>
+            <input id="campo-titulo_livro" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Subtítulo -->
+          <div class="campo-ref" data-campo="subtitulo">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Subtítulo <span class="text-gray-400 font-normal">(opcional)</span></label>
+            <input id="campo-subtitulo" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Linha: Ano + Edição -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="campo-ref" data-campo="ano">
+              <label class="block text-xs font-medium text-gray-600 mb-1">Ano</label>
+              <input id="campo-ano" type="number" placeholder="2024" min="1500" max="2099"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="campo-ref" data-campo="edicao">
+              <label class="block text-xs font-medium text-gray-600 mb-1">Edição</label>
+              <input id="campo-edicao" type="text" placeholder="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+          </div>
+
+          <!-- Linha: Local + Editora -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="campo-ref" data-campo="local">
+              <label class="block text-xs font-medium text-gray-600 mb-1">Local</label>
+              <input id="campo-local" type="text" placeholder="São Paulo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="campo-ref" data-campo="editora">
+              <label class="block text-xs font-medium text-gray-600 mb-1">Editora</label>
+              <input id="campo-editora" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+          </div>
+
+          <!-- Revista (artigo) -->
+          <div class="campo-ref hidden" data-campo="revista">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Nome do periódico</label>
+            <input id="campo-revista" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Linha: Volume + Número + Páginas -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="campo-ref hidden" data-campo="volume">
+              <label class="block text-xs font-medium text-gray-600 mb-1">Volume</label>
+              <input id="campo-volume" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="campo-ref hidden" data-campo="numero">
+              <label class="block text-xs font-medium text-gray-600 mb-1">Número</label>
+              <input id="campo-numero" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="campo-ref" data-campo="paginas">
+              <label class="block text-xs font-medium text-gray-600 mb-1">Páginas</label>
+              <input id="campo-paginas" type="text" placeholder="1-20" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+          </div>
+
+          <!-- Mês (artigo) -->
+          <div class="campo-ref hidden" data-campo="mes">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Mês <span class="text-gray-400 font-normal">(opcional)</span></label>
+            <input id="campo-mes" type="text" placeholder="jan." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- DOI -->
+          <div class="campo-ref hidden" data-campo="doi">
+            <label class="block text-xs font-medium text-gray-600 mb-1">DOI</label>
+            <input id="campo-doi" type="text" placeholder="10.xxxx/xxxxx"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono">
+          </div>
+
+          <!-- URL -->
+          <div class="campo-ref hidden" data-campo="url">
+            <label class="block text-xs font-medium text-gray-600 mb-1">URL</label>
+            <input id="campo-url" type="url" placeholder="https://"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Data de acesso (site) -->
+          <div class="campo-ref hidden" data-campo="acesso">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Acesso em</label>
+            <input id="campo-acesso" type="text" placeholder="19 abr. 2026"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Tese: Curso + Instituição + Folhas -->
+          <div class="campo-ref hidden" data-campo="curso">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Área/Curso do programa</label>
+            <input id="campo-curso" type="text" placeholder="Educação"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div class="campo-ref hidden" data-campo="instituicao">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Instituição</label>
+            <input id="campo-instituicao" type="text" placeholder="Universidade Estadual de Maringá"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div class="campo-ref hidden" data-campo="folhas">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Nº de folhas <span class="text-gray-400 font-normal">(opcional)</span></label>
+            <input id="campo-folhas" type="number" placeholder="120"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+
+          <!-- Botões -->
+          <div class="flex gap-2 pt-2">
+            <button id="btn-salvar" type="button"
+              class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5">
+              <i data-lucide="save" class="w-4 h-4"></i> Salvar no Supabase
+            </button>
+            <button id="btn-limpar" type="button"
+              class="px-4 border border-gray-300 hover:bg-gray-50 text-gray-600 font-medium py-2 rounded-lg text-sm transition-colors">
+              Limpar
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- Coluna direita: Preview + Lista -->
+    <div class="space-y-4">
+
+      <!-- Preview ABNT -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+            <i data-lucide="eye" class="w-3.5 h-3.5"></i> Citação ABNT (preview)
+          </p>
+          <button id="btn-copiar" class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors">
+            <i data-lucide="copy" class="w-3 h-3"></i> Copiar
+          </button>
+        </div>
+        <div id="preview-abnt" class="bg-slate-50 rounded-lg p-4 min-h-[80px] border border-slate-200">
+          <span class="text-gray-400 text-sm">Preencha os campos para ver a citação…</span>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">
+          Norma ABNT NBR 6023:2018 · Até 3 autores listados; acima de 3 usa <em>et al.</em>
+        </p>
+      </div>
+
+      <!-- Lista de referências salvas -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+            <i data-lucide="list" class="w-3.5 h-3.5"></i> Referências salvas
+          </p>
+          <button onclick="App.carregarReferencias()" class="text-xs text-gray-400 hover:text-indigo-600 flex items-center gap-1 transition-colors">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Atualizar
+          </button>
+        </div>
+        <div id="lista-referencias" class="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+          <p class="text-sm text-gray-400 text-center py-4">Carregando…</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"
+  class="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg opacity-0 translate-y-2 pointer-events-none z-50">
+</div>
+
+<script src="abnt-formatter.js"></script>
+<script src="referencias.js"></script>
+<script>
+  // Inicializar Lucide após carregar a página
+  document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+  // Mostrar botão logout quando logado
+  const _origAtualizarStatusAuth = App.atualizarStatusAuth.bind(App);
+  App.atualizarStatusAuth = function() {
+    _origAtualizarStatusAuth();
+    document.getElementById('btn-logout').classList.toggle('hidden', !this.session);
+  };
+</script>
+</body>
+</html>
