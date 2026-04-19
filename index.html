@@ -1420,18 +1420,12 @@
       <!-- Status de salvamento -->
       <span id="leitor-save-status" class="hidden text-xs font-medium px-2 py-1 rounded-lg"
         style="background:rgba(255,255,255,.08); color:rgba(255,255,255,.6);"></span>
-      <!-- Botão citar documento aberto -->
-      <button onclick="citarDocumentoAberto()"
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors hover:bg-white/10"
-        style="color:#a5f3a5; border:1px solid rgba(165,243,165,.3);" title="Gerar citação ABNT deste documento">
-        <i data-lucide="book-marked" class="w-3.5 h-3.5"></i>
-        <span class="hidden sm:inline">Citar este PDF</span>
-      </button>
-      <!-- Botão busca manual -->
+      <!-- Botão ABNT -->
       <button onclick="togglePainelAbnt()"
-        class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold transition-colors hover:bg-white/10"
-        style="color:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.15);" title="Busca manual de citação">
-        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors hover:bg-white/10"
+        style="color:#a5f3a5; border:1px solid rgba(165,243,165,.3);" title="Gerador de citações ABNT">
+        <i data-lucide="book-marked" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Citar ABNT</span>
       </button>
       <button onclick="fecharLeitorPdf()"
         class="p-1.5 rounded-lg transition-colors hover:bg-white/10"
@@ -4127,20 +4121,6 @@
     if (!aberto) { lucide.createIcons(); renderBiblio() }
   }
 
-  window.citarDocumentoAberto = () => {
-    // Abre painel se fechado
-    const p = document.getElementById('painel-abnt')
-    if (p.classList.contains('hidden')) { p.classList.remove('hidden'); p.classList.add('flex'); lucide.createIcons(); renderBiblio() }
-    // Monta query com o que temos dos metadados do PDF
-    const inp = document.getElementById('abnt-query')
-    if (!inp) return
-    const query = pdfMeta.doi
-      || pdfMeta.title
-      || document.getElementById('leitor-titulo')?.textContent?.replace(/\.(pdf|PDF)$/,'').trim()
-      || ''
-    inp.value = query
-    if (query.length >= 5) buscarAbnt()
-  }
 
   window.agendarBuscaAbnt = () => {
     clearTimeout(abntBuscaTimer)
@@ -4405,7 +4385,7 @@
       const inp = document.getElementById('abnt-query')
       if (inp) inp.value = ''
       const res = document.getElementById('abnt-resultados')
-      if (res) res.innerHTML = `<p class="text-xs text-center py-8" style="color:rgba(255,255,255,.3);">Digite para buscar ou clique em<br><strong style="color:#a5f3a5;">Citar este documento</strong> para buscar a referência do PDF aberto.</p>`
+      if (res) res.innerHTML = `<p class="text-xs text-center py-8" style="color:rgba(255,255,255,.3);">Digite o título, autor ou DOI do trabalho para buscar a referência.</p>`
     } catch(fetchErr) {
       setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
       return
