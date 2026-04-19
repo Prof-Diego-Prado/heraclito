@@ -225,9 +225,16 @@
       55%       { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
     }
     .proxima-aula-pulse { animation: proximaAulaGlow 3s ease-in-out infinite; }
+    /* Painel lateral do leitor PDF */
+    .painel-aba { color: rgba(255,255,255,.4); background: none; border: none; cursor: pointer; transition: color .15s; }
+    .painel-aba-ativa { color: #a5b4fc !important; box-shadow: inset 0 -2px 0 #6366f1; }
   </style>
   <!-- Adobe PDF Embed API — gratuito, anotações por usuário -->
   <script src="https://acrobatservices.adobe.com/view-sdk/viewer.js"></script>
+  <!-- PDF.js — extração de metadados -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- ABNT Formatter (compartilhado com referencias.html) -->
+  <script src="referencias/abnt-formatter.js"></script>
 </head>
 <body class="flex h-screen overflow-hidden">
 
@@ -1417,9 +1424,20 @@
       <p id="leitor-titulo" class="text-sm font-semibold text-white truncate max-w-[300px]"></p>
     </div>
     <div class="flex items-center gap-2 shrink-0">
-      <!-- Status de salvamento -->
       <span id="leitor-save-status" class="hidden text-xs font-medium px-2 py-1 rounded-lg"
         style="background:rgba(255,255,255,.08); color:rgba(255,255,255,.6);"></span>
+      <!-- Botão citar trecho (aparece após referência carregada) -->
+      <button onclick="abrirCitarTrechoManual()" id="btn-citar-trecho"
+        class="hidden items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:#a5b4fc; background:rgba(99,102,241,.2);" title="Registrar citação direta deste PDF">
+        <i data-lucide="quote" class="w-3.5 h-3.5"></i> Citar trecho
+      </button>
+      <!-- Toggle painel lateral -->
+      <button onclick="togglePainelRef()" id="btn-toggle-painel"
+        class="hidden items-center gap-1 p-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:rgba(255,255,255,.7);" title="Referência e citações">
+        <i data-lucide="panel-right" class="w-4 h-4"></i>
+      </button>
       <button onclick="fecharLeitorPdf()"
         class="p-1.5 rounded-lg transition-colors hover:bg-white/10"
         style="color:rgba(255,255,255,.7);" title="Fechar (Esc)">
@@ -1427,7 +1445,94 @@
       </button>
     </div>
   </div>
-  <div id="adobe-dc-view" class="flex-1 w-full overflow-hidden"></div>
+  <!-- Body: viewer + painel lateral -->
+  <div class="flex flex-1 overflow-hidden">
+    <div id="adobe-dc-view" class="flex-1 overflow-hidden"></div>
+    <!-- Painel lateral de referências ABNT -->
+    <div id="leitor-ref-panel" class="hidden w-72 shrink-0 flex-col overflow-hidden" style="background:#12122a; border-left:1px solid rgba(255,255,255,.1);">
+      <!-- Abas -->
+      <div class="flex shrink-0" style="border-bottom:1px solid rgba(255,255,255,.1);">
+        <button onclick="setPainelAba('ref')" id="aba-ref" class="flex-1 py-2.5 text-xs font-medium painel-aba painel-aba-ativa">
+          Referência
+        </button>
+        <button onclick="setPainelAba('cit')" id="aba-cit" class="flex-1 py-2.5 text-xs font-medium painel-aba">
+          Citações (<span id="cit-count">0</span>)
+        </button>
+      </div>
+      <!-- Aba: Referência -->
+      <div id="painel-aba-ref" class="flex-1 overflow-y-auto p-3 space-y-3">
+        <div id="ref-loading" class="flex flex-col items-center justify-center py-8 gap-2">
+          <div class="w-5 h-5 border-2 rounded-full animate-spin" style="border-color:rgba(99,102,241,.3);border-top-color:#6366f1;"></div>
+          <p class="text-xs" style="color:rgba(255,255,255,.4);">Buscando referência…</p>
+        </div>
+        <div id="ref-card" class="hidden space-y-3"></div>
+      </div>
+      <!-- Aba: Citações diretas -->
+      <div id="painel-aba-cit" class="hidden flex-1 overflow-y-auto p-3">
+        <div id="cit-lista"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Citação Direta -->
+<div id="modal-citar-trecho" class="fixed inset-0 z-[400] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7);">
+  <div class="rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" style="background:#1e1e2e; border:1px solid rgba(255,255,255,.15);">
+    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,.1);">
+      <p class="font-semibold text-sm flex items-center gap-2 text-white">
+        <i data-lucide="quote" class="w-4 h-4" style="color:#a5b4fc;"></i> Citação Direta
+      </p>
+      <button onclick="fecharCitarTrecho()" class="p-1 rounded hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.5);">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Trecho citado</label>
+        <textarea id="citar-trecho-texto" rows="4" placeholder="Cole ou digite o trecho exato do texto…"
+          class="w-full rounded-lg px-3 py-2 text-sm resize-none"
+          style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Página</label>
+          <input id="citar-trecho-pagina" type="number" min="1" placeholder="Ex: 45"
+            class="w-full rounded-lg px-3 py-2 text-sm"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Página final <span style="color:rgba(255,255,255,.3);">(opcional)</span></label>
+          <input id="citar-trecho-pagina-fim" type="number" min="1" placeholder="Ex: 47"
+            class="w-full rounded-lg px-3 py-2 text-sm"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Anotação pessoal <span style="color:rgba(255,255,255,.3);">(opcional)</span></label>
+        <textarea id="citar-trecho-nota" rows="2" placeholder="Comentários, interpretação, conexões com outros textos…"
+          class="w-full rounded-lg px-3 py-2 text-sm resize-none"
+          style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);outline:none;"></textarea>
+      </div>
+      <!-- Preview ABNT -->
+      <div class="rounded-lg px-4 py-3" style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);">
+        <p class="text-xs mb-1" style="color:#a5b4fc;">Citação formatada (ABNT)</p>
+        <p id="citar-preview-abnt" class="text-sm italic" style="color:rgba(255,255,255,.8);">Preencha os campos acima…</p>
+      </div>
+      <p id="citar-erro" class="text-xs text-red-400 min-h-[16px]"></p>
+      <div class="flex gap-2 pt-1">
+        <button onclick="salvarCitacaoDireta()" id="btn-salvar-citacao"
+          class="flex-1 text-sm font-medium py-2 rounded-lg transition-colors"
+          style="background:#6366f1;color:white;">
+          Salvar citação
+        </button>
+        <button onclick="fecharCitarTrecho()"
+          class="px-4 text-sm font-medium py-2 rounded-lg transition-colors"
+          style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="modal-foto-perfil" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
@@ -4081,6 +4186,7 @@
       const resp = await fetch(fullUrl, { credentials: 'omit' })
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       pdfBuffer = await resp.arrayBuffer()
+      buscarOuCriarReferencia(url, titulo, pdfBuffer) // roda em background
     } catch(fetchErr) {
       setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
       return
@@ -4124,12 +4230,20 @@
         setLeitorStatus('')
       }
 
-      // Auto-salvar ao anotar (debounce 2s)
+      // Auto-salvar ao anotar (debounce 2s) + detectar highlight para citação
       annotationMgr.registerEventListener(
         function(event) {
           setLeitorStatus('💾 Salvando…', 'rgba(255,255,255,.5)')
           clearTimeout(annotationTimer)
           annotationTimer = setTimeout(salvarAnotacoes, 2000)
+          if (event.type === 'ANNOTATION_ADDED' && leitorRefAtual) {
+            const ann = event.data
+            if (ann?.type === 'highlight' || ann?.subtype === 'highlight') {
+              const pagina = (ann?.target?.selector?.node?.index ?? 0) + 1
+              const texto  = ann?.target?.selector?.exact || ann?.bodyValue || ''
+              sugerirCitacao(pagina, texto)
+            }
+          }
         },
         { listenOn: ['ANNOTATION_ADDED', 'ANNOTATION_UPDATED', 'ANNOTATION_DELETED'] }
       )
@@ -4147,9 +4261,345 @@
     modal.classList.remove('flex')
     document.getElementById('adobe-dc-view').innerHTML = ''
     adobeViewer = null; annotationMgr = null; leitorPdfUrl = null
+    // Resetar painel de referências
+    leitorRefAtual = null; leitorCitacoes = []
+    const painel = document.getElementById('leitor-ref-panel')
+    painel.classList.add('hidden'); painel.classList.remove('flex')
+    document.getElementById('btn-citar-trecho').classList.replace('flex','hidden')
+    document.getElementById('btn-toggle-painel').classList.replace('flex','hidden')
+    setPainelAba('ref')
   }
 
   document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharLeitorPdf?.() })
+
+  // ── REFERÊNCIAS ABNT NO LEITOR ────────────────────────
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+  }
+
+  let leitorRefAtual = null   // referência do PDF aberto
+  let leitorCitacoes = []     // citações diretas do PDF atual
+
+  window.togglePainelRef = () => {
+    const painel = document.getElementById('leitor-ref-panel')
+    const aberto = painel.classList.contains('flex')
+    painel.classList.toggle('hidden', aberto)
+    painel.classList.toggle('flex', !aberto)
+    document.getElementById('btn-toggle-painel').style.background =
+      aberto ? 'transparent' : 'rgba(99,102,241,.2)'
+  }
+
+  window.setPainelAba = (aba) => {
+    document.getElementById('painel-aba-ref').classList.toggle('hidden', aba !== 'ref')
+    document.getElementById('painel-aba-cit').classList.toggle('hidden', aba !== 'cit')
+    document.querySelectorAll('.painel-aba').forEach(el => el.classList.remove('painel-aba-ativa'))
+    document.getElementById(`aba-${aba}`).classList.add('painel-aba-ativa')
+  }
+
+  window.buscarOuCriarReferencia = async (url, titulo, pdfBuffer) => {
+    const loading = document.getElementById('ref-loading')
+    const card    = document.getElementById('ref-card')
+    loading.classList.remove('hidden')
+    card.classList.add('hidden')
+
+    // Exibir painel e botões da toolbar
+    const painel = document.getElementById('leitor-ref-panel')
+    painel.classList.remove('hidden'); painel.classList.add('flex')
+    const btnCitar  = document.getElementById('btn-citar-trecho')
+    const btnToggle = document.getElementById('btn-toggle-painel')
+    btnCitar.classList.remove('hidden');  btnCitar.classList.add('flex')
+    btnToggle.classList.remove('hidden'); btnToggle.classList.add('flex')
+    btnToggle.style.background = 'rgba(99,102,241,.2)'
+    lucide.createIcons()
+
+    // 1. Buscar referência existente por URL ou nome do arquivo
+    const pdfPath = url.split('/').pop()
+    const { data: ref } = await db.from('referencias')
+      .select('*')
+      .or(`pdf_url.eq.${url},pdf_path.eq.${pdfPath}`)
+      .maybeSingle()
+
+    let refFinal = ref
+
+    // 2. Não encontrou → extrair metadados e criar
+    if (!refFinal && pdfBuffer && typeof pdfjsLib !== 'undefined') {
+      refFinal = await extrairECriarReferencia(url, titulo, pdfBuffer)
+    }
+
+    leitorRefAtual = refFinal
+    loading.classList.add('hidden')
+
+    if (refFinal) {
+      renderRefCard(refFinal)
+      card.classList.remove('hidden')
+    } else {
+      card.innerHTML = `
+        <div class="text-center py-6">
+          <p class="text-xs mb-3" style="color:rgba(255,255,255,.4);">Referência não encontrada para este PDF.</p>
+          <button onclick="abrirCitarTrechoManual()"
+            class="text-xs px-3 py-1.5 rounded-lg" style="background:rgba(99,102,241,.3);color:#a5b4fc;">
+            + Registrar citação manualmente
+          </button>
+        </div>`
+      card.classList.remove('hidden')
+    }
+
+    await carregarCitacoes()
+  }
+
+  async function extrairECriarReferencia(url, titulo, pdfBuffer) {
+    try {
+      const pdf  = await pdfjsLib.getDocument({ data: pdfBuffer }).promise
+      const meta = await pdf.getMetadata()
+      const info = meta.info || {}
+
+      // Extrair DOI das primeiras 3 páginas
+      let doi = null
+      for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+        const pg = await pdf.getPage(i)
+        const ct = await pg.getTextContent()
+        const tx = ct.items.map(x => x.str).join(' ')
+        const m  = tx.match(/\b(10\.\d{4,9}\/[^\s"<>]+)/)
+        if (m) { doi = m[1]; break }
+      }
+
+      const ano       = info.CreationDate?.match(/(\d{4})/)?.[1] || null
+      const tituloFin = info.Title || titulo
+      const autores   = info.Author || null
+
+      let citacao = null
+      if (typeof ABNT !== 'undefined') {
+        citacao = ABNT.textoPlano(ABNT.livro({ autores, titulo: tituloFin, ano, doi }))
+      }
+
+      const { data, error } = await db.from('referencias').insert({
+        tipo: 'livro', autores, titulo: tituloFin,
+        ano:  ano ? parseInt(ano) : null, doi,
+        pdf_url: url, pdf_path: url.split('/').pop(),
+        citacao_abnt: citacao, created_by: currentUser?.id || null,
+      }).select().single()
+
+      if (error) { console.error('Erro ao criar referência:', error); return null }
+      return data
+    } catch(e) {
+      console.error('Erro ao extrair metadados do PDF:', e)
+      return null
+    }
+  }
+
+  function renderRefCard(ref) {
+    const card = document.getElementById('ref-card')
+    const abnt = ref.citacao_abnt || '—'
+    const abntEsc = abnt.replace(/\\/g,'\\\\').replace(/`/g,'\\`')
+    card.innerHTML = `
+      <div>
+        <p class="text-xs font-semibold mb-1.5 flex items-center gap-1.5" style="color:#a5b4fc;">
+          <i data-lucide="book-open" class="w-3 h-3"></i> Referência ABNT
+        </p>
+        <div class="rounded-lg p-3 text-xs leading-relaxed"
+          style="background:rgba(255,255,255,.05);color:rgba(255,255,255,.85);font-family:'Times New Roman',serif;">
+          ${abnt}
+        </div>
+        <button onclick="copiarLeitorTexto(\`${abntEsc}\`)"
+          class="mt-2 w-full text-xs py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 hover:bg-white/10"
+          style="color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);">
+          <i data-lucide="copy" class="w-3 h-3"></i> Copiar referência
+        </button>
+      </div>
+      ${ref.autores ? `<div class="text-xs" style="color:rgba(255,255,255,.5);"><span style="color:rgba(255,255,255,.7);">Autor(es):</span> ${ref.autores}</div>` : ''}
+      ${ref.ano     ? `<div class="text-xs" style="color:rgba(255,255,255,.5);"><span style="color:rgba(255,255,255,.7);">Ano:</span> ${ref.ano}</div>` : ''}
+      ${ref.doi     ? `<div class="text-xs break-all" style="color:rgba(255,255,255,.5);"><span style="color:rgba(255,255,255,.7);">DOI:</span> ${ref.doi}</div>` : ''}
+      <button onclick="abrirCitarTrechoManual()"
+        class="w-full text-xs py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
+        style="background:rgba(99,102,241,.25);color:#a5b4fc;border:1px solid rgba(99,102,241,.4);">
+        <i data-lucide="plus" class="w-3 h-3"></i> Nova citação direta
+      </button>`
+    lucide.createIcons()
+  }
+
+  async function carregarCitacoes() {
+    if (!leitorRefAtual || !currentUser) return
+    const { data } = await db.from('citacoes_diretas')
+      .select('*')
+      .eq('referencia_id', leitorRefAtual.id)
+      .eq('user_id', currentUser.id)
+      .order('pagina', { ascending: true })
+    leitorCitacoes = data || []
+    document.getElementById('cit-count').textContent = leitorCitacoes.length
+    renderCitacoes()
+  }
+
+  function renderCitacoes() {
+    const lista = document.getElementById('cit-lista')
+    if (!leitorCitacoes.length) {
+      lista.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-8 gap-2">
+          <i data-lucide="quote" class="w-8 h-8" style="color:rgba(255,255,255,.12);"></i>
+          <p class="text-xs text-center" style="color:rgba(255,255,255,.3);">Nenhuma citação direta.<br>Faça um highlight no PDF ou clique em "Citar trecho".</p>
+        </div>`
+      lucide.createIcons(); return
+    }
+    lista.innerHTML = `
+      <div class="flex justify-end mb-3">
+        <button onclick="exportarCitacoes()"
+          class="text-xs flex items-center gap-1 transition-colors hover:opacity-80" style="color:#a5b4fc;">
+          <i data-lucide="download" class="w-3 h-3"></i> Exportar .txt
+        </button>
+      </div>
+      ${leitorCitacoes.map(c => {
+        const citEsc = (c.citacao_formatada||'').replace(/\\/g,'\\\\').replace(/`/g,'\\`')
+        return `
+        <div class="rounded-lg p-3 space-y-2 mb-2" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-xs px-1.5 py-0.5 rounded shrink-0" style="background:rgba(99,102,241,.25);color:#a5b4fc;">p. ${c.pagina}</span>
+            <div class="flex gap-1">
+              <button onclick="copiarLeitorTexto(\`${citEsc}\`)" title="Copiar"
+                class="p-1 rounded transition-colors hover:bg-white/10" style="color:rgba(255,255,255,.4);">
+                <i data-lucide="copy" class="w-3 h-3"></i>
+              </button>
+              <button onclick="excluirCitacao('${c.id}')" title="Excluir"
+                class="p-1 rounded transition-colors hover:bg-red-500/20" style="color:rgba(255,255,255,.4);">
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
+              </button>
+            </div>
+          </div>
+          ${c.trecho ? `<p class="text-xs italic leading-relaxed" style="color:rgba(255,255,255,.75);">"${c.trecho}"</p>` : ''}
+          <p class="text-xs font-medium" style="color:#a5b4fc;">${c.citacao_formatada || ''}</p>
+          ${c.anotacao_pessoal ? `<p class="text-xs" style="color:rgba(255,255,255,.35);border-top:1px solid rgba(255,255,255,.07);padding-top:6px;">📝 ${c.anotacao_pessoal}</p>` : ''}
+        </div>`
+      }).join('')}`
+    lucide.createIcons()
+  }
+
+  window.abrirCitarTrechoManual = (pagina = '', texto = '') => {
+    document.getElementById('citar-trecho-texto').value   = texto
+    document.getElementById('citar-trecho-pagina').value  = pagina
+    document.getElementById('citar-trecho-pagina-fim').value = ''
+    document.getElementById('citar-trecho-nota').value    = ''
+    document.getElementById('citar-erro').textContent     = ''
+    document.getElementById('modal-citar-trecho').classList.remove('hidden')
+    document.getElementById('modal-citar-trecho').classList.add('flex')
+    atualizarPreviewCitacao()
+    lucide.createIcons()
+    setTimeout(() => document.getElementById('citar-trecho-texto').focus(), 50)
+  }
+
+  window.fecharCitarTrecho = () => {
+    document.getElementById('modal-citar-trecho').classList.add('hidden')
+    document.getElementById('modal-citar-trecho').classList.remove('flex')
+  }
+
+  function sobrenomeRef(ref) {
+    if (!ref?.autores) return 'AUTOR'
+    const primeiro = ref.autores.split(/[;|]/)[0].trim()
+    if (primeiro.includes(',')) return primeiro.split(',')[0].trim().toUpperCase()
+    const p = primeiro.split(/\s+/)
+    return p[p.length - 1].toUpperCase()
+  }
+
+  function atualizarPreviewCitacao() {
+    const pagIni = document.getElementById('citar-trecho-pagina').value
+    const pagFim = document.getElementById('citar-trecho-pagina-fim').value
+    const sob    = sobrenomeRef(leitorRefAtual)
+    const ano    = leitorRefAtual?.ano || 's.d.'
+    const pagStr = pagFim ? `${pagIni}-${pagFim}` : pagIni
+    const cit    = pagIni ? `(${sob}, ${ano}, p. ${pagStr})` : `(${sob}, ${ano})`
+    document.getElementById('citar-preview-abnt').textContent = cit
+  }
+
+  // Bind inputs do modal de citação ao preview
+  ;['citar-trecho-pagina','citar-trecho-pagina-fim'].forEach(id => {
+    document.addEventListener('input', e => { if (e.target.id === id) atualizarPreviewCitacao() })
+  })
+
+  window.salvarCitacaoDireta = async () => {
+    if (!leitorRefAtual || !currentUser) return
+    const trecho   = document.getElementById('citar-trecho-texto').value.trim()
+    const pagina   = document.getElementById('citar-trecho-pagina').value
+    const paginaFim = document.getElementById('citar-trecho-pagina-fim').value
+    const nota     = document.getElementById('citar-trecho-nota').value.trim()
+    const erroEl   = document.getElementById('citar-erro')
+
+    if (!pagina) { erroEl.textContent = 'Informe o número da página.'; return }
+
+    const btn = document.getElementById('btn-salvar-citacao')
+    btn.disabled = true; btn.textContent = 'Salvando…'
+    erroEl.textContent = ''
+
+    const pagStr = paginaFim ? `${pagina}-${paginaFim}` : pagina
+    const sob    = sobrenomeRef(leitorRefAtual)
+    const ano    = leitorRefAtual?.ano || 's.d.'
+    const citacao = `(${sob}, ${ano}, p. ${pagStr})`
+
+    const { data, error } = await db.from('citacoes_diretas').insert({
+      referencia_id:    leitorRefAtual.id,
+      user_id:          currentUser.id,
+      trecho:           trecho || null,
+      pagina:           parseInt(pagina),
+      citacao_formatada: citacao,
+      anotacao_pessoal: nota || null,
+    }).select().single()
+
+    btn.disabled = false; btn.textContent = 'Salvar citação'
+
+    if (error) {
+      erroEl.textContent = 'Erro: ' + error.message
+    } else {
+      leitorCitacoes.push(data)
+      leitorCitacoes.sort((a,b) => a.pagina - b.pagina)
+      document.getElementById('cit-count').textContent = leitorCitacoes.length
+      renderCitacoes()
+      fecharCitarTrecho()
+      setPainelAba('cit')
+      setLeitorStatus('✓ Citação salva', '#86efac')
+      setTimeout(() => setLeitorStatus(''), 2500)
+    }
+  }
+
+  window.excluirCitacao = async (id) => {
+    if (!confirm('Excluir esta citação?')) return
+    const { error } = await db.from('citacoes_diretas').delete().eq('id', id)
+    if (!error) {
+      leitorCitacoes = leitorCitacoes.filter(c => c.id !== id)
+      document.getElementById('cit-count').textContent = leitorCitacoes.length
+      renderCitacoes()
+    }
+  }
+
+  window.exportarCitacoes = () => {
+    if (!leitorCitacoes.length) return
+    const titulo = leitorRefAtual?.titulo || 'PDF'
+    const linhas = [
+      `# Citações diretas — ${titulo}`,
+      `Referência: ${leitorRefAtual?.citacao_abnt || ''}`,
+      '',
+    ]
+    leitorCitacoes.forEach(c => {
+      linhas.push(`p. ${c.pagina}`)
+      if (c.trecho)          linhas.push(`"${c.trecho}"`)
+      if (c.citacao_formatada) linhas.push(c.citacao_formatada)
+      if (c.anotacao_pessoal) linhas.push(`Nota: ${c.anotacao_pessoal}`)
+      linhas.push('')
+    })
+    const blob = new Blob([linhas.join('\n')], { type: 'text/plain;charset=utf-8' })
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: `citacoes_${titulo.slice(0,30).replace(/\s/g,'_')}.txt`
+    })
+    a.click(); URL.revokeObjectURL(a.href)
+  }
+
+  function sugerirCitacao(pagina, texto) {
+    setTimeout(() => abrirCitarTrechoManual(pagina, texto), 350)
+  }
+
+  window.copiarLeitorTexto = (texto) => {
+    navigator.clipboard.writeText(texto).then(() => {
+      setLeitorStatus('✓ Copiado!', '#86efac')
+      setTimeout(() => setLeitorStatus(''), 2000)
+    })
+  }
 
   // ── ALTERAR NOME ─────────────────────────────────────
   window.abrirAlterarNome = () => {
