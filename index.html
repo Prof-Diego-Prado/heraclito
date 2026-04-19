@@ -1420,12 +1420,18 @@
       <!-- Status de salvamento -->
       <span id="leitor-save-status" class="hidden text-xs font-medium px-2 py-1 rounded-lg"
         style="background:rgba(255,255,255,.08); color:rgba(255,255,255,.6);"></span>
-      <!-- Botão ABNT -->
-      <button onclick="togglePainelAbnt()"
+      <!-- Botão citar documento aberto -->
+      <button onclick="citarDocumentoAberto()"
         class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors hover:bg-white/10"
-        style="color:#a5f3a5; border:1px solid rgba(165,243,165,.3);" title="Gerador de citações ABNT">
+        style="color:#a5f3a5; border:1px solid rgba(165,243,165,.3);" title="Gerar citação ABNT deste documento">
         <i data-lucide="book-marked" class="w-3.5 h-3.5"></i>
-        <span class="hidden sm:inline">Citar ABNT</span>
+        <span class="hidden sm:inline">Citar este PDF</span>
+      </button>
+      <!-- Botão busca manual -->
+      <button onclick="togglePainelAbnt()"
+        class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-semibold transition-colors hover:bg-white/10"
+        style="color:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.15);" title="Busca manual de citação">
+        <i data-lucide="search" class="w-3.5 h-3.5"></i>
       </button>
       <button onclick="fecharLeitorPdf()"
         class="p-1.5 rounded-lg transition-colors hover:bg-white/10"
@@ -4080,6 +4086,37 @@
   let   annotationTimer   = null   // debounce save
   let   leitorPdfUrl      = null   // URL do PDF aberto
   let   abntBuscaTimer   = null
+  let   pdfMeta          = {}     // metadados extraídos do PDF atual
+
+  function extrairMetadataPdf(buffer) {
+    // Decodifica os primeiros 80KB (metadados ficam no início)
+    const bytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 80000))
+    const txt   = new TextDecoder('latin1').decode(bytes)
+
+    const get = (chave) => {
+      // Formato: /Chave (valor) ou /Chave <FEFF...> (UTF-16BE hex)
+      const m = txt.match(new RegExp(`/${chave}\\s*\\(([^)]{1,300})\\)`))
+      if (!m) return null
+      let v = m[1].trim()
+      // Remove escapes PDF
+      v = v.replace(/\\([\\()nrt])/g, (_, c) => ({'\\':'\\','(':'(', ')':')','n':'\n','r':'','t':' '}[c]))
+      // Remove BOM UTF-16 se presente
+      if (v.startsWith('\xFE\xFF')) {
+        const hex = [...v].map(c => c.charCodeAt(0).toString(16).padStart(2,'0')).join('')
+        v = hex.replace(/feff/,'').match(/.{4}/g)?.map(h => String.fromCharCode(parseInt(h,16))).join('') || v
+      }
+      return v.trim() || null
+    }
+
+    // DOI — busca em todo o trecho decodificado
+    const doiMatch = txt.match(/\b(10\.\d{4,}\/[^\s\)>\]"]{4,})/)?.[1]
+
+    return {
+      title:  get('Title'),
+      author: get('Author'),
+      doi:    doiMatch || null,
+    }
+  }
 
   // ── PAINEL ABNT ───────────────────────────────────────
   window.togglePainelAbnt = () => {
@@ -4088,6 +4125,21 @@
     p.classList.toggle('hidden', aberto)
     p.classList.toggle('flex', !aberto)
     if (!aberto) { lucide.createIcons(); renderBiblio() }
+  }
+
+  window.citarDocumentoAberto = () => {
+    // Abre painel se fechado
+    const p = document.getElementById('painel-abnt')
+    if (p.classList.contains('hidden')) { p.classList.remove('hidden'); p.classList.add('flex'); lucide.createIcons(); renderBiblio() }
+    // Monta query com o que temos dos metadados do PDF
+    const inp = document.getElementById('abnt-query')
+    if (!inp) return
+    const query = pdfMeta.doi
+      || pdfMeta.title
+      || document.getElementById('leitor-titulo')?.textContent?.replace(/\.(pdf|PDF)$/,'').trim()
+      || ''
+    inp.value = query
+    if (query.length >= 5) buscarAbnt()
   }
 
   window.agendarBuscaAbnt = () => {
@@ -4347,7 +4399,13 @@
       const resp = await fetch(fullUrl)
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       const buffer = await resp.arrayBuffer()
+      pdfMeta = extrairMetadataPdf(buffer)
       pdfPromise = Promise.resolve(buffer)
+      // Reseta painel ABNT para o novo documento
+      const inp = document.getElementById('abnt-query')
+      if (inp) inp.value = ''
+      const res = document.getElementById('abnt-resultados')
+      if (res) res.innerHTML = `<p class="text-xs text-center py-8" style="color:rgba(255,255,255,.3);">Digite para buscar ou clique em<br><strong style="color:#a5f3a5;">Citar este documento</strong> para buscar a referência do PDF aberto.</p>`
     } catch(fetchErr) {
       setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
       return
