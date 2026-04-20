@@ -2235,7 +2235,7 @@
       nome:          document.getElementById('mat-disc-nome').value.trim(),
       tipo,
       url:           finalUrl,
-      fonte:         fileInput.files[0] ? 'upload' : 'web',
+      fonte:         'web',
       disc_id:       discIdDisc,
       aula_data:     document.getElementById('mat-disc-data').value || null,
       professor_nome:profNomeDisc,
@@ -3774,7 +3774,7 @@
 
     const { error } = await db.from('arquivos').insert({
       nome: document.getElementById('arq-nome').value,
-      tipo, fonte: fileInput.files[0] ? 'upload' : 'web', url: finalUrl,
+      tipo, fonte: 'web', url: finalUrl,
       created_by: currentUser.id,
       ...(descricao && { descricao }),
       ...(folderId  && { folder_id: folderId }),
