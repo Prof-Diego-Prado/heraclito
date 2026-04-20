@@ -4304,6 +4304,11 @@
       const resp = await fetch(fullUrl, { credentials: 'omit' })
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       pdfBuffer = await resp.arrayBuffer()
+      // Verificar magic bytes: PDF válido começa com %PDF (25 50 44 46)
+      const magic = new Uint8Array(pdfBuffer, 0, 4)
+      if (magic[0] !== 0x25 || magic[1] !== 0x50 || magic[2] !== 0x44 || magic[3] !== 0x46) {
+        throw new Error('O arquivo não é um PDF válido (o servidor retornou HTML ou outro formato). Verifique a URL ou faça upload novamente.')
+      }
       buscarOuCriarReferencia(url, titulo, pdfBuffer) // roda em background
     } catch(fetchErr) {
       setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
