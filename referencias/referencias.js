@@ -5,11 +5,11 @@ const SUPABASE_ANON_KEY = 'sb_publishable_mcvvhFe5AIdQLN4BQAhjEw_y1bvEbvT';
 
 // Campos visíveis por tipo de referência
 const CAMPOS_POR_TIPO = {
-  livro:       ['autores','titulo','subtitulo','edicao','local','editora','ano'],
+  livro:       ['autores','titulo','subtitulo','edicao','local','editora','ano','doi'],
   artigo:      ['autores','titulo','revista','local','volume','numero','paginas','mes','ano','doi','url'],
-  tese:        ['autores','titulo','subtitulo','ano','folhas','curso','instituicao','local'],
-  dissertacao: ['autores','titulo','subtitulo','ano','folhas','curso','instituicao','local'],
-  capitulo:    ['autores','titulo_cap','autores_org','titulo_livro','local','editora','ano','paginas'],
+  tese:        ['autores','titulo','subtitulo','ano','folhas','curso','instituicao','local','doi'],
+  dissertacao: ['autores','titulo','subtitulo','ano','folhas','curso','instituicao','local','doi'],
+  capitulo:    ['autores','titulo_cap','autores_org','titulo_livro','local','editora','ano','paginas','doi'],
   site:        ['autores','titulo','local','ano','url','acesso'],
 };
 
@@ -32,16 +32,29 @@ const App = {
   },
 
   async checkAuth() {
-    const { data: { session } } = await this.db.auth.getSession();
+    // MODO TESTE - Pular autenticação
+    const session = { 
+      user: { 
+        id: 'test-user-local',
+        email: 'teste@local.dev'
+      } 
+    };
+    
     this.session = session;
     this.atualizarStatusAuth();
+    
+    // Forçar mostrar painel principal
+    document.getElementById('login-panel').classList.add('hidden');
+    document.getElementById('main-panel').classList.remove('hidden');
+    
     if (session) await this.carregarReferencias();
 
-    this.db.auth.onAuthStateChange((_ev, sess) => {
-      this.session = sess;
-      this.atualizarStatusAuth();
-      if (sess) this.carregarReferencias();
-    });
+    // Auth listener comentado para teste local
+    // this.db.auth.onAuthStateChange((_ev, sess) => {
+    //   this.session = sess;
+    //   this.atualizarStatusAuth();
+    //   if (sess) this.carregarReferencias();
+    // });
   },
 
   atualizarStatusAuth() {
@@ -49,7 +62,7 @@ const App = {
     const loginPanel = document.getElementById('login-panel');
     const mainPanel  = document.getElementById('main-panel');
     if (this.session) {
-      badge.textContent = '● Conectado';
+      badge.textContent = '● Modo Teste Local';
       badge.className = 'text-xs font-medium text-green-600';
       loginPanel.classList.add('hidden');
       mainPanel.classList.remove('hidden');
@@ -125,6 +138,18 @@ const App = {
 
     // Copiar citação
     document.getElementById('btn-copiar').addEventListener('click', () => this.copiarCitacao());
+
+    // Busca por DOI
+    document.getElementById('btn-buscar-doi').addEventListener('click', () => this.buscarDOI());
+    document.getElementById('busca-doi').addEventListener('keydown', e => {
+      if (e.key === 'Enter') this.buscarDOI();
+    });
+
+    // Busca por ISBN
+    document.getElementById('btn-buscar-isbn').addEventListener('click', () => this.buscarISBN());
+    document.getElementById('busca-isbn').addEventListener('keydown', e => {
+      if (e.key === 'Enter') this.buscarISBN();
+    });
   },
 
   atualizarCampos(tipo) {
@@ -338,6 +363,106 @@ const App = {
     document.getElementById('pdf-status').textContent = '';
     document.getElementById('pdf-input').value = '';
     this.atualizarPreview();
+  },
+
+  // ── BUSCA POR DOI / ISBN ──────────────────────────────
+
+  _setBuscaStatus(msg, tipo = 'loading') {
+    const box     = document.getElementById('busca-status');
+    const spinner = document.getElementById('busca-spinner');
+    const msgEl   = document.getElementById('busca-msg');
+    box.classList.remove('hidden');
+    box.classList.add('flex');
+    spinner.classList.toggle('hidden', tipo !== 'loading');
+    msgEl.textContent = msg;
+    msgEl.className = 'text-xs ' + (
+      tipo === 'loading' ? 'text-indigo-600' :
+      tipo === 'ok'      ? 'text-green-600'  : 'text-red-500'
+    );
+  },
+
+  _ocultarBuscaStatus() {
+    const box = document.getElementById('busca-status');
+    box.classList.add('hidden');
+    box.classList.remove('flex');
+  },
+
+  async buscarDOI() {
+    const doi = document.getElementById('busca-doi').value.trim();
+    if (!doi) return;
+    const btn = document.getElementById('btn-buscar-doi');
+    btn.disabled = true;
+    this._setBuscaStatus('Consultando CrossRef…', 'loading');
+    try {
+      const dados = await CitationManager.buscarPorDOI(doi);
+      this.preencherCampos(dados);
+      this._setBuscaStatus(`✓ Metadados carregados via CrossRef (${dados.tipo})`, 'ok');
+      document.getElementById('busca-doi').value = '';
+    } catch (err) {
+      this._setBuscaStatus('✗ ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  },
+
+  async buscarISBN() {
+    const isbn = document.getElementById('busca-isbn').value.trim();
+    if (!isbn) return;
+    const btn = document.getElementById('btn-buscar-isbn');
+    btn.disabled = true;
+    this._setBuscaStatus('Consultando Google Books…', 'loading');
+    try {
+      const dados = await CitationManager.buscarPorISBN(isbn);
+      this.preencherCampos(dados);
+      this._setBuscaStatus(`✓ Metadados carregados via Google Books (livro)`, 'ok');
+      document.getElementById('busca-isbn').value = '';
+    } catch (err) {
+      this._setBuscaStatus('✗ ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  },
+
+  preencherCampos(dados) {
+    // Atualizar tipo e campos visíveis
+    const tipo = dados.tipo || 'livro';
+    document.getElementById('tipo').value = tipo;
+    this.atualizarCampos(tipo);
+
+    // Mapa: chave dos dados → id do campo no formulário
+    const mapa = {
+      autores:      'autores',
+      titulo:       'titulo',
+      subtitulo:    'subtitulo',
+      ano:          'ano',
+      edicao:       'edicao',
+      local:        'local',
+      editora:      'editora',
+      doi:          'doi',
+      url:          'url',
+      revista:      'revista',
+      volume:       'volume',
+      numero:       'numero',
+      paginas:      'paginas',
+      mes:          'mes',
+      curso:        'curso',
+      instituicao:  'instituicao',
+      titulo_cap:   'titulo_cap',
+      titulo_livro: 'titulo_livro',
+      autores_org:  'autores_org',
+      acesso:       'acesso',
+    };
+
+    Object.entries(mapa).forEach(([chave, campoId]) => {
+      if (dados[chave]) {
+        const el = document.getElementById(`campo-${campoId}`);
+        if (el) el.value = dados[chave];
+      }
+    });
+
+    this.atualizarPreview();
+    // Focar no primeiro campo vazio para revisão
+    setTimeout(() => document.getElementById('campo-titulo')?.focus(), 100);
   },
 
   mostrarToast(msg) {

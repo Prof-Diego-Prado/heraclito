@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/citation-js@0.7/build/citation.min.js"></script>
   <link rel="stylesheet" href="referencias.css">
 </head>
 <body class="bg-slate-50">
@@ -53,6 +54,55 @@
 
     <!-- Coluna esquerda: Formulário -->
     <div class="space-y-4">
+
+      <!-- Busca automática por DOI / ISBN -->
+      <div class="bg-white rounded-xl border border-indigo-100 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-1">
+          <i data-lucide="search" class="w-3.5 h-3.5"></i> Busca automática de metadados
+        </p>
+
+        <!-- DOI -->
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">
+            DOI <span class="text-gray-400 font-normal">(CrossRef API)</span>
+          </label>
+          <div class="flex gap-2">
+            <input id="busca-doi" type="text"
+              placeholder="Ex: 10.1590/S0102-311X2009001200009"
+              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+              autocomplete="off">
+            <button id="btn-buscar-doi"
+              class="shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg transition-colors bg-indigo-600 hover:bg-indigo-700 text-white">
+              <i data-lucide="search" class="w-3.5 h-3.5"></i> Buscar
+            </button>
+          </div>
+        </div>
+
+        <!-- ISBN -->
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">
+            ISBN <span class="text-gray-400 font-normal">(Google Books API)</span>
+          </label>
+          <div class="flex gap-2">
+            <input id="busca-isbn" type="text"
+              placeholder="Ex: 9788535902778"
+              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+              autocomplete="off">
+            <button id="btn-buscar-isbn"
+              class="shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg transition-colors bg-emerald-600 hover:bg-emerald-700 text-white">
+              <i data-lucide="search" class="w-3.5 h-3.5"></i> Buscar
+            </button>
+          </div>
+        </div>
+
+        <!-- Status / spinner -->
+        <div id="busca-status" class="hidden items-center gap-2 mt-1">
+          <div id="busca-spinner"
+            class="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin hidden shrink-0">
+          </div>
+          <span id="busca-msg" class="text-xs"></span>
+        </div>
+      </div>
 
       <!-- Upload PDF -->
       <div class="bg-white rounded-xl border border-dashed border-gray-300 p-5">
@@ -183,8 +233,8 @@
           </div>
 
           <!-- DOI -->
-          <div class="campo-ref hidden" data-campo="doi">
-            <label class="block text-xs font-medium text-gray-600 mb-1">DOI</label>
+          <div class="campo-ref" data-campo="doi">
+            <label class="block text-xs font-medium text-gray-600 mb-1">DOI <span class="text-gray-400 font-normal">(opcional)</span></label>
             <input id="campo-doi" type="text" placeholder="10.xxxx/xxxxx"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono">
           </div>
@@ -282,6 +332,7 @@
 </div>
 
 <script src="abnt-formatter.js"></script>
+<script src="citation-manager.js"></script>
 <script src="referencias.js"></script>
 <script>
   // Inicializar Lucide após carregar a página
