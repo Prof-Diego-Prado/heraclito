@@ -1328,9 +1328,19 @@
         </div>
         <p class="text-xs mt-1.5" style="color:var(--muted);">Use "Link" para vídeos do Meet, YouTube etc.</p>
       </div>
+      <div id="arq-file-wrap">
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Arquivo <span class="normal-case font-normal text-gray-400">(do seu computador)</span></label>
+        <label class="flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer hover:bg-gray-50 transition-colors" style="border-color:var(--border);">
+          <i data-lucide="upload" class="w-4 h-4 shrink-0" style="color:var(--primary);"></i>
+          <span id="arq-file-name" class="text-sm truncate" style="color:var(--muted);">Clique para selecionar…</span>
+          <input type="file" id="arq-file" accept=".pdf,.doc,.docx,.ppt,.pptx" class="hidden">
+        </label>
+      </div>
       <div>
-        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">URL</label>
-        <input type="url" id="arq-url" class="input-field" placeholder="https://..." required>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
+          URL externa <span id="arq-url-hint" class="normal-case font-normal text-gray-400">(se não enviou arquivo acima)</span><span id="arq-url-req" class="normal-case font-normal text-gray-400 hidden"> (obrigatório para links)</span>
+        </label>
+        <input type="url" id="arq-url" class="input-field" placeholder="https://...">
       </div>
       <div>
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Mensagem para o Feed <span class="normal-case font-normal">(opcional)</span></label>
@@ -1390,9 +1400,19 @@
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome do Material</label>
         <input type="text" id="mat-disc-nome" class="input-field" placeholder="Ex: Slides — Culturas Digitais e Docência" required>
       </div>
+      <div id="mat-file-wrap">
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Arquivo <span class="normal-case font-normal text-gray-400">(do seu computador)</span></label>
+        <label class="flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer hover:bg-gray-50 transition-colors" style="border-color:var(--border);">
+          <i data-lucide="upload" class="w-4 h-4 shrink-0" style="color:var(--primary);"></i>
+          <span id="mat-file-name" class="text-sm truncate" style="color:var(--muted);">Clique para selecionar…</span>
+          <input type="file" id="mat-disc-file" accept=".pdf,.doc,.docx,.ppt,.pptx" class="hidden">
+        </label>
+      </div>
       <div>
-        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">URL do Arquivo</label>
-        <input type="url" id="mat-disc-url" class="input-field" placeholder="https://..." required>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
+          URL externa <span id="mat-url-hint" class="normal-case font-normal text-gray-400">(se não enviou arquivo acima)</span><span id="mat-url-req" class="normal-case font-normal text-gray-400 hidden"> (obrigatório para links)</span>
+        </label>
+        <input type="url" id="mat-disc-url" class="input-field" placeholder="https://...">
       </div>
       <div>
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Texto / Conteúdo da Aula <span class="normal-case font-normal">(opcional)</span></label>
@@ -2177,11 +2197,35 @@
 
   document.getElementById('form-mat-disc')?.addEventListener('submit', async (e) => {
     e.preventDefault()
-    const btn   = document.getElementById('btn-submit-mat-disc')
-    const erro  = document.getElementById('mat-disc-erro')
+    const btn     = document.getElementById('btn-submit-mat-disc')
+    const erro    = document.getElementById('mat-disc-erro')
     const discIdx = parseInt(document.getElementById('mat-disc-idx').value)
+    const tipo    = document.getElementById('mat-disc-tipo').value
     erro.classList.add('hidden')
     btn.disabled = true; btn.textContent = 'Publicando…'
+
+    // URL: arquivo local tem prioridade sobre URL externa
+    let finalUrl = document.getElementById('mat-disc-url').value.trim()
+    const fileInput = document.getElementById('mat-disc-file')
+    if (fileInput.files[0]) {
+      try {
+        btn.textContent = 'Enviando arquivo…'
+        finalUrl = await uploadArquivoStorage(fileInput.files[0])
+      } catch(upErr) {
+        btn.disabled = false; btn.textContent = 'Publicar'
+        erro.textContent = upErr.message
+        erro.classList.remove('hidden')
+        return
+      }
+    }
+    if (!finalUrl) {
+      btn.disabled = false; btn.textContent = 'Publicar'
+      erro.textContent = tipo === 'link'
+        ? 'Informe a URL do link.'
+        : 'Selecione um arquivo ou informe uma URL externa.'
+      erro.classList.remove('hidden')
+      return
+    }
 
     const profNomeDisc = document.getElementById('mat-disc-prof').value.trim() || null
     const discIdDisc   = discIdx + 1
@@ -2189,9 +2233,9 @@
 
     const payload = {
       nome:          document.getElementById('mat-disc-nome').value.trim(),
-      tipo:          document.getElementById('mat-disc-tipo').value,
-      url:           document.getElementById('mat-disc-url').value.trim(),
-      fonte:         'web',
+      tipo,
+      url:           finalUrl,
+      fonte:         fileInput.files[0] ? 'upload' : 'web',
       disc_id:       discIdDisc,
       aula_data:     document.getElementById('mat-disc-data').value || null,
       professor_nome:profNomeDisc,
@@ -2210,7 +2254,7 @@
     }
 
     fecharModalMatDisc()
-    // Adiciona ao cache e re-renderiza
+    document.getElementById('mat-file-name').textContent = 'Clique para selecionar…'
     if (!discArquivosCache[discIdx+1]) discArquivosCache[discIdx+1] = []
     discArquivosCache[discIdx+1].push(data)
     discArquivosCache[discIdx+1].sort((a,b) => (a.aula_data||'').localeCompare(b.aula_data||''))
@@ -3673,38 +3717,79 @@
     }
   })
 
+  // ── UPLOAD DE ARQUIVO PARA SUPABASE STORAGE ─────────────────────────────
+  async function uploadArquivoStorage(file) {
+    const mimeMap = {
+      pdf:'application/pdf', doc:'application/msword',
+      docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ppt:'application/vnd.ms-powerpoint',
+      pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    }
+    const ext  = file.name.split('.').pop().toLowerCase()
+    const mime = file.type || mimeMap[ext] || 'application/octet-stream'
+    const safe = file.name.replace(/[^\w.\-]/g, '_')
+    const path = `${currentUser.id}/${Date.now()}_${safe}`
+    const { data, error } = await db.storage
+      .from('materiais')
+      .upload(path, file, { contentType: mime, upsert: false })
+    if (error) throw new Error('Erro no upload: ' + error.message)
+    return db.storage.from('materiais').getPublicUrl(data.path).data.publicUrl
+  }
+
   document.getElementById('form-arquivo').addEventListener('submit', async (e) => {
     e.preventDefault()
     const tipo      = document.querySelector('input[name="arq-tipo"]:checked').value
     const descricao = document.getElementById('arq-descricao').value.trim() || null
+    const erroEl    = document.getElementById('arq-erro')
     const btn       = e.target.querySelector('[type="submit"]')
+    erroEl.classList.add('hidden')
     btn.disabled = true; btn.textContent = 'Publicando…'
+
+    // Determinar URL — arquivo local tem prioridade sobre URL externa
+    let finalUrl = document.getElementById('arq-url').value.trim()
+    const fileInput = document.getElementById('arq-file')
+    if (fileInput.files[0]) {
+      try {
+        btn.textContent = 'Enviando arquivo…'
+        finalUrl = await uploadArquivoStorage(fileInput.files[0])
+      } catch(upErr) {
+        btn.disabled = false; btn.textContent = 'Publicar'
+        erroEl.textContent = upErr.message
+        erroEl.classList.remove('hidden')
+        return
+      }
+    }
+    if (!finalUrl) {
+      btn.disabled = false; btn.textContent = 'Publicar'
+      erroEl.textContent = tipo === 'link'
+        ? 'Informe a URL do link.'
+        : 'Selecione um arquivo ou informe uma URL externa.'
+      erroEl.classList.remove('hidden')
+      return
+    }
 
     // Determinar pasta de destino
     let folderId = document.getElementById('arq-folder').value || null
-
-    // Professor: garantir que a pasta dele existe; usar como padrão se nenhuma selecionada
-    if (isTeacher && !folderId) {
-      folderId = await garantirPastaProf()
-    }
+    if (isTeacher && !folderId) folderId = await garantirPastaProf()
 
     const { error } = await db.from('arquivos').insert({
       nome: document.getElementById('arq-nome').value,
-      tipo, fonte:'web', url: document.getElementById('arq-url').value,
+      tipo, fonte: fileInput.files[0] ? 'upload' : 'web', url: finalUrl,
       created_by: currentUser.id,
-      ...(descricao  && { descricao }),
-      ...(folderId   && { folder_id: folderId }),
+      ...(descricao && { descricao }),
+      ...(folderId  && { folder_id: folderId }),
     })
 
     btn.disabled = false; btn.textContent = 'Publicar'
 
     if (error) {
-      document.getElementById('arq-erro').textContent = error.message
-      document.getElementById('arq-erro').classList.remove('hidden')
+      erroEl.textContent = error.message
+      erroEl.classList.remove('hidden')
     } else {
       document.getElementById('modal-arquivo').classList.add('hidden')
-      document.getElementById('arq-erro').classList.add('hidden')
+      erroEl.classList.add('hidden')
       e.target.reset()
+      document.getElementById('arq-file-name').textContent = 'Clique para selecionar…'
       await carregarSidebarPastas()
     }
   })
@@ -3777,7 +3862,40 @@
       }))
     document.getElementById('btn-novo-arquivo').addEventListener('click', () => {
       document.getElementById('modal-arquivo').classList.remove('hidden')
+      // Resetar file picker ao abrir
+      document.getElementById('arq-file').value = ''
+      document.getElementById('arq-file-name').textContent = 'Clique para selecionar…'
       lucide.createIcons()
+    })
+
+    // Exibir nome do arquivo selecionado — biblioteca
+    document.getElementById('arq-file').addEventListener('change', (e) => {
+      document.getElementById('arq-file-name').textContent =
+        e.target.files[0]?.name || 'Clique para selecionar…'
+    })
+
+    // Exibir nome do arquivo selecionado — disciplina
+    document.getElementById('mat-disc-file').addEventListener('change', (e) => {
+      document.getElementById('mat-file-name').textContent =
+        e.target.files[0]?.name || 'Clique para selecionar…'
+    })
+
+    // Tipo "link" na biblioteca → oculta file picker, mostra dica de URL obrigatória
+    document.querySelectorAll('input[name="arq-tipo"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const isLink = radio.value === 'link'
+        document.getElementById('arq-file-wrap').classList.toggle('hidden', isLink)
+        document.getElementById('arq-url-hint').classList.toggle('hidden', isLink)
+        document.getElementById('arq-url-req').classList.toggle('hidden', !isLink)
+      })
+    })
+
+    // Tipo "link" na disciplina → oculta file picker
+    document.getElementById('mat-disc-tipo').addEventListener('change', (e) => {
+      const isLink = e.target.value === 'link'
+      document.getElementById('mat-file-wrap').classList.toggle('hidden', isLink)
+      document.getElementById('mat-url-hint').classList.toggle('hidden', isLink)
+      document.getElementById('mat-url-req').classList.toggle('hidden', !isLink)
     })
 
     // Fechar modais
