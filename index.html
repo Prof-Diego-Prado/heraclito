@@ -4863,7 +4863,7 @@
     const btn = document.getElementById('btn-salvar-ref')
     btn.disabled = true; btn.textContent = 'Salvando…'
 
-    const payload = { tipo, autores, titulo, ano, doi: doi||null, local_publicacao: local||null, editora: editora||null, citacao_abnt }
+    const payload = { tipo, autores, titulo, ano, doi: doi||null, editora: editora||null, citacao_abnt }
 
     let error
     if (completarRefId) {
