@@ -1470,35 +1470,47 @@
     <div id="adobe-dc-view" class="flex-1 overflow-hidden"></div>
   </div>
   <!-- Painel flutuante de referências ABNT -->
-  <div id="leitor-ref-panel" class="hidden absolute flex-col overflow-hidden rounded-xl shadow-2xl"
-    style="background:#12122a; border:1px solid rgba(255,255,255,.15); width:17rem; right:1rem; top:4rem; bottom:1rem; z-index:10;">
-    <!-- Cabeçalho do painel -->
-    <div class="flex items-center justify-between px-3 py-2 shrink-0" style="background:#1a1a30; border-bottom:1px solid rgba(255,255,255,.1);">
-      <span class="text-xs font-semibold" style="color:rgba(255,255,255,.7);">Referências</span>
-      <button onclick="togglePainelRef()" class="p-1 rounded hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.4);">
-        <i data-lucide="x" class="w-3.5 h-3.5"></i>
-      </button>
+  <div id="leitor-ref-panel" class="hidden absolute flex-row overflow-hidden rounded-l-xl shadow-2xl"
+    style="background:#12122a; border:1px solid rgba(255,255,255,.15); right:0; top:4rem; bottom:1rem; z-index:10; transition:width .25s ease; width:2.5rem;">
+    <!-- Aba lateral (estado minimizado) -->
+    <div id="painel-tab" onclick="expandirPainel()"
+      class="flex flex-col items-center justify-center gap-3 cursor-pointer shrink-0 select-none"
+      style="width:2.5rem; min-width:2.5rem; border-right:1px solid rgba(255,255,255,.08);">
+      <i data-lucide="book-marked" class="w-4 h-4 shrink-0" style="color:#a5b4fc;"></i>
+      <span class="text-xs font-medium" style="color:rgba(255,255,255,.45); writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.05em;">Referências</span>
+      <span id="cit-badge" class="hidden items-center justify-center rounded-full text-white shrink-0"
+        style="background:#6366f1; font-size:9px; width:16px; height:16px;">0</span>
     </div>
-    <!-- Abas -->
-    <div class="flex shrink-0" style="border-bottom:1px solid rgba(255,255,255,.1);">
-      <button onclick="setPainelAba('ref')" id="aba-ref" class="flex-1 py-2.5 text-xs font-medium painel-aba painel-aba-ativa">
-        Referência
-      </button>
-      <button onclick="setPainelAba('cit')" id="aba-cit" class="flex-1 py-2.5 text-xs font-medium painel-aba">
-        Citações (<span id="cit-count">0</span>)
-      </button>
-    </div>
-    <!-- Aba: Referência -->
-    <div id="painel-aba-ref" class="flex-1 overflow-y-auto p-3 space-y-3">
-      <div id="ref-loading" class="flex flex-col items-center justify-center py-8 gap-2">
-        <div class="w-5 h-5 border-2 rounded-full animate-spin" style="border-color:rgba(99,102,241,.3);border-top-color:#6366f1;"></div>
-        <p class="text-xs" style="color:rgba(255,255,255,.4);">Buscando referência…</p>
+    <!-- Conteúdo (estado expandido) -->
+    <div id="painel-conteudo" class="hidden flex-col overflow-hidden" style="width:17rem; min-width:17rem;">
+      <!-- Cabeçalho -->
+      <div class="flex items-center justify-between px-3 py-2 shrink-0" style="background:#1a1a30; border-bottom:1px solid rgba(255,255,255,.1);">
+        <span class="text-xs font-semibold" style="color:rgba(255,255,255,.7);">Referências</span>
+        <button onclick="recolherPainel()" class="p-1 rounded hover:bg-white/10 transition-colors" title="Recolher">
+          <i data-lucide="panel-right-close" class="w-3.5 h-3.5" style="color:rgba(255,255,255,.4);"></i>
+        </button>
       </div>
-      <div id="ref-card" class="hidden space-y-3"></div>
-    </div>
-    <!-- Aba: Citações diretas -->
-    <div id="painel-aba-cit" class="hidden flex-1 overflow-y-auto p-3">
-      <div id="cit-lista"></div>
+      <!-- Abas -->
+      <div class="flex shrink-0" style="border-bottom:1px solid rgba(255,255,255,.1);">
+        <button onclick="setPainelAba('ref')" id="aba-ref" class="flex-1 py-2.5 text-xs font-medium painel-aba painel-aba-ativa">
+          Referência
+        </button>
+        <button onclick="setPainelAba('cit')" id="aba-cit" class="flex-1 py-2.5 text-xs font-medium painel-aba">
+          Citações (<span id="cit-count">0</span>)
+        </button>
+      </div>
+      <!-- Aba: Referência -->
+      <div id="painel-aba-ref" class="flex-1 overflow-y-auto p-3 space-y-3">
+        <div id="ref-loading" class="flex flex-col items-center justify-center py-8 gap-2">
+          <div class="w-5 h-5 border-2 rounded-full animate-spin" style="border-color:rgba(99,102,241,.3);border-top-color:#6366f1;"></div>
+          <p class="text-xs" style="color:rgba(255,255,255,.4);">Buscando referência…</p>
+        </div>
+        <div id="ref-card" class="hidden space-y-3"></div>
+      </div>
+      <!-- Aba: Citações diretas -->
+      <div id="painel-aba-cit" class="hidden flex-1 overflow-y-auto p-3">
+        <div id="cit-lista"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -4553,14 +4565,37 @@
   let leitorRefAtual = null   // referência do PDF aberto
   let leitorCitacoes = []     // citações diretas do PDF atual
 
+  window.expandirPainel = () => {
+    const painel    = document.getElementById('leitor-ref-panel')
+    const conteudo  = document.getElementById('painel-conteudo')
+    painel.style.width = '19.5rem'  // 2.5rem tab + 17rem conteúdo
+    conteudo.classList.remove('hidden'); conteudo.classList.add('flex')
+    lucide.createIcons()
+    document.getElementById('btn-toggle-painel').style.background = 'rgba(99,102,241,.2)'
+  }
+
+  window.recolherPainel = () => {
+    const painel   = document.getElementById('leitor-ref-panel')
+    const conteudo = document.getElementById('painel-conteudo')
+    painel.style.width = '2.5rem'
+    conteudo.classList.add('hidden'); conteudo.classList.remove('flex')
+  }
+
   window.togglePainelRef = () => {
     const painel = document.getElementById('leitor-ref-panel')
-    const aberto = painel.classList.contains('flex')
-    painel.classList.toggle('hidden', aberto)
-    painel.classList.toggle('flex', !aberto)
-    document.getElementById('btn-toggle-painel').style.background =
-      aberto ? 'transparent' : 'rgba(99,102,241,.2)'
-    if (!aberto) lucide.createIcons()
+    if (painel.classList.contains('hidden')) {
+      // Mostrar minimizado
+      painel.classList.remove('hidden'); painel.classList.add('flex')
+      document.getElementById('btn-toggle-painel').style.background = 'rgba(99,102,241,.2)'
+      lucide.createIcons()
+    } else if (!document.getElementById('painel-conteudo').classList.contains('hidden')) {
+      // Expandido → minimizado
+      recolherPainel()
+    } else {
+      // Minimizado → oculto
+      painel.classList.add('hidden'); painel.classList.remove('flex')
+      document.getElementById('btn-toggle-painel').style.background = 'transparent'
+    }
   }
 
   window.setPainelAba = (aba) => {
@@ -4576,9 +4611,12 @@
     loading.classList.remove('hidden')
     card.classList.add('hidden')
 
-    // Exibir painel e botões da toolbar
+    // Exibir painel minimizado + botões da toolbar
     const painel = document.getElementById('leitor-ref-panel')
     painel.classList.remove('hidden'); painel.classList.add('flex')
+    painel.style.width = '2.5rem'
+    document.getElementById('painel-conteudo').classList.add('hidden')
+    document.getElementById('painel-conteudo').classList.remove('flex')
     const btnCitar  = document.getElementById('btn-citar-trecho')
     const btnToggle = document.getElementById('btn-toggle-painel')
     btnCitar.classList.remove('hidden');  btnCitar.classList.add('flex')
@@ -4833,7 +4871,7 @@
       .eq('user_id', currentUser.id)
       .order('pagina', { ascending: true })
     leitorCitacoes = data || []
-    document.getElementById('cit-count').textContent = leitorCitacoes.length
+    const _n = leitorCitacoes.length; document.getElementById('cit-count').textContent = _n; const _b = document.getElementById('cit-badge'); if(_b){_b.textContent=_n; _b.classList.toggle('hidden',_n===0); _b.classList.toggle('flex',_n>0);}
     renderCitacoes()
   }
 
@@ -4955,7 +4993,7 @@
     } else {
       leitorCitacoes.push(data)
       leitorCitacoes.sort((a,b) => a.pagina - b.pagina)
-      document.getElementById('cit-count').textContent = leitorCitacoes.length
+      const _n = leitorCitacoes.length; document.getElementById('cit-count').textContent = _n; const _b = document.getElementById('cit-badge'); if(_b){_b.textContent=_n; _b.classList.toggle('hidden',_n===0); _b.classList.toggle('flex',_n>0);}
       renderCitacoes()
       fecharCitarTrecho()
       setPainelAba('cit')
@@ -4969,7 +5007,7 @@
     const { error } = await db.from('citacoes_diretas').delete().eq('id', id)
     if (!error) {
       leitorCitacoes = leitorCitacoes.filter(c => c.id !== id)
-      document.getElementById('cit-count').textContent = leitorCitacoes.length
+      const _n = leitorCitacoes.length; document.getElementById('cit-count').textContent = _n; const _b = document.getElementById('cit-badge'); if(_b){_b.textContent=_n; _b.classList.toggle('hidden',_n===0); _b.classList.toggle('flex',_n>0);}
       renderCitacoes()
     }
   }
