@@ -1465,31 +1465,180 @@
       </button>
     </div>
   </div>
-  <!-- Body: viewer + painel lateral -->
+  <!-- Body: viewer -->
   <div class="flex flex-1 overflow-hidden">
     <div id="adobe-dc-view" class="flex-1 overflow-hidden"></div>
-    <!-- Painel lateral de referências ABNT -->
-    <div id="leitor-ref-panel" class="hidden w-72 shrink-0 flex-col overflow-hidden" style="background:#12122a; border-left:1px solid rgba(255,255,255,.1);">
-      <!-- Abas -->
-      <div class="flex shrink-0" style="border-bottom:1px solid rgba(255,255,255,.1);">
-        <button onclick="setPainelAba('ref')" id="aba-ref" class="flex-1 py-2.5 text-xs font-medium painel-aba painel-aba-ativa">
-          Referência
-        </button>
-        <button onclick="setPainelAba('cit')" id="aba-cit" class="flex-1 py-2.5 text-xs font-medium painel-aba">
-          Citações (<span id="cit-count">0</span>)
-        </button>
+  </div>
+  <!-- Painel flutuante de referências ABNT -->
+  <div id="leitor-ref-panel" class="hidden absolute flex-col overflow-hidden rounded-xl shadow-2xl"
+    style="background:#12122a; border:1px solid rgba(255,255,255,.15); width:17rem; right:1rem; top:4rem; bottom:1rem; z-index:10;">
+    <!-- Cabeçalho do painel -->
+    <div class="flex items-center justify-between px-3 py-2 shrink-0" style="background:#1a1a30; border-bottom:1px solid rgba(255,255,255,.1);">
+      <span class="text-xs font-semibold" style="color:rgba(255,255,255,.7);">Referências</span>
+      <button onclick="togglePainelRef()" class="p-1 rounded hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.4);">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+    <!-- Abas -->
+    <div class="flex shrink-0" style="border-bottom:1px solid rgba(255,255,255,.1);">
+      <button onclick="setPainelAba('ref')" id="aba-ref" class="flex-1 py-2.5 text-xs font-medium painel-aba painel-aba-ativa">
+        Referência
+      </button>
+      <button onclick="setPainelAba('cit')" id="aba-cit" class="flex-1 py-2.5 text-xs font-medium painel-aba">
+        Citações (<span id="cit-count">0</span>)
+      </button>
+    </div>
+    <!-- Aba: Referência -->
+    <div id="painel-aba-ref" class="flex-1 overflow-y-auto p-3 space-y-3">
+      <div id="ref-loading" class="flex flex-col items-center justify-center py-8 gap-2">
+        <div class="w-5 h-5 border-2 rounded-full animate-spin" style="border-color:rgba(99,102,241,.3);border-top-color:#6366f1;"></div>
+        <p class="text-xs" style="color:rgba(255,255,255,.4);">Buscando referência…</p>
       </div>
-      <!-- Aba: Referência -->
-      <div id="painel-aba-ref" class="flex-1 overflow-y-auto p-3 space-y-3">
-        <div id="ref-loading" class="flex flex-col items-center justify-center py-8 gap-2">
-          <div class="w-5 h-5 border-2 rounded-full animate-spin" style="border-color:rgba(99,102,241,.3);border-top-color:#6366f1;"></div>
-          <p class="text-xs" style="color:rgba(255,255,255,.4);">Buscando referência…</p>
+      <div id="ref-card" class="hidden space-y-3"></div>
+    </div>
+    <!-- Aba: Citações diretas -->
+    <div id="painel-aba-cit" class="hidden flex-1 overflow-y-auto p-3">
+      <div id="cit-lista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Completar dados da referência -->
+<div id="modal-completar-ref" class="fixed inset-0 z-[450] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.75);">
+  <div class="rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" style="background:#1e1e2e; border:1px solid rgba(255,255,255,.15);">
+    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,.1);">
+      <div>
+        <p class="font-semibold text-sm text-white flex items-center gap-2">
+          <i data-lucide="book-marked" class="w-4 h-4" style="color:#a5b4fc;"></i> Completar referência ABNT
+        </p>
+        <p class="text-xs mt-0.5" style="color:rgba(255,255,255,.4);">Preencha os dados ausentes para gerar a citação correta</p>
+      </div>
+      <button onclick="fecharCompletarRef()" class="p-1 rounded hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.5);">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
+      <!-- Tipo -->
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Tipo de obra <span style="color:#f87171;">*</span></label>
+        <select id="cref-tipo" class="w-full rounded-lg px-3 py-2 text-sm"
+          style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+          <option value="livro">Livro</option>
+          <option value="tese">Tese / Dissertação</option>
+          <option value="artigo">Artigo</option>
+          <option value="capitulo">Capítulo de livro</option>
+        </select>
+      </div>
+      <!-- Autores -->
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">
+          Autor(es) <span style="color:#f87171;">*</span>
+          <span class="ml-1 font-normal" style="color:rgba(255,255,255,.35);">SOBRENOME, Nome; ...</span>
+        </label>
+        <input id="cref-autores" type="text" placeholder="Ex: FREIRE, Paulo; PIAGET, Jean"
+          class="w-full rounded-lg px-3 py-2 text-sm"
+          style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+      </div>
+      <!-- Título -->
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Título <span style="color:#f87171;">*</span></label>
+        <input id="cref-titulo" type="text" placeholder="Título da obra"
+          class="w-full rounded-lg px-3 py-2 text-sm"
+          style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+      </div>
+      <!-- Subtítulo -->
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Subtítulo <span style="color:rgba(255,255,255,.3);">(opcional)</span></label>
+        <input id="cref-subtitulo" type="text" placeholder="Subtítulo da obra"
+          class="w-full rounded-lg px-3 py-2 text-sm"
+          style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Ano -->
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Ano <span style="color:#f87171;">*</span></label>
+          <input id="cref-ano" type="number" min="1000" max="2099" placeholder="Ex: 2021"
+            class="w-full rounded-lg px-3 py-2 text-sm"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
         </div>
-        <div id="ref-card" class="hidden space-y-3"></div>
+        <!-- Edição -->
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Edição <span style="color:rgba(255,255,255,.3);">(opcional)</span></label>
+          <input id="cref-edicao" type="text" placeholder="Ex: 3. ed."
+            class="w-full rounded-lg px-3 py-2 text-sm"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+        </div>
       </div>
-      <!-- Aba: Citações diretas -->
-      <div id="painel-aba-cit" class="hidden flex-1 overflow-y-auto p-3">
-        <div id="cit-lista"></div>
+      <!-- Campos condicionais: livro/capítulo -->
+      <div id="cref-campos-livro" class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Local <span style="color:#f87171;">*</span></label>
+          <input id="cref-local" type="text" placeholder="Ex: São Paulo"
+            class="w-full rounded-lg px-3 py-2 text-sm"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Editora <span style="color:#f87171;">*</span></label>
+          <input id="cref-editora" type="text" placeholder="Ex: Cortez"
+            class="w-full rounded-lg px-3 py-2 text-sm"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+        </div>
+      </div>
+      <!-- Campos condicionais: tese -->
+      <div id="cref-campos-tese" class="hidden space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Tipo <span style="color:#f87171;">*</span></label>
+            <select id="cref-tese-tipo" class="w-full rounded-lg px-3 py-2 text-sm"
+              style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+              <option value="Dissertação (Mestrado)">Dissertação (Mestrado)</option>
+              <option value="Tese (Doutorado)">Tese (Doutorado)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Local <span style="color:#f87171;">*</span></label>
+            <input id="cref-tese-local" type="text" placeholder="Ex: Maringá"
+              class="w-full rounded-lg px-3 py-2 text-sm"
+              style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Programa/Curso <span style="color:#f87171;">*</span></label>
+          <input id="cref-tese-programa" type="text" placeholder="Ex: Programa de Pós-Graduação em Educação"
+            class="w-full rounded-lg px-3 py-2 text-sm"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">Instituição <span style="color:#f87171;">*</span></label>
+          <input id="cref-tese-inst" type="text" placeholder="Ex: Universidade Estadual de Maringá"
+            class="w-full rounded-lg px-3 py-2 text-sm"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+        </div>
+      </div>
+      <!-- DOI/URL -->
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:rgba(255,255,255,.6);">DOI / URL <span style="color:rgba(255,255,255,.3);">(opcional)</span></label>
+        <input id="cref-doi" type="text" placeholder="10.xxxx/... ou https://..."
+          class="w-full rounded-lg px-3 py-2 text-sm"
+          style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:white;outline:none;">
+      </div>
+      <!-- Preview ABNT -->
+      <div class="rounded-lg px-4 py-3" style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);">
+        <p class="text-xs mb-1" style="color:#a5b4fc;">Preview ABNT</p>
+        <p id="cref-preview" class="text-xs leading-relaxed italic" style="color:rgba(255,255,255,.8); font-family:'Times New Roman',serif;">Preencha os campos obrigatórios…</p>
+      </div>
+      <p id="cref-erro" class="text-xs text-red-400 min-h-[14px]"></p>
+      <div class="flex gap-2 pt-1">
+        <button onclick="salvarDadosRef()" id="btn-salvar-ref"
+          class="flex-1 text-sm font-medium py-2 rounded-lg transition-colors"
+          style="background:#6366f1;color:white;">
+          Salvar referência
+        </button>
+        <button onclick="fecharCompletarRef()"
+          class="px-4 text-sm font-medium py-2 rounded-lg"
+          style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);">
+          Agora não
+        </button>
       </div>
     </div>
   </div>
@@ -4411,6 +4560,7 @@
     painel.classList.toggle('flex', !aberto)
     document.getElementById('btn-toggle-painel').style.background =
       aberto ? 'transparent' : 'rgba(99,102,241,.2)'
+    if (!aberto) lucide.createIcons()
   }
 
   window.setPainelAba = (aba) => {
@@ -4456,13 +4606,17 @@
     if (refFinal) {
       renderRefCard(refFinal)
       card.classList.remove('hidden')
+      // Abre modal de completar se faltar autores ou ano
+      if (!refFinal.autores || !refFinal.ano) {
+        abrirCompletarRef(refFinal)
+      }
     } else {
       card.innerHTML = `
         <div class="text-center py-6">
           <p class="text-xs mb-3" style="color:rgba(255,255,255,.4);">Referência não encontrada para este PDF.</p>
-          <button onclick="abrirCitarTrechoManual()"
+          <button onclick="abrirCompletarRef(null)"
             class="text-xs px-3 py-1.5 rounded-lg" style="background:rgba(99,102,241,.3);color:#a5b4fc;">
-            + Registrar citação manualmente
+            + Inserir dados da referência
           </button>
         </div>`
       card.classList.remove('hidden')
@@ -4533,12 +4687,142 @@
       ${ref.autores ? `<div class="text-xs" style="color:rgba(255,255,255,.5);"><span style="color:rgba(255,255,255,.7);">Autor(es):</span> ${ref.autores}</div>` : ''}
       ${ref.ano     ? `<div class="text-xs" style="color:rgba(255,255,255,.5);"><span style="color:rgba(255,255,255,.7);">Ano:</span> ${ref.ano}</div>` : ''}
       ${ref.doi     ? `<div class="text-xs break-all" style="color:rgba(255,255,255,.5);"><span style="color:rgba(255,255,255,.7);">DOI:</span> ${ref.doi}</div>` : ''}
+      ${(!ref.autores || !ref.ano) ? `
+      <button onclick="abrirCompletarRef(leitorRefAtual)"
+        class="w-full text-xs py-1.5 rounded-lg flex items-center justify-center gap-1.5"
+        style="background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3);">
+        <i data-lucide="alert-triangle" class="w-3 h-3"></i> Completar dados da referência
+      </button>` : ''}
       <button onclick="abrirCitarTrechoManual()"
         class="w-full text-xs py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
         style="background:rgba(99,102,241,.25);color:#a5b4fc;border:1px solid rgba(99,102,241,.4);">
         <i data-lucide="plus" class="w-3 h-3"></i> Nova citação direta
       </button>`
     lucide.createIcons()
+  }
+
+  // ── MODAL: COMPLETAR REFERÊNCIA ───────────────────────
+  let completarRefId = null
+
+  window.abrirCompletarRef = (ref) => {
+    completarRefId = ref?.id || null
+    const modal = document.getElementById('modal-completar-ref')
+    modal.classList.remove('hidden'); modal.classList.add('flex')
+    lucide.createIcons()
+
+    // Pré-preencher campos se a referência já tiver algum dado
+    if (ref) {
+      document.getElementById('cref-autores').value  = ref.autores  || ''
+      document.getElementById('cref-titulo').value   = ref.titulo   || ''
+      document.getElementById('cref-ano').value      = ref.ano      || ''
+      document.getElementById('cref-doi').value      = ref.doi      || ''
+      document.getElementById('cref-tipo').value     = ref.tipo     || 'livro'
+    }
+    document.getElementById('cref-erro').textContent = ''
+    atualizarCamposTipo()
+    atualizarPreviewRef()
+  }
+
+  window.fecharCompletarRef = () => {
+    const modal = document.getElementById('modal-completar-ref')
+    modal.classList.add('hidden'); modal.classList.remove('flex')
+  }
+
+  function atualizarCamposTipo() {
+    const tipo = document.getElementById('cref-tipo').value
+    document.getElementById('cref-campos-livro').classList.toggle('hidden', tipo === 'tese')
+    document.getElementById('cref-campos-tese').classList.toggle('hidden', tipo !== 'tese')
+  }
+  document.getElementById('cref-tipo').addEventListener('change', () => {
+    atualizarCamposTipo(); atualizarPreviewRef()
+  })
+
+  function atualizarPreviewRef() {
+    if (typeof ABNT === 'undefined') return
+    const tipo     = document.getElementById('cref-tipo').value
+    const autores  = document.getElementById('cref-autores').value.trim()
+    const titulo   = document.getElementById('cref-titulo').value.trim()
+    const sub      = document.getElementById('cref-subtitulo').value.trim()
+    const ano      = document.getElementById('cref-ano').value.trim()
+    const edicao   = document.getElementById('cref-edicao').value.trim()
+    const doi      = document.getElementById('cref-doi').value.trim()
+
+    let preview = '—'
+    try {
+      if (tipo === 'tese') {
+        const inst     = document.getElementById('cref-tese-inst').value.trim()
+        const programa = document.getElementById('cref-tese-programa').value.trim()
+        const local    = document.getElementById('cref-tese-local').value.trim()
+        const teseTipo = document.getElementById('cref-tese-tipo').value
+        const nivel    = teseTipo.includes('Mestrado') ? 'mestrado' : 'doutorado'
+        preview = ABNT.textoPlano(ABNT.tese({ autores, titulo, subtitulo: sub, ano, nivel, curso: programa, instituicao: inst, local }))
+      } else {
+        const local    = document.getElementById('cref-local').value.trim()
+        const editora  = document.getElementById('cref-editora').value.trim()
+        preview = ABNT.textoPlano(ABNT.livro({ autores, titulo, subtitulo: sub, ano, edicao, local, editora, doi }))
+      }
+    } catch(e) { /* campos ainda incompletos */ }
+    document.getElementById('cref-preview').textContent = preview || 'Preencha os campos obrigatórios…'
+  }
+  ;['cref-autores','cref-titulo','cref-subtitulo','cref-ano','cref-edicao','cref-doi',
+    'cref-local','cref-editora','cref-tese-inst','cref-tese-programa','cref-tese-local','cref-tese-tipo']
+    .forEach(id => document.getElementById(id)?.addEventListener('input', atualizarPreviewRef))
+
+  window.salvarDadosRef = async () => {
+    const autores  = document.getElementById('cref-autores').value.trim()
+    const titulo   = document.getElementById('cref-titulo').value.trim()
+    const ano      = parseInt(document.getElementById('cref-ano').value) || null
+    const tipo     = document.getElementById('cref-tipo').value
+    const sub      = document.getElementById('cref-subtitulo').value.trim()
+    const edicao   = document.getElementById('cref-edicao').value.trim()
+    const doi      = document.getElementById('cref-doi').value.trim()
+
+    if (!autores || !titulo || !ano) {
+      document.getElementById('cref-erro').textContent = 'Autores, título e ano são obrigatórios.'
+      return
+    }
+
+    const local   = tipo !== 'tese' ? document.getElementById('cref-local').value.trim()    : document.getElementById('cref-tese-local').value.trim()
+    const editora = tipo !== 'tese' ? document.getElementById('cref-editora').value.trim()  : null
+    const inst    = tipo === 'tese' ? document.getElementById('cref-tese-inst').value.trim() : null
+    const prog    = tipo === 'tese' ? document.getElementById('cref-tese-programa').value.trim() : null
+    const teseTip = tipo === 'tese' ? document.getElementById('cref-tese-tipo').value        : null
+
+    let citacao_abnt = null
+    if (typeof ABNT !== 'undefined') {
+      if (tipo === 'tese') {
+        const nivel = (teseTip||'').includes('Mestrado') ? 'mestrado' : 'doutorado'
+        citacao_abnt = ABNT.textoPlano(ABNT.tese({ autores, titulo, subtitulo: sub, ano: String(ano), nivel, curso: prog, instituicao: inst, local }))
+      } else {
+        citacao_abnt = ABNT.textoPlano(ABNT.livro({ autores, titulo, subtitulo: sub, ano: String(ano), edicao, local, editora, doi }))
+      }
+    }
+
+    const btn = document.getElementById('btn-salvar-ref')
+    btn.disabled = true; btn.textContent = 'Salvando…'
+
+    const payload = { tipo, autores, titulo, ano, doi: doi||null, local: local||null, editora: editora||null, citacao_abnt }
+
+    let error
+    if (completarRefId) {
+      ;({ error } = await db.from('referencias').update(payload).eq('id', completarRefId))
+      if (!error) leitorRefAtual = { ...leitorRefAtual, ...payload, id: completarRefId }
+    } else {
+      const pdfUrl = leitorRefAtual?.pdf_url || null
+      const pdfPath = pdfUrl ? pdfUrl.split('/').pop() : null
+      const { data, error: e } = await db.from('referencias')
+        .insert({ ...payload, pdf_url: pdfUrl, pdf_path: pdfPath, created_by: currentUser?.id || null })
+        .select().single()
+      error = e
+      if (!error) leitorRefAtual = data
+    }
+
+    btn.disabled = false; btn.textContent = 'Salvar referência'
+    if (error) { document.getElementById('cref-erro').textContent = 'Erro ao salvar: ' + error.message; return }
+
+    fecharCompletarRef()
+    renderRefCard(leitorRefAtual)
+    document.getElementById('ref-card').classList.remove('hidden')
   }
 
   async function carregarCitacoes() {
