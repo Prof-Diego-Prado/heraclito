@@ -4713,6 +4713,7 @@
       }
 
       const { data, error } = await db.from('referencias').insert({
+        id: crypto.randomUUID(),
         tipo: 'livro', autores, titulo: tituloFin,
         ano:  ano ? parseInt(ano) : null, doi,
         pdf_url: url, pdf_path: url.split('/').pop(),
@@ -4873,7 +4874,7 @@
       const pdfUrl = leitorRefAtual?.pdf_url || null
       const pdfPath = pdfUrl ? pdfUrl.split('/').pop() : null
       const { data, error: e } = await db.from('referencias')
-        .insert({ ...payload, pdf_url: pdfUrl, pdf_path: pdfPath, created_by: currentUser?.id || null })
+        .insert({ id: crypto.randomUUID(), ...payload, pdf_url: pdfUrl, pdf_path: pdfPath, created_by: currentUser?.id || null })
         .select().single()
       error = e
       if (!error) leitorRefAtual = data
@@ -5002,6 +5003,7 @@
       const titulo  = document.getElementById('leitor-titulo').textContent.trim() || 'PDF sem título'
       const pdfUrl  = window._leitorPdfUrl || null
       const { data: refCriada, error: refErr } = await db.from('referencias').insert({
+        id: crypto.randomUUID(),
         tipo: 'livro', titulo, pdf_url: pdfUrl,
         pdf_path: pdfUrl ? pdfUrl.split('/').pop() : null,
         created_by: currentUser.id,
@@ -5016,6 +5018,7 @@
     const citacao = `(${sob}, ${ano}, p. ${pagStr})`
 
     const { data, error } = await db.from('citacoes_diretas').insert({
+      id:                crypto.randomUUID(),
       referencia_id:     leitorRefAtual.id,
       user_id:           currentUser.id,
       trecho:            trecho || null,
