@@ -1868,6 +1868,10 @@
      SCRIPT
 ═══════════════════════════════════════════════════════ -->
 <script type="module">
+  window.addEventListener('error', e => {
+    alert('ERRO JS: ' + e.message + '\nArquivo: ' + e.filename?.split('/').pop() + '\nLinha: ' + e.lineno)
+  })
+
   const SUPABASE_URL     = 'https://scwhsfutncfbwgvqsgbf.supabase.co'
   const SUPABASE_ANON_KEY = 'sb_publishable_mcvvhFe5AIdQLN4BQAhjEw_y1bvEbvT'
   const { createClient } = supabase
