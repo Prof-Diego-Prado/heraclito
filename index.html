@@ -4984,7 +4984,7 @@
   })
 
   window.salvarCitacaoDireta = async () => {
-    if (!currentUser) return
+    if (!currentUser) { alert('DEBUG: currentUser é null — usuário não autenticado'); return }
     const trecho    = document.getElementById('citar-trecho-texto').value.trim()
     const pagina    = document.getElementById('citar-trecho-pagina').value
     const paginaFim = document.getElementById('citar-trecho-pagina-fim').value
@@ -5006,8 +5006,9 @@
         pdf_path: pdfUrl ? pdfUrl.split('/').pop() : null,
         created_by: currentUser.id,
       }).select().single()
-      if (refErr) { erroEl.textContent = 'Erro ao criar referência: ' + refErr.message; btn.disabled = false; btn.textContent = 'Salvar citação'; return }
+      if (refErr) { alert('DEBUG erro ao criar ref: ' + refErr.message); erroEl.textContent = 'Erro ao criar referência: ' + refErr.message; btn.disabled = false; btn.textContent = 'Salvar citação'; return }
       leitorRefAtual = refCriada
+      alert('DEBUG: referência criada: ' + JSON.stringify(refCriada?.id))
     }
 
     const pagStr  = paginaFim ? `${pagina}-${paginaFim}` : pagina
@@ -5027,8 +5028,10 @@
     btn.disabled = false; btn.textContent = 'Salvar citação'
 
     if (error) {
+      alert('DEBUG erro citacao_direta: ' + error.message + ' | código: ' + error.code)
       erroEl.textContent = 'Erro: ' + error.message
     } else {
+      alert('DEBUG: citação salva com sucesso! id=' + data?.id)
       // Copiar citação automaticamente para a área de transferência
       const textoParaCopiar = trecho ? `"${trecho}" ${citacao}` : citacao
       navigator.clipboard?.writeText(textoParaCopiar).catch(() => {})
