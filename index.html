@@ -1868,10 +1868,6 @@
      SCRIPT
 ═══════════════════════════════════════════════════════ -->
 <script type="module">
-  window.addEventListener('error', e => {
-    alert('ERRO JS: ' + e.message + '\nArquivo: ' + e.filename?.split('/').pop() + '\nLinha: ' + e.lineno)
-  })
-
   const SUPABASE_URL     = 'https://scwhsfutncfbwgvqsgbf.supabase.co'
   const SUPABASE_ANON_KEY = 'sb_publishable_mcvvhFe5AIdQLN4BQAhjEw_y1bvEbvT'
   const { createClient } = supabase
@@ -4867,7 +4863,7 @@
     const btn = document.getElementById('btn-salvar-ref')
     btn.disabled = true; btn.textContent = 'Salvando…'
 
-    const payload = { tipo, autores, titulo, ano, doi: doi||null, local: local||null, editora: editora||null, citacao_abnt }
+    const payload = { tipo, autores, titulo, ano, doi: doi||null, local_publicacao: local||null, editora: editora||null, citacao_abnt }
 
     let error
     if (completarRefId) {
@@ -4988,7 +4984,7 @@
   })
 
   window.salvarCitacaoDireta = async () => {
-    if (!currentUser) { alert('DEBUG: currentUser é null — usuário não autenticado'); return }
+    if (!currentUser) return
     const trecho    = document.getElementById('citar-trecho-texto').value.trim()
     const pagina    = document.getElementById('citar-trecho-pagina').value
     const paginaFim = document.getElementById('citar-trecho-pagina-fim').value
@@ -5010,9 +5006,8 @@
         pdf_path: pdfUrl ? pdfUrl.split('/').pop() : null,
         created_by: currentUser.id,
       }).select().single()
-      if (refErr) { alert('DEBUG erro ao criar ref: ' + refErr.message); erroEl.textContent = 'Erro ao criar referência: ' + refErr.message; btn.disabled = false; btn.textContent = 'Salvar citação'; return }
+      if (refErr) { erroEl.textContent = 'Erro ao criar referência: ' + refErr.message; btn.disabled = false; btn.textContent = 'Salvar citação'; return }
       leitorRefAtual = refCriada
-      alert('DEBUG: referência criada: ' + JSON.stringify(refCriada?.id))
     }
 
     const pagStr  = paginaFim ? `${pagina}-${paginaFim}` : pagina
@@ -5032,10 +5027,8 @@
     btn.disabled = false; btn.textContent = 'Salvar citação'
 
     if (error) {
-      alert('DEBUG erro citacao_direta: ' + error.message + ' | código: ' + error.code)
       erroEl.textContent = 'Erro: ' + error.message
     } else {
-      alert('DEBUG: citação salva com sucesso! id=' + data?.id)
       // Copiar citação automaticamente para a área de transferência
       const textoParaCopiar = trecho ? `"${trecho}" ${citacao}` : citacao
       navigator.clipboard?.writeText(textoParaCopiar).catch(() => {})
