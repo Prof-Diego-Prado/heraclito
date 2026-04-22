@@ -1484,63 +1484,92 @@
   <!-- Painel flutuante de referências ABNT -->
   <div id="leitor-ref-panel" class="hidden absolute flex-row overflow-hidden rounded-l-xl shadow-2xl"
     style="background:#12122a; border:1px solid rgba(255,255,255,.15); right:0; top:4rem; bottom:1rem; z-index:10; transition:width .25s ease; width:2.5rem;">
-    <!-- Aba lateral (estado minimizado) -->
-    <div id="painel-tab" onclick="expandirPainel()"
-      class="flex flex-col items-center justify-center gap-3 cursor-pointer shrink-0 select-none"
-      style="width:2.5rem; min-width:2.5rem; border-right:1px solid rgba(255,255,255,.08);">
-      <i data-lucide="book-marked" class="w-4 h-4 shrink-0" style="color:#a5b4fc;"></i>
-      <span class="text-xs font-medium" style="color:rgba(255,255,255,.45); writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.05em;">Referências</span>
-      <span id="cit-badge" class="hidden items-center justify-center rounded-full text-white shrink-0"
-        style="background:#6366f1; font-size:9px; width:16px; height:16px;">0</span>
+    <!-- Marcadores laterais (dois bookmarks empilhados) -->
+    <div class="flex flex-col shrink-0" style="width:2.5rem; min-width:2.5rem; border-right:1px solid rgba(255,255,255,.08);">
+      <!-- Marcador: Referências -->
+      <div id="painel-tab-ref" onclick="expandirPainelSecao('ref')"
+        class="flex flex-col items-center justify-center gap-2 cursor-pointer select-none py-5 transition-colors"
+        style="border-bottom:1px solid rgba(255,255,255,.08);">
+        <i data-lucide="book-marked" class="w-4 h-4 shrink-0" style="color:#a5b4fc;"></i>
+        <span class="text-xs font-medium" style="color:rgba(255,255,255,.45); writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.05em;">Referências</span>
+        <span id="cit-badge" class="hidden items-center justify-center rounded-full text-white shrink-0"
+          style="background:#6366f1; font-size:9px; width:16px; height:16px;">0</span>
+      </div>
+      <!-- Marcador: Zotero -->
+      <div id="painel-tab-zotero" onclick="expandirPainelSecao('zotero')"
+        class="flex flex-col items-center justify-center gap-2 cursor-pointer select-none py-5 transition-colors">
+        <i data-lucide="library" class="w-4 h-4 shrink-0" style="color:#e84653;"></i>
+        <span class="text-xs font-medium" style="color:rgba(255,255,255,.45); writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.05em;">Zotero</span>
+      </div>
     </div>
     <!-- Conteúdo (estado expandido) -->
     <div id="painel-conteudo" class="hidden flex-col overflow-hidden" style="width:17rem; min-width:17rem;">
-      <!-- Cabeçalho -->
-      <div class="flex items-center justify-between px-3 py-2 shrink-0" style="background:#1a1a30; border-bottom:1px solid rgba(255,255,255,.1);">
-        <span class="text-xs font-semibold" style="color:rgba(255,255,255,.7);">Referências</span>
-        <button onclick="recolherPainel()" class="p-1 rounded hover:bg-white/10 transition-colors" title="Recolher">
-          <i data-lucide="panel-right-close" class="w-3.5 h-3.5" style="color:rgba(255,255,255,.4);"></i>
-        </button>
-      </div>
-      <!-- Abas -->
-      <div class="flex shrink-0" style="border-bottom:1px solid rgba(255,255,255,.1);">
-        <button onclick="setPainelAba('ref')" id="aba-ref" class="flex-1 py-2.5 text-xs font-medium painel-aba painel-aba-ativa">
-          Referência
-        </button>
-        <button onclick="setPainelAba('cit')" id="aba-cit" class="flex-1 py-2.5 text-xs font-medium painel-aba">
-          Cit. (<span id="cit-count">0</span>)
-        </button>
-        <button onclick="setPainelAba('bloco')" id="aba-bloco" class="flex-1 py-2.5 text-xs font-medium painel-aba">
-          Bloco
-        </button>
-      </div>
-      <!-- Aba: Referência -->
-      <div id="painel-aba-ref" class="flex-1 overflow-y-auto p-3 space-y-3">
-        <div id="ref-loading" class="flex flex-col items-center justify-center py-8 gap-2">
-          <div class="w-5 h-5 border-2 rounded-full animate-spin" style="border-color:rgba(99,102,241,.3);border-top-color:#6366f1;"></div>
-          <p class="text-xs" style="color:rgba(255,255,255,.4);">Buscando referência…</p>
-        </div>
-        <div id="ref-card" class="hidden space-y-3"></div>
-      </div>
-      <!-- Aba: Citações diretas -->
-      <div id="painel-aba-cit" class="hidden flex-1 overflow-y-auto p-3">
-        <div id="cit-lista"></div>
-      </div>
-      <!-- Aba: Bloco de notas -->
-      <div id="painel-aba-bloco" class="hidden flex-1 flex-col overflow-hidden">
-        <div class="flex items-center justify-between px-3 py-2 shrink-0" style="border-bottom:1px solid rgba(255,255,255,.08);">
-          <span class="text-xs" style="color:rgba(255,255,255,.4);">Todas as citações</span>
-          <button onclick="copiarBloco()" id="btn-copiar-bloco"
-            class="text-xs flex items-center gap-1 px-2 py-1 rounded-lg transition-colors hover:bg-white/10"
-            style="color:#a5b4fc;">
-            <i data-lucide="copy" class="w-3 h-3"></i> Copiar tudo
+
+      <!-- ── SEÇÃO: Referências ── -->
+      <div id="painel-secao-ref" class="flex flex-col flex-1 overflow-hidden">
+        <!-- Cabeçalho -->
+        <div class="flex items-center justify-between px-3 py-2 shrink-0" style="background:#1a1a30; border-bottom:1px solid rgba(255,255,255,.1);">
+          <span class="text-xs font-semibold" style="color:rgba(255,255,255,.7);">Referências</span>
+          <button onclick="recolherPainel()" class="p-1 rounded hover:bg-white/10 transition-colors" title="Recolher">
+            <i data-lucide="panel-right-close" class="w-3.5 h-3.5" style="color:rgba(255,255,255,.4);"></i>
           </button>
         </div>
-        <textarea id="bloco-notas" spellcheck="false"
-          class="flex-1 p-3 text-xs resize-none outline-none"
-          style="background:transparent; color:rgba(255,255,255,.8); line-height:1.6; font-family:'Courier New',monospace;"
-          placeholder="As citações salvas aparecerão aqui em ordem de criação…"></textarea>
+        <!-- Abas -->
+        <div class="flex shrink-0" style="border-bottom:1px solid rgba(255,255,255,.1);">
+          <button onclick="setPainelAba('ref')" id="aba-ref" class="flex-1 py-2.5 text-xs font-medium painel-aba painel-aba-ativa">
+            Referência
+          </button>
+          <button onclick="setPainelAba('cit')" id="aba-cit" class="flex-1 py-2.5 text-xs font-medium painel-aba">
+            Cit. (<span id="cit-count">0</span>)
+          </button>
+          <button onclick="setPainelAba('bloco')" id="aba-bloco" class="flex-1 py-2.5 text-xs font-medium painel-aba">
+            Bloco
+          </button>
+        </div>
+        <!-- Aba: Referência -->
+        <div id="painel-aba-ref" class="flex-1 overflow-y-auto p-3 space-y-3">
+          <div id="ref-loading" class="flex flex-col items-center justify-center py-8 gap-2">
+            <div class="w-5 h-5 border-2 rounded-full animate-spin" style="border-color:rgba(99,102,241,.3);border-top-color:#6366f1;"></div>
+            <p class="text-xs" style="color:rgba(255,255,255,.4);">Buscando referência…</p>
+          </div>
+          <div id="ref-card" class="hidden space-y-3"></div>
+        </div>
+        <!-- Aba: Citações diretas -->
+        <div id="painel-aba-cit" class="hidden flex-1 overflow-y-auto p-3">
+          <div id="cit-lista"></div>
+        </div>
+        <!-- Aba: Bloco de notas -->
+        <div id="painel-aba-bloco" class="hidden flex-1 flex-col overflow-hidden">
+          <div class="flex items-center justify-between px-3 py-2 shrink-0" style="border-bottom:1px solid rgba(255,255,255,.08);">
+            <span class="text-xs" style="color:rgba(255,255,255,.4);">Todas as citações</span>
+            <button onclick="copiarBloco()" id="btn-copiar-bloco"
+              class="text-xs flex items-center gap-1 px-2 py-1 rounded-lg transition-colors hover:bg-white/10"
+              style="color:#a5b4fc;">
+              <i data-lucide="copy" class="w-3 h-3"></i> Copiar tudo
+            </button>
+          </div>
+          <textarea id="bloco-notas" spellcheck="false"
+            class="flex-1 p-3 text-xs resize-none outline-none"
+            style="background:transparent; color:rgba(255,255,255,.8); line-height:1.6; font-family:'Courier New',monospace;"
+            placeholder="As citações salvas aparecerão aqui em ordem de criação…"></textarea>
+        </div>
       </div>
+
+      <!-- ── SEÇÃO: Zotero ── -->
+      <div id="painel-secao-zotero" class="hidden flex-col flex-1 overflow-hidden">
+        <!-- Cabeçalho -->
+        <div class="flex items-center justify-between px-3 py-2 shrink-0" style="background:#1a1a30; border-bottom:1px solid rgba(255,255,255,.1);">
+          <span class="text-xs font-semibold flex items-center gap-1.5" style="color:rgba(255,255,255,.7);">
+            <i data-lucide="library" class="w-3.5 h-3.5" style="color:#e84653;"></i> Zotero
+          </span>
+          <button onclick="recolherPainel()" class="p-1 rounded hover:bg-white/10 transition-colors" title="Recolher">
+            <i data-lucide="panel-right-close" class="w-3.5 h-3.5" style="color:rgba(255,255,255,.4);"></i>
+          </button>
+        </div>
+        <!-- Corpo renderizado por renderZoteroPainel() -->
+        <div id="zotero-painel-corpo" class="flex-1 overflow-y-auto p-3"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -4645,20 +4674,102 @@
   let leitorRefAtual = null   // referência do PDF aberto
   let leitorCitacoes = []     // citações diretas do PDF atual
 
-  window.expandirPainel = () => {
-    const painel    = document.getElementById('leitor-ref-panel')
-    const conteudo  = document.getElementById('painel-conteudo')
-    painel.style.width = '19.5rem'  // 2.5rem tab + 17rem conteúdo
+  window.expandirPainelSecao = (secao) => {
+    const painel   = document.getElementById('leitor-ref-panel')
+    const conteudo = document.getElementById('painel-conteudo')
+    painel.style.width = '19.5rem'
     conteudo.classList.remove('hidden'); conteudo.classList.add('flex')
+    // Mostrar seção correta
+    const secRef    = document.getElementById('painel-secao-ref')
+    const secZotero = document.getElementById('painel-secao-zotero')
+    const tabRef    = document.getElementById('painel-tab-ref')
+    const tabZotero = document.getElementById('painel-tab-zotero')
+    if (secao === 'zotero') {
+      secRef.classList.add('hidden');    secRef.classList.remove('flex')
+      secZotero.classList.remove('hidden'); secZotero.classList.add('flex')
+      tabRef.style.background    = ''
+      tabZotero.style.background = 'rgba(232,70,83,.18)'
+      renderZoteroPainel()
+    } else {
+      secRef.classList.remove('hidden'); secRef.classList.add('flex')
+      secZotero.classList.add('hidden');  secZotero.classList.remove('flex')
+      tabRef.style.background    = 'rgba(99,102,241,.18)'
+      tabZotero.style.background = ''
+    }
     lucide.createIcons()
     document.getElementById('btn-toggle-painel').style.background = 'rgba(99,102,241,.2)'
   }
+
+  window.expandirPainel = () => expandirPainelSecao('ref')
 
   window.recolherPainel = () => {
     const painel   = document.getElementById('leitor-ref-panel')
     const conteudo = document.getElementById('painel-conteudo')
     painel.style.width = '2.5rem'
     conteudo.classList.add('hidden'); conteudo.classList.remove('flex')
+    ;['painel-tab-ref','painel-tab-zotero'].forEach(id => {
+      const el = document.getElementById(id)
+      if (el) el.style.background = ''
+    })
+  }
+
+  window.renderZoteroPainel = () => {
+    const corpo = document.getElementById('zotero-painel-corpo')
+    if (!corpo) return
+    if (!zoteroConfigurado()) {
+      corpo.innerHTML = `
+        <div class="flex flex-col items-center justify-center gap-3 py-10 text-center">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(232,70,83,.12);">
+            <i data-lucide="library" class="w-5 h-5" style="color:#e84653;"></i>
+          </div>
+          <p class="text-xs font-semibold text-white">Zotero não configurado</p>
+          <p class="text-xs leading-relaxed" style="color:rgba(255,255,255,.4);">Conecte sua biblioteca para salvar referências automaticamente ao ler PDFs.</p>
+          <button onclick="abrirZoteroConfig()" class="px-4 py-2 rounded-xl text-xs font-semibold mt-1" style="background:#e84653; color:white;">
+            Configurar agora
+          </button>
+        </div>`
+      lucide.createIcons(); return
+    }
+    const uid = localStorage.getItem('zotero_user_id')
+    const ref = leitorRefAtual
+    corpo.innerHTML = `
+      <div class="space-y-3">
+        <div class="rounded-xl px-3 py-2.5 flex items-center gap-2" style="background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.2);">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0" style="color:#22c55e;"></i>
+          <div>
+            <p class="text-xs font-semibold" style="color:#22c55e;">Conectado</p>
+            <p class="text-xs" style="color:rgba(255,255,255,.4);">User ID: ${uid}</p>
+          </div>
+        </div>
+        ${ref ? `
+          <div class="rounded-xl p-3 space-y-2.5" style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);">
+            <p class="text-xs font-medium" style="color:rgba(255,255,255,.55);">Referência em leitura</p>
+            <p class="text-xs text-white leading-snug" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${ref.titulo || 'Sem título'}</p>
+            <button onclick="salvarRefNoZotero()" id="btn-salvar-zotero-painel"
+              class="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              style="background:#e84653; color:white;">
+              <i data-lucide="upload" class="w-3 h-3"></i> Salvar no Zotero
+            </button>
+          </div>
+        ` : `
+          <p class="text-xs text-center py-6" style="color:rgba(255,255,255,.35);">Abra um PDF para ver a referência disponível.</p>
+        `}
+        <button onclick="abrirZoteroConfig()"
+          class="w-full py-2 rounded-xl text-xs transition-colors hover:bg-white/10 flex items-center justify-center gap-1.5"
+          style="color:rgba(255,255,255,.4); border:1px solid rgba(255,255,255,.1);">
+          <i data-lucide="settings" class="w-3 h-3"></i> Configurações
+        </button>
+        <div class="pt-1" style="border-top:1px solid rgba(255,255,255,.06);">
+          <p class="text-xs font-medium mb-2" style="color:rgba(255,255,255,.35);">Como usar</p>
+          <ul class="space-y-1.5 text-xs" style="color:rgba(255,255,255,.4);">
+            <li class="flex items-start gap-1.5"><span style="color:#e84653;">1.</span> Abra qualquer PDF da plataforma</li>
+            <li class="flex items-start gap-1.5"><span style="color:#e84653;">2.</span> Clique em "Salvar no Zotero" acima</li>
+            <li class="flex items-start gap-1.5"><span style="color:#e84653;">3.</span> A referência aparece na sua biblioteca Zotero</li>
+            <li class="flex items-start gap-1.5"><span style="color:#e84653;">4.</span> Use <i>Referências</i> (outro marcador) para citações ABNT</li>
+          </ul>
+        </div>
+      </div>`
+    lucide.createIcons()
   }
 
   window.togglePainelRef = () => {
