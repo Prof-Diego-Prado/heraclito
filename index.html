@@ -1457,6 +1457,13 @@
         style="color:#a5b4fc; background:rgba(99,102,241,.2);" title="Registrar citação direta deste PDF">
         <i data-lucide="quote" class="w-3.5 h-3.5"></i> Citar trecho
       </button>
+      <!-- Botão Zotero na toolbar -->
+      <button onclick="zoteroLeitorAcao()" id="btn-zotero-leitor"
+        class="hidden items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:#e84653; background:rgba(232,70,83,.15);" title="Zotero">
+        <i data-lucide="library" class="w-3.5 h-3.5"></i>
+        <span id="btn-zotero-label">Zotero</span>
+      </button>
       <!-- Toggle painel lateral -->
       <button onclick="togglePainelRef()" id="btn-toggle-painel"
         class="hidden items-center gap-1 p-1.5 rounded-lg transition-colors hover:bg-white/10"
@@ -4697,9 +4704,12 @@
     document.getElementById('painel-conteudo').classList.remove('flex')
     const btnCitar  = document.getElementById('btn-citar-trecho')
     const btnToggle = document.getElementById('btn-toggle-painel')
+    const btnZotero = document.getElementById('btn-zotero-leitor')
     btnCitar.classList.remove('hidden');  btnCitar.classList.add('flex')
     btnToggle.classList.remove('hidden'); btnToggle.classList.add('flex')
     btnToggle.style.background = 'rgba(99,102,241,.2)'
+    btnZotero.classList.remove('hidden'); btnZotero.classList.add('flex')
+    atualizarBtnZoteroLeitor()
     lucide.createIcons()
 
     // 1. Buscar referência existente por URL ou nome do arquivo
@@ -6023,6 +6033,23 @@
       setTimeout(() => setLeitorStatus(''), 2500)
     } catch(e) {
       setLeitorStatus('Erro Zotero: ' + e.message, '#fca5a5')
+    }
+  }
+
+  function atualizarBtnZoteroLeitor() {
+    const lbl = document.getElementById('btn-zotero-label')
+    if (!lbl) return
+    lbl.textContent = zoteroConfigurado() ? 'Salvar no Zotero' : 'Configurar Zotero'
+  }
+
+  window.zoteroLeitorAcao = () => {
+    if (zoteroConfigurado()) {
+      salvarRefNoZotero()
+    } else {
+      // Abrir config sem fechar o leitor (modal z-[500] fica acima do leitor z-[300])
+      const modal = document.getElementById('modal-zotero')
+      modal.style.zIndex = '500'
+      abrirZoteroConfig()
     }
   }
 
