@@ -1457,18 +1457,20 @@
         style="color:#a5b4fc; background:rgba(99,102,241,.2);" title="Registrar citação direta deste PDF">
         <i data-lucide="quote" class="w-3.5 h-3.5"></i> Citar trecho
       </button>
-      <!-- Botão Zotero na toolbar -->
-      <button onclick="zoteroLeitorAcao()" id="btn-zotero-leitor"
+      <!-- Abas da toolbar: Referências e Zotero -->
+      <button onclick="togglePainelSecao('ref')" id="btn-tab-ref"
         class="hidden items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
-        style="color:#e84653; background:rgba(232,70,83,.15);" title="Zotero">
-        <i data-lucide="library" class="w-3.5 h-3.5"></i>
-        <span id="btn-zotero-label">Zotero</span>
+        style="color:#a5b4fc;" title="Referências e citações">
+        <i data-lucide="book-marked" class="w-3.5 h-3.5"></i>
+        <span>Referências</span>
+        <span id="cit-badge" class="hidden items-center justify-center rounded-full text-white shrink-0 ml-0.5"
+          style="background:#6366f1; font-size:9px; width:16px; height:16px; min-width:16px;">0</span>
       </button>
-      <!-- Toggle painel lateral -->
-      <button onclick="togglePainelRef()" id="btn-toggle-painel"
-        class="hidden items-center gap-1 p-1.5 rounded-lg transition-colors hover:bg-white/10"
-        style="color:rgba(255,255,255,.7);" title="Referência e citações">
-        <i data-lucide="panel-right" class="w-4 h-4"></i>
+      <button onclick="togglePainelSecao('zotero')" id="btn-tab-zotero"
+        class="hidden items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:#e84653;" title="Zotero">
+        <i data-lucide="library" class="w-3.5 h-3.5"></i>
+        <span>Zotero</span>
       </button>
       <button onclick="fecharLeitorPdf()"
         class="p-1.5 rounded-lg transition-colors hover:bg-white/10"
@@ -1477,33 +1479,12 @@
       </button>
     </div>
   </div>
-  <!-- Body: viewer -->
+  <!-- Body: viewer + painel lateral -->
   <div class="flex flex-1 overflow-hidden">
     <div id="adobe-dc-view" class="flex-1 overflow-hidden"></div>
-  </div>
-  <!-- Painel flutuante de referências ABNT -->
-  <div id="leitor-ref-panel" class="hidden absolute flex-row overflow-hidden rounded-l-xl shadow-2xl"
-    style="background:#12122a; border:1px solid rgba(255,255,255,.15); right:0; top:4rem; bottom:1rem; z-index:10; transition:width .25s ease; width:2.5rem;">
-    <!-- Marcadores laterais (dois bookmarks empilhados) -->
-    <div class="flex flex-col shrink-0" style="width:2.5rem; min-width:2.5rem; border-right:1px solid rgba(255,255,255,.08);">
-      <!-- Marcador: Referências -->
-      <div id="painel-tab-ref" onclick="expandirPainelSecao('ref')"
-        class="flex flex-col items-center justify-center gap-2 cursor-pointer select-none py-5 transition-colors"
-        style="border-bottom:1px solid rgba(255,255,255,.08);">
-        <i data-lucide="book-marked" class="w-4 h-4 shrink-0" style="color:#a5b4fc;"></i>
-        <span class="text-xs font-medium" style="color:rgba(255,255,255,.45); writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.05em;">Referências</span>
-        <span id="cit-badge" class="hidden items-center justify-center rounded-full text-white shrink-0"
-          style="background:#6366f1; font-size:9px; width:16px; height:16px;">0</span>
-      </div>
-      <!-- Marcador: Zotero -->
-      <div id="painel-tab-zotero" onclick="expandirPainelSecao('zotero')"
-        class="flex flex-col items-center justify-center gap-2 cursor-pointer select-none py-5 transition-colors">
-        <i data-lucide="library" class="w-4 h-4 shrink-0" style="color:#e84653;"></i>
-        <span class="text-xs font-medium" style="color:rgba(255,255,255,.45); writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.05em;">Zotero</span>
-      </div>
-    </div>
-    <!-- Conteúdo (estado expandido) -->
-    <div id="painel-conteudo" class="hidden flex-col overflow-hidden" style="width:17rem; min-width:17rem;">
+    <!-- Painel lateral de referências/Zotero (sidebar real, sem sobreposição) -->
+    <div id="leitor-ref-panel" class="hidden flex-col overflow-hidden shrink-0"
+      style="background:#12122a; border-left:1px solid rgba(255,255,255,.15); width:0; min-width:0; transition:width .25s ease;">
 
       <!-- ── SEÇÃO: Referências ── -->
       <div id="painel-secao-ref" class="flex flex-col flex-1 overflow-hidden">
@@ -1572,7 +1553,6 @@
 
     </div>
   </div>
-</div>
 
 <!-- Modal: Completar dados da referência -->
 <div id="modal-completar-ref" class="fixed inset-0 z-[450] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.75);">
@@ -4659,7 +4639,10 @@
     const painel = document.getElementById('leitor-ref-panel')
     painel.classList.add('hidden'); painel.classList.remove('flex')
     document.getElementById('btn-citar-trecho').classList.replace('flex','hidden')
-    document.getElementById('btn-toggle-painel').classList.replace('flex','hidden')
+    ;['btn-tab-ref','btn-tab-zotero'].forEach(id => {
+      const el = document.getElementById(id)
+      if (el) { el.classList.add('hidden'); el.classList.remove('flex') }
+    })
     setPainelAba('ref')
   }
 
@@ -4674,43 +4657,57 @@
   let leitorRefAtual = null   // referência do PDF aberto
   let leitorCitacoes = []     // citações diretas do PDF atual
 
+  let painelSecaoAtiva = null  // 'ref' | 'zotero' | null
+
   window.expandirPainelSecao = (secao) => {
-    const painel   = document.getElementById('leitor-ref-panel')
-    const conteudo = document.getElementById('painel-conteudo')
-    painel.style.width = '19.5rem'
-    conteudo.classList.remove('hidden'); conteudo.classList.add('flex')
+    const painel = document.getElementById('leitor-ref-panel')
+    painel.classList.remove('hidden'); painel.classList.add('flex')
+    painel.style.width = '19rem'
+    painelSecaoAtiva = secao
     // Mostrar seção correta
     const secRef    = document.getElementById('painel-secao-ref')
     const secZotero = document.getElementById('painel-secao-zotero')
-    const tabRef    = document.getElementById('painel-tab-ref')
-    const tabZotero = document.getElementById('painel-tab-zotero')
     if (secao === 'zotero') {
-      secRef.classList.add('hidden');    secRef.classList.remove('flex')
+      secRef.classList.add('hidden');      secRef.classList.remove('flex')
       secZotero.classList.remove('hidden'); secZotero.classList.add('flex')
-      tabRef.style.background    = ''
-      tabZotero.style.background = 'rgba(232,70,83,.18)'
       renderZoteroPainel()
     } else {
       secRef.classList.remove('hidden'); secRef.classList.add('flex')
       secZotero.classList.add('hidden');  secZotero.classList.remove('flex')
-      tabRef.style.background    = 'rgba(99,102,241,.18)'
-      tabZotero.style.background = ''
     }
+    // Destacar botão ativo na toolbar
+    const btnRef    = document.getElementById('btn-tab-ref')
+    const btnZotero = document.getElementById('btn-tab-zotero')
+    if (btnRef)    btnRef.style.background    = secao === 'ref'    ? 'rgba(99,102,241,.25)' : ''
+    if (btnZotero) btnZotero.style.background = secao === 'zotero' ? 'rgba(232,70,83,.25)'  : ''
     lucide.createIcons()
-    document.getElementById('btn-toggle-painel').style.background = 'rgba(99,102,241,.2)'
+  }
+
+  // Alterna: se já aberto na mesma seção, fecha; senão abre na seção
+  window.togglePainelSecao = (secao) => {
+    const painel = document.getElementById('leitor-ref-panel')
+    if (!painel.classList.contains('hidden') && painelSecaoAtiva === secao) {
+      recolherPainel()
+    } else {
+      expandirPainelSecao(secao)
+    }
   }
 
   window.expandirPainel = () => expandirPainelSecao('ref')
 
   window.recolherPainel = () => {
-    const painel   = document.getElementById('leitor-ref-panel')
-    const conteudo = document.getElementById('painel-conteudo')
-    painel.style.width = '2.5rem'
-    conteudo.classList.add('hidden'); conteudo.classList.remove('flex')
-    ;['painel-tab-ref','painel-tab-zotero'].forEach(id => {
-      const el = document.getElementById(id)
-      if (el) el.style.background = ''
-    })
+    const painel = document.getElementById('leitor-ref-panel')
+    painel.style.width = '0'
+    painelSecaoAtiva = null
+    setTimeout(() => {
+      if (painel.style.width === '0px' || painel.style.width === '0') {
+        painel.classList.add('hidden'); painel.classList.remove('flex')
+      }
+    }, 260)
+    const btnRef    = document.getElementById('btn-tab-ref')
+    const btnZotero = document.getElementById('btn-tab-zotero')
+    if (btnRef)    btnRef.style.background    = ''
+    if (btnZotero) btnZotero.style.background = ''
   }
 
   window.renderZoteroPainel = () => {
@@ -4772,22 +4769,7 @@
     lucide.createIcons()
   }
 
-  window.togglePainelRef = () => {
-    const painel = document.getElementById('leitor-ref-panel')
-    if (painel.classList.contains('hidden')) {
-      // Mostrar minimizado
-      painel.classList.remove('hidden'); painel.classList.add('flex')
-      document.getElementById('btn-toggle-painel').style.background = 'rgba(99,102,241,.2)'
-      lucide.createIcons()
-    } else if (!document.getElementById('painel-conteudo').classList.contains('hidden')) {
-      // Expandido → minimizado
-      recolherPainel()
-    } else {
-      // Minimizado → oculto
-      painel.classList.add('hidden'); painel.classList.remove('flex')
-      document.getElementById('btn-toggle-painel').style.background = 'transparent'
-    }
-  }
+  window.togglePainelRef = () => togglePainelSecao('ref')
 
   window.setPainelAba = (aba) => {
     ['ref','cit','bloco'].forEach(a => {
@@ -4807,20 +4789,13 @@
     loading.classList.remove('hidden')
     card.classList.add('hidden')
 
-    // Exibir painel minimizado + botões da toolbar
-    const painel = document.getElementById('leitor-ref-panel')
-    painel.classList.remove('hidden'); painel.classList.add('flex')
-    painel.style.width = '2.5rem'
-    document.getElementById('painel-conteudo').classList.add('hidden')
-    document.getElementById('painel-conteudo').classList.remove('flex')
-    const btnCitar  = document.getElementById('btn-citar-trecho')
-    const btnToggle = document.getElementById('btn-toggle-painel')
-    const btnZotero = document.getElementById('btn-zotero-leitor')
-    btnCitar.classList.remove('hidden');  btnCitar.classList.add('flex')
-    btnToggle.classList.remove('hidden'); btnToggle.classList.add('flex')
-    btnToggle.style.background = 'rgba(99,102,241,.2)'
-    btnZotero.classList.remove('hidden'); btnZotero.classList.add('flex')
-    atualizarBtnZoteroLeitor()
+    // Exibir botões da toolbar (painel começa fechado)
+    const btnCitar   = document.getElementById('btn-citar-trecho')
+    const btnTabRef  = document.getElementById('btn-tab-ref')
+    const btnTabZot  = document.getElementById('btn-tab-zotero')
+    if (btnCitar)  { btnCitar.classList.remove('hidden');  btnCitar.classList.add('flex') }
+    if (btnTabRef) { btnTabRef.classList.remove('hidden'); btnTabRef.classList.add('flex') }
+    if (btnTabZot) { btnTabZot.classList.remove('hidden'); btnTabZot.classList.add('flex') }
     lucide.createIcons()
 
     // 1. Buscar referência existente por URL ou nome do arquivo
@@ -6149,11 +6124,7 @@
     }
   }
 
-  function atualizarBtnZoteroLeitor() {
-    const lbl = document.getElementById('btn-zotero-label')
-    if (!lbl) return
-    lbl.textContent = zoteroConfigurado() ? 'Salvar no Zotero' : 'Configurar Zotero'
-  }
+  function atualizarBtnZoteroLeitor() { /* labels fixos agora */ }
 
   window.zoteroLeitorAcao = () => {
     if (zoteroConfigurado()) {
