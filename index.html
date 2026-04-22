@@ -449,6 +449,11 @@
           <button onclick="abrirAlterarUsername()" class="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm hover:bg-[#F0EDE6] transition-colors" style="color:var(--text);">
             <i data-lucide="at-sign" class="w-4 h-4 shrink-0" style="color:var(--primary);"></i>Alterar nome de usuário
           </button>
+          <div style="height:1px;background:var(--border);margin:2px 0;"></div>
+          <button onclick="abrirZoteroConfig()" class="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm hover:bg-[#F0EDE6] transition-colors" style="color:var(--text);">
+            <i data-lucide="library" class="w-4 h-4 shrink-0" style="color:#e84653;"></i>
+            Zotero <span id="zotero-chip" class="hidden text-xs px-1.5 py-0.5 rounded-full ml-auto" style="background:#e84653;color:white;">ON</span>
+          </button>
         </div>
       </div>
 
@@ -1728,6 +1733,55 @@
           class="px-4 text-sm font-medium py-2 rounded-lg transition-colors"
           style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);">
           Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Zotero Config -->
+<div id="modal-zotero" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:#e84653;">
+          <i data-lucide="library" class="w-3.5 h-3.5 text-white"></i>
+        </div>
+        <p class="font-bold text-sm" style="color:var(--text);">Integração Zotero</p>
+      </div>
+      <button onclick="fecharZoteroConfig()" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <p class="text-xs leading-relaxed" style="color:var(--muted);">
+        Suas credenciais ficam salvas <strong>apenas neste dispositivo</strong> (localStorage).
+        Gere sua API Key em <strong>zotero.org/settings/keys</strong> com permissão de leitura/escrita.
+      </p>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">User ID</label>
+        <input id="zotero-user-id" type="text" placeholder="Ex: 1234567"
+          class="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-all"
+          style="border:1.5px solid var(--border); background:var(--bg); color:var(--text);">
+        <p class="text-xs mt-1" style="color:var(--muted);">Número em zotero.org/settings/keys → "Your userID"</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">API Key</label>
+        <input id="zotero-api-key" type="password" placeholder="Chave gerada no Zotero"
+          class="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-all"
+          style="border:1.5px solid var(--border); background:var(--bg); color:var(--text);">
+      </div>
+      <div id="zotero-status" class="hidden rounded-xl px-4 py-2.5 text-xs font-medium"></div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="salvarZoteroConfig()"
+          class="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+          style="background:#e84653; color:white;">
+          Salvar
+        </button>
+        <button onclick="limparZoteroConfig()"
+          class="px-4 py-2.5 rounded-xl text-sm font-medium transition-colors hover:bg-red-50"
+          style="border:1.5px solid var(--border); color:var(--muted);">
+          Desconectar
         </button>
       </div>
     </div>
@@ -4657,7 +4711,24 @@
 
     let refFinal = ref
 
-    // 2. Não encontrou → extrair metadados e criar
+    // 2. Não encontrou → tentar Zotero (se configurado)
+    if (!refFinal && zoteroConfigurado()) {
+      const zRef = await buscarNoZotero(null, titulo)
+      if (zRef) {
+        // Salvar no banco para próximas aberturas
+        const { data: salvo } = await db.from('referencias').insert({
+          id: crypto.randomUUID(), tipo: 'livro',
+          autores: zRef.autores, titulo: zRef.titulo, ano: zRef.ano,
+          editora: zRef.editora, doi: zRef.doi, citacao_abnt: zRef.citacao_abnt,
+          pdf_url: url, pdf_path: url.split('/').pop(), created_by: currentUser?.id || null,
+        }).select().single()
+        refFinal = salvo || zRef
+        setLeitorStatus('✓ Referência importada do Zotero', '#86efac')
+        setTimeout(() => setLeitorStatus(''), 2500)
+      }
+    }
+
+    // 3. Extrair metadados do PDF
     if (!refFinal && pdfBuffer && typeof pdfjsLib !== 'undefined') {
       refFinal = await extrairECriarReferencia(url, titulo, pdfBuffer)
     }
@@ -4760,7 +4831,13 @@
         class="w-full text-xs py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
         style="background:rgba(99,102,241,.25);color:#a5b4fc;border:1px solid rgba(99,102,241,.4);">
         <i data-lucide="plus" class="w-3 h-3"></i> Nova citação direta
-      </button>`
+      </button>
+      ${zoteroConfigurado() ? `
+      <button onclick="salvarRefNoZotero()"
+        class="w-full text-xs py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
+        style="background:rgba(232,70,83,.15);color:#e84653;border:1px solid rgba(232,70,83,.3);">
+        <i data-lucide="library" class="w-3 h-3"></i> Salvar no Zotero
+      </button>` : ''}`
     lucide.createIcons()
   }
 
@@ -5789,6 +5866,168 @@
       }
     }
   }
+
+  // ── ZOTERO INTEGRATION ───────────────────────────────────────────────────
+  const ZOTERO_BASE = 'https://api.zotero.org'
+
+  function zoteroConfigurado() {
+    return !!(localStorage.getItem('zotero_user_id') && localStorage.getItem('zotero_api_key'))
+  }
+
+  function zoteroHeaders() {
+    return {
+      'Zotero-API-Key':     localStorage.getItem('zotero_api_key') || '',
+      'Zotero-API-Version': '3',
+      'Content-Type':       'application/json',
+    }
+  }
+
+  window.abrirZoteroConfig = () => {
+    const modal = document.getElementById('modal-zotero')
+    modal.classList.remove('hidden'); modal.classList.add('flex')
+    document.getElementById('zotero-user-id').value  = localStorage.getItem('zotero_user_id') || ''
+    document.getElementById('zotero-api-key').value  = localStorage.getItem('zotero_api_key') || ''
+    document.getElementById('zotero-status').classList.add('hidden')
+    lucide.createIcons()
+    atualizarZoteroChip()
+  }
+
+  window.fecharZoteroConfig = () => {
+    const modal = document.getElementById('modal-zotero')
+    modal.classList.add('hidden'); modal.classList.remove('flex')
+  }
+
+  window.salvarZoteroConfig = async () => {
+    const uid = document.getElementById('zotero-user-id').value.trim()
+    const key = document.getElementById('zotero-api-key').value.trim()
+    const status = document.getElementById('zotero-status')
+    if (!uid || !key) {
+      status.textContent = 'Preencha os dois campos.'
+      status.style.cssText = 'background:rgba(239,68,68,.1);color:#ef4444;'
+      status.classList.remove('hidden'); return
+    }
+    // Testar credenciais
+    status.textContent = 'Verificando…'
+    status.style.cssText = 'background:rgba(99,102,241,.1);color:#6366f1;'
+    status.classList.remove('hidden')
+    try {
+      const r = await fetch(`${ZOTERO_BASE}/users/${uid}/items?limit=1`, { headers: zoteroHeaders() })
+      if (!r.ok) throw new Error('Credenciais inválidas (HTTP ' + r.status + ')')
+      localStorage.setItem('zotero_user_id', uid)
+      localStorage.setItem('zotero_api_key', key)
+      status.textContent = '✓ Conectado ao Zotero com sucesso!'
+      status.style.cssText = 'background:rgba(34,197,94,.1);color:#16a34a;'
+      atualizarZoteroChip()
+      setTimeout(fecharZoteroConfig, 1500)
+    } catch(e) {
+      status.textContent = 'Erro: ' + e.message
+      status.style.cssText = 'background:rgba(239,68,68,.1);color:#ef4444;'
+    }
+  }
+
+  window.limparZoteroConfig = () => {
+    localStorage.removeItem('zotero_user_id')
+    localStorage.removeItem('zotero_api_key')
+    document.getElementById('zotero-user-id').value = ''
+    document.getElementById('zotero-api-key').value = ''
+    const status = document.getElementById('zotero-status')
+    status.textContent = 'Desconectado.'
+    status.style.cssText = 'background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);'
+    status.classList.remove('hidden')
+    atualizarZoteroChip()
+  }
+
+  function atualizarZoteroChip() {
+    const chip = document.getElementById('zotero-chip')
+    if (chip) chip.classList.toggle('hidden', !zoteroConfigurado())
+  }
+
+  // Busca item no Zotero por DOI (preciso) ou título (fuzzy)
+  async function buscarNoZotero(doi, titulo) {
+    if (!zoteroConfigurado()) return null
+    const uid = localStorage.getItem('zotero_user_id')
+    try {
+      // 1. Tentar por DOI primeiro
+      if (doi) {
+        const r = await fetch(`${ZOTERO_BASE}/users/${uid}/items?q=${encodeURIComponent(doi)}&limit=1`, { headers: zoteroHeaders() })
+        if (r.ok) {
+          const items = await r.json()
+          if (items.length) return zoteroParaRef(items[0])
+        }
+      }
+      // 2. Buscar por título
+      if (titulo) {
+        const r = await fetch(`${ZOTERO_BASE}/users/${uid}/items?q=${encodeURIComponent(titulo)}&limit=3`, { headers: zoteroHeaders() })
+        if (r.ok) {
+          const items = await r.json()
+          // Escolher o item com título mais próximo
+          const match = items.find(i => {
+            const t = (i.data?.title || '').toLowerCase()
+            return t.includes(titulo.toLowerCase().slice(0, 20))
+          })
+          if (match) return zoteroParaRef(match)
+        }
+      }
+    } catch(e) { console.warn('Zotero search error:', e) }
+    return null
+  }
+
+  // Converter item Zotero → campos de referência
+  function zoteroParaRef(item) {
+    const d = item.data || {}
+    const autores = (d.creators || [])
+      .filter(c => c.creatorType === 'author' || c.creatorType === 'editor')
+      .map(c => c.lastName ? `${c.lastName}, ${c.firstName || ''}`.trim() : c.name || '')
+      .join('; ')
+    const ano = d.date ? String(d.date).match(/\d{4}/)?.[0] : null
+    let citacao_abnt = null
+    if (typeof ABNT !== 'undefined') {
+      citacao_abnt = ABNT.textoPlano(ABNT.livro({
+        autores, titulo: d.title, ano,
+        editora: d.publisher, doi: d.DOI || null,
+      }))
+    }
+    return { _fromZotero: true, _zoteroKey: item.key, autores, titulo: d.title,
+      ano: ano ? parseInt(ano) : null, editora: d.publisher || null,
+      doi: d.DOI || null, citacao_abnt }
+  }
+
+  // Salvar referência atual no Zotero
+  window.salvarRefNoZotero = async () => {
+    if (!zoteroConfigurado() || !leitorRefAtual) return
+    const uid = localStorage.getItem('zotero_user_id')
+    const ref = leitorRefAtual
+    const autores = (ref.autores || '').split(/[;|]/).map(a => {
+      const t = a.trim()
+      if (t.includes(',')) {
+        const [sob, ...resto] = t.split(',')
+        return { creatorType: 'author', lastName: sob.trim(), firstName: resto.join(',').trim() }
+      }
+      return { creatorType: 'author', name: t }
+    })
+    const item = [{
+      itemType: 'book',
+      title:     ref.titulo || '',
+      creators:  autores,
+      date:      ref.ano ? String(ref.ano) : '',
+      publisher: ref.editora || '',
+      DOI:       ref.doi || '',
+      url:       ref.pdf_url || '',
+    }]
+    try {
+      const r = await fetch(`${ZOTERO_BASE}/users/${uid}/items`, {
+        method: 'POST', headers: zoteroHeaders(), body: JSON.stringify(item)
+      })
+      if (!r.ok) throw new Error('HTTP ' + r.status)
+      setLeitorStatus('✓ Salvo no Zotero', '#86efac')
+      setTimeout(() => setLeitorStatus(''), 2500)
+    } catch(e) {
+      setLeitorStatus('Erro Zotero: ' + e.message, '#fca5a5')
+    }
+  }
+
+  // Inicializar chip ao carregar
+  atualizarZoteroChip()
 </script>
 
 <!-- ═══════════════════════════════════════════════════════
