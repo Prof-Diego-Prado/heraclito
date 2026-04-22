@@ -5921,7 +5921,9 @@
     status.style.cssText = 'background:rgba(99,102,241,.1);color:#6366f1;'
     status.classList.remove('hidden')
     try {
-      const r = await fetch(`${ZOTERO_BASE}/users/${uid}/items?limit=1`, { headers: zoteroHeaders() })
+      const r = await fetch(`${ZOTERO_BASE}/users/${uid}/items?limit=1`, {
+        headers: { 'Zotero-API-Key': key, 'Zotero-API-Version': '3' }
+      })
       if (!r.ok) throw new Error('Credenciais inválidas (HTTP ' + r.status + ')')
       localStorage.setItem('zotero_user_id', uid)
       localStorage.setItem('zotero_api_key', key)
