@@ -915,6 +915,10 @@
             <i data-lucide="users" class="w-4 h-4" style="color:var(--primary);"></i>
           </div>
           <p class="font-semibold text-sm" style="color:var(--text);">Todos os Usuários</p>
+          <button id="btn-add-usuario" onclick="abrirAddUsuario()"
+            class="ml-auto btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold hidden">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>Adicionar
+          </button>
         </div>
         <div id="lista-todos-usuarios" class="divide-y" style="divide-color:var(--border);">
           <p class="text-sm text-center py-8" style="color:var(--muted);">Carregando...</p>
@@ -1935,6 +1939,106 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════
+     MODAL: ADICIONAR USUÁRIO (admin)
+═══════════════════════════════════════════════════════ -->
+<div id="modal-add-usuario" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-md overflow-hidden fade-in">
+    <div class="px-6 pt-6 pb-2 flex items-center gap-3" style="border-bottom:1px solid var(--border);">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#EEF2FF;">
+        <i data-lucide="user-plus" class="w-4 h-4" style="color:var(--primary);"></i>
+      </div>
+      <p class="font-bold text-base" style="color:var(--text);">Adicionar Usuário</p>
+      <button onclick="fecharAddUsuario()" class="ml-auto p-1 rounded-lg hover:bg-gray-100 transition-colors">
+        <i data-lucide="x" class="w-4 h-4" style="color:var(--muted);"></i>
+      </button>
+    </div>
+    <form id="form-add-usuario" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+      <!-- Nome -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome completo</label>
+        <input type="text" id="add-nome" class="input-field" placeholder="Nome do usuário" required>
+      </div>
+      <!-- Email -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Email</label>
+        <input type="email" id="add-email" class="input-field" placeholder="email@exemplo.com" required>
+      </div>
+      <!-- Senha -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Senha inicial</label>
+        <div class="relative">
+          <input type="password" id="add-senha" class="input-field pr-10" placeholder="Mínimo 6 caracteres" required minlength="6">
+          <button type="button" onclick="toggleAddSenha()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+            <i data-lucide="eye" id="add-senha-icon" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      <!-- Perfil (role) -->
+      <div>
+        <label class="block text-xs font-semibold mb-2 uppercase tracking-wider" style="color:var(--muted);">Perfil</label>
+        <div class="flex gap-3">
+          <label class="flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors hover:border-indigo-400"
+            style="border-color:var(--border);">
+            <input type="radio" name="add-role" value="student" class="accent-indigo-600" checked
+              onchange="toggleAddCamposRole()">
+            <span class="text-sm font-medium" style="color:var(--text);">Aluno</span>
+          </label>
+          <label class="flex-1 flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors hover:border-indigo-400"
+            style="border-color:var(--border);">
+            <input type="radio" name="add-role" value="teacher" class="accent-indigo-600"
+              onchange="toggleAddCamposRole()">
+            <span class="text-sm font-medium" style="color:var(--text);">Professor</span>
+          </label>
+        </div>
+      </div>
+      <!-- Campos de aluno -->
+      <div id="add-campos-aluno" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Disciplina</label>
+          <select id="add-disciplina-aluno" class="input-field">
+            <option value="">Selecionar depois</option>
+            <option value="4001">4001</option>
+            <option value="4008">4008</option>
+            <option value="4001,4008">4001 e 4008</option>
+          </select>
+        </div>
+      </div>
+      <!-- Campos de professor -->
+      <div id="add-campos-professor" class="space-y-3 hidden">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Instituição</label>
+          <input type="text" id="add-instituicao" class="input-field" placeholder="Ex: UEM">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Área de atuação</label>
+          <input type="text" id="add-area" class="input-field" placeholder="Ex: Educação e Tecnologia">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Disciplina ministrada</label>
+          <input type="text" id="add-disciplina-prof" class="input-field" placeholder="Ex: DPD 4008">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Link pasta Google Drive</label>
+          <input type="url" id="add-drive" class="input-field" placeholder="https://drive.google.com/…">
+        </div>
+      </div>
+      <!-- Aprovado -->
+      <div class="flex items-center gap-2 pt-1">
+        <input type="checkbox" id="add-aprovado" class="w-4 h-4 rounded accent-indigo-600" checked>
+        <label for="add-aprovado" class="text-sm cursor-pointer" style="color:var(--muted);">Aprovar conta imediatamente</label>
+      </div>
+      <!-- Erro -->
+      <p id="add-usuario-erro" class="hidden text-xs font-medium" style="color:#DC2626;"></p>
+      <!-- Botão -->
+      <button type="submit" id="btn-add-usuario-submit"
+        class="btn-primary w-full py-2.5 rounded-xl font-semibold text-sm mt-2">
+        Criar Usuário
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
      SCRIPT
 ═══════════════════════════════════════════════════════ -->
 <script type="module">
@@ -2121,6 +2225,7 @@
 
     if (isAdmin) {
       document.querySelectorAll('#btn-nova-aula, #btn-nova-aula-2').forEach(b => b.classList.remove('hidden'))
+      document.getElementById('btn-add-usuario').classList.remove('hidden')
     }
     if (isAdmin || isTeacher) {
       document.getElementById('nav-usuarios').classList.remove('hidden')
@@ -3714,6 +3819,33 @@
     const roleColors = { admin:'#EDE9FE:#6D28D9', teacher:'#EEF2FF:#4338CA', student:'#ECFDF5:#065F46' }
     const [rbg, rtc]  = (roleColors[u.role] || '#F3F4F6:#6B7280').split(':')
     const roleLabel   = { admin:'Admin', teacher:'Professor', student:'Aluno' }
+    const statusColor = u.approved ? '#059669' : '#D97706'
+    const statusLabel = u.approved ? 'Ativo' : 'Pendente'
+
+    const roleSelectorHtml = isAdmin && u.role !== 'admin' ? `
+      <select onchange="alterarRole('${u.id}', this.value)"
+        class="text-xs rounded-lg px-2 py-1 border transition-colors cursor-pointer"
+        style="border-color:var(--border); color:var(--text); background:var(--surface);">
+        <option value="student" ${u.role === 'student' ? 'selected' : ''}>Aluno</option>
+        <option value="teacher" ${u.role === 'teacher' ? 'selected' : ''}>Professor</option>
+      </select>` : ''
+
+    const disciplinaHtml = isAdmin && u.role === 'student' ? `
+      <select onchange="atribuirDisciplina('${u.id}', this.value)"
+        class="text-xs rounded-lg px-2 py-1 border transition-colors cursor-pointer"
+        style="border-color:var(--border); color:var(--text); background:var(--surface);">
+        <option value="" ${!u.disciplinas?.length ? 'selected':''}>Disc…</option>
+        <option value="4001" ${u.disciplinas?.includes('4001') && !u.disciplinas?.includes('4008') ? 'selected':''}>4001</option>
+        <option value="4008" ${u.disciplinas?.includes('4008') && !u.disciplinas?.includes('4001') ? 'selected':''}>4008</option>
+        <option value="4001,4008" ${u.disciplinas?.includes('4001') && u.disciplinas?.includes('4008') ? 'selected':''}>4001+4008</option>
+      </select>` : ''
+
+    const deleteBtn = isAdmin && u.role !== 'admin' ? `
+      <button onclick="deletarUsuario('${u.id}','${u.name.replace(/'/g,"\\'")}')"
+        class="p-1 rounded-lg hover:bg-red-50 transition-colors text-gray-400 hover:text-red-500" title="Excluir">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+      </button>` : ''
+
     return `
       <div class="flex items-center gap-3 px-5 py-3.5">
         <img src="${avatarUrl(u)}" class="avatar w-9 h-9 shrink-0" style="border:1.5px solid var(--border);">
@@ -3721,7 +3853,6 @@
           <p class="text-sm font-semibold truncate" style="color:var(--text);">${u.name}</p>
           <p class="text-xs truncate" style="color:var(--muted);">${u.email}</p>
         </div>
-        <span class="badge shrink-0" style="background:${rbg}; color:${rtc};">${roleLabel[u.role]||u.role}</span>
         ${pendente ? `
           <div class="flex gap-1.5 shrink-0">
             <button onclick="aprovarUsuario('${u.id}')"
@@ -3732,33 +3863,15 @@
               class="px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-red-50 transition-colors" style="color:#DC2626; border:1px solid #FECACA;">
               <i data-lucide="x" class="w-3 h-3"></i>Rejeitar
             </button>
-          </div>` : u.role === 'student' ? `
-          <div class="flex items-center gap-2 shrink-0">
-            <select onchange="atribuirDisciplina('${u.id}', this.value)"
-              class="text-xs rounded-lg px-2 py-1 border transition-colors cursor-pointer"
-              style="border-color:var(--border); color:var(--text); background:var(--surface);">
-              <option value="" ${!u.disciplinas?.length ? 'selected':''}>Disciplina…</option>
-              <option value="4001" ${u.disciplinas?.includes('4001') && !u.disciplinas?.includes('4008') ? 'selected':''}>4001</option>
-              <option value="4008" ${u.disciplinas?.includes('4008') && !u.disciplinas?.includes('4001') ? 'selected':''}>4008</option>
-              <option value="4001,4008" ${u.disciplinas?.includes('4001') && u.disciplinas?.includes('4008') ? 'selected':''}>4001 e 4008</option>
-            </select>
-            <span class="text-xs font-medium" style="color:${u.approved ? '#059669':'#D97706'};">
-              ${u.approved ? 'Ativo':'Pendente'}
-            </span>
-            <button onclick="deletarUsuario('${u.id}','${u.name.replace(/'/g,"\\'")}')"
-              class="p-1 rounded-lg hover:bg-red-50 transition-colors text-gray-400 hover:text-red-500" title="Excluir">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>` : u.role !== 'admin' ? `
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="text-xs font-medium" style="color:${u.approved ? '#059669':'#D97706'};">
-              ${u.approved ? 'Ativo':'Pendente'}
-            </span>
-            <button onclick="deletarUsuario('${u.id}','${u.name.replace(/'/g,"\\'")}')"
-              class="p-1 rounded-lg hover:bg-red-50 transition-colors text-gray-400 hover:text-red-500" title="Excluir">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>` : `<span class="text-xs font-medium" style="color:#059669;">Ativo</span>`}
+          </div>` : u.role === 'admin' ? `
+          <span class="badge shrink-0" style="background:${rbg}; color:${rtc};">${roleLabel[u.role]}</span>
+          <span class="text-xs font-medium shrink-0" style="color:#059669;">Ativo</span>` : `
+          <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            ${roleSelectorHtml}
+            ${disciplinaHtml}
+            <span class="text-xs font-medium" style="color:${statusColor};">${statusLabel}</span>
+            ${deleteBtn}
+          </div>`}
       </div>`
   }
 
@@ -3895,6 +4008,111 @@
     await db.from('users').delete().eq('id',id)
     await carregarTodosUsuarios(); await carregarProfessoresSidebar(); await carregarMaterialDidatico()
   }
+
+  window.alterarRole = async (id, novoRole) => {
+    if (!isAdmin) return
+    const campos = { role: novoRole }
+    if (novoRole === 'teacher') campos.disciplinas = null
+    const { error } = await db.from('users').update(campos).eq('id', id)
+    if (error) { alert('Erro ao alterar perfil: ' + error.message); return }
+    await carregarTodosUsuarios()
+    await carregarProfessoresSidebar()
+    await carregarMaterialDidatico()
+  }
+
+  // ── ADICIONAR USUÁRIO (admin) ─────────────────────────
+  window.abrirAddUsuario = () => {
+    const m = document.getElementById('modal-add-usuario')
+    m.classList.remove('hidden'); m.classList.add('flex')
+    document.getElementById('form-add-usuario').reset()
+    document.getElementById('add-campos-aluno').classList.remove('hidden')
+    document.getElementById('add-campos-professor').classList.add('hidden')
+    document.getElementById('add-usuario-erro').classList.add('hidden')
+    lucide.createIcons()
+  }
+
+  window.fecharAddUsuario = () => {
+    const m = document.getElementById('modal-add-usuario')
+    m.classList.add('hidden'); m.classList.remove('flex')
+  }
+
+  window.toggleAddCamposRole = () => {
+    const role = document.querySelector('input[name="add-role"]:checked').value
+    document.getElementById('add-campos-aluno').classList.toggle('hidden', role !== 'student')
+    document.getElementById('add-campos-professor').classList.toggle('hidden', role !== 'teacher')
+  }
+
+  window.toggleAddSenha = () => {
+    const inp  = document.getElementById('add-senha')
+    const icon = document.getElementById('add-senha-icon')
+    inp.type = inp.type === 'password' ? 'text' : 'password'
+    icon.setAttribute('data-lucide', inp.type === 'password' ? 'eye' : 'eye-off')
+    lucide.createIcons()
+  }
+
+  document.getElementById('form-add-usuario').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    if (!isAdmin) return
+    const nome     = document.getElementById('add-nome').value.trim()
+    const email    = document.getElementById('add-email').value.trim()
+    const senha    = document.getElementById('add-senha').value
+    const role     = document.querySelector('input[name="add-role"]:checked').value
+    const aprovado = document.getElementById('add-aprovado').checked
+    const erroEl   = document.getElementById('add-usuario-erro')
+    const btn      = document.getElementById('btn-add-usuario-submit')
+    erroEl.classList.add('hidden')
+    btn.disabled = true; btn.textContent = 'Criando...'
+
+    // Salvar sessão do admin antes do signUp (que troca a sessão ativa)
+    const { data: { session: adminSession } } = await db.auth.getSession()
+
+    const { data: authData, error: authError } = await db.auth.signUp({ email, password: senha })
+    if (authError) {
+      erroEl.textContent = authError.message; erroEl.classList.remove('hidden')
+      btn.disabled = false; btn.textContent = 'Criar Usuário'; return
+    }
+
+    const userId = authData.user?.id
+    if (!userId) {
+      erroEl.textContent = 'Usuário criado, mas ID não retornado. Verifique o Supabase.'
+      erroEl.classList.remove('hidden')
+      btn.disabled = false; btn.textContent = 'Criar Usuário'
+      await db.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token })
+      return
+    }
+
+    const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '')
+    const discVal  = document.getElementById('add-disciplina-aluno').value
+    const discArr  = discVal === '4001,4008' ? ['4001','4008'] : discVal ? [discVal] : []
+
+    const perfil = {
+      id: userId, email, name: nome, username, role, approved: aprovado,
+      ...(role === 'student' && discArr.length > 0 && { disciplinas: discArr }),
+      ...(role === 'teacher' && {
+        institution:      document.getElementById('add-instituicao').value.trim() || null,
+        area:             document.getElementById('add-area').value.trim() || null,
+        disciplina:       document.getElementById('add-disciplina-prof').value.trim() || null,
+        drive_folder_url: document.getElementById('add-drive').value.trim() || null,
+      })
+    }
+
+    const { error: pErr } = await db.from('users').insert(perfil)
+
+    // Restaurar sessão do admin imediatamente
+    await db.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token })
+
+    if (pErr) {
+      erroEl.textContent = 'Conta Auth criada, mas erro no perfil: ' + pErr.message
+      erroEl.classList.remove('hidden')
+      btn.disabled = false; btn.textContent = 'Criar Usuário'; return
+    }
+
+    btn.disabled = false; btn.textContent = 'Criar Usuário'
+    fecharAddUsuario()
+    await carregarTodosUsuarios()
+    await carregarProfessoresSidebar()
+    await carregarMaterialDidatico()
+  })
 
   // ── REALTIME ─────────────────────────────────────────
   function setupRealtime() {
