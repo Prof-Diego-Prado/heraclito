@@ -4096,11 +4096,18 @@
       })
     }
 
+    // Restaurar sessão do admin ANTES do insert (RLS exige role=admin)
+    const { error: sessErr } = await db.auth.setSession({
+      access_token: adminSession.access_token,
+      refresh_token: adminSession.refresh_token
+    })
+    if (sessErr) {
+      erroEl.textContent = 'Erro ao restaurar sessão: ' + sessErr.message
+      erroEl.classList.remove('hidden')
+      btn.disabled = false; btn.textContent = 'Criar Usuário'; return
+    }
+
     const { error: pErr } = await db.from('users').insert(perfil)
-
-    // Restaurar sessão do admin imediatamente
-    await db.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token })
-
     if (pErr) {
       erroEl.textContent = 'Conta Auth criada, mas erro no perfil: ' + pErr.message
       erroEl.classList.remove('hidden')
@@ -6427,5 +6434,4 @@
   class="fixed z-[250] flex flex-col gap-2 items-end pointer-events-none"
   style="bottom:6rem; right:1.25rem; max-width:300px;"></div>
 </body>
-<!-- build: 2026-04-23 -->
 </html>
