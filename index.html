@@ -6260,86 +6260,72 @@
       .order('created_at', { ascending: false })
       .limit(60)
 
-    // Mostra apenas PDFs sincronizados que TÊM capa (thumbnail do Drive). Cards sem capa
-    // ficam ocultos via onerror — o usuário só vê obras com capa visível.
+    // PDFs sincronizados que têm capa renderizável (thumbnail do Drive)
     const drvComCapa = (drvDocs||[]).filter(d => d.drive_id && d.tipo === 'pdf')
-    const driveSection = drvComCapa.length ? `
+
+    // "Recém adicionado" = não visualizados por este usuário ainda
+    const vistosKey = currentUser?.id ? `biblioteca_drv_vistos_${currentUser.id}` : null
+    const vistos = new Set(vistosKey ? JSON.parse(localStorage.getItem(vistosKey) || '[]') : [])
+    const naoVistos = drvComCapa.filter(d => !vistos.has(d.drive_id))
+
+    const renderCard = (d, prefixo) => {
+      const cardId = `${prefixo}-${d.drive_id}`
+      const thumb  = `https://drive.google.com/thumbnail?id=${d.drive_id}&sz=w400-h600`
+      const open   = `https://drive.google.com/file/d/${d.drive_id}/view`
+      return `
+        <div id="${cardId}" class="group rounded-2xl overflow-hidden transition-shadow hover:shadow-lg cursor-pointer"
+          style="background:var(--surface); border:1px solid var(--border);"
+          onclick="marcarDriveVisto('${d.drive_id}'); window.open('${open}','_blank')">
+          <div class="aspect-[3/4] overflow-hidden relative" style="background:#F3F4F6;">
+            <img src="${thumb}" alt="${d.nome}" referrerpolicy="no-referrer"
+              class="w-full h-full object-cover transition-transform group-hover:scale-105"
+              onerror="document.getElementById('${cardId}').style.display='none'">
+          </div>
+          <div class="p-3">
+            <p class="text-xs font-semibold line-clamp-2 leading-snug" style="color:var(--text);">${d.nome}</p>
+          </div>
+        </div>`
+    }
+
+    const recemSection = naoVistos.length ? `
       <div class="mb-6">
-        <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">
-          📚 Acervo Sincronizado
+        <p class="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:var(--muted);">
+          ✨ Recém adicionado <span class="text-white text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#DC2626;">${naoVistos.length}</span>
         </p>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          ${drvComCapa.map(d => {
-            const tituloEsc = (d.nome||'').replace(/'/g,"\\'")
-            const cardId = `drv-card-${d.drive_id}`
-            const thumb  = `https://drive.google.com/thumbnail?id=${d.drive_id}&sz=w400-h600`
-            const open   = `https://drive.google.com/file/d/${d.drive_id}/view`
-            return `
-            <div id="${cardId}" class="group rounded-2xl overflow-hidden transition-shadow hover:shadow-lg cursor-pointer"
-              style="background:var(--surface); border:1px solid var(--border);"
-              onclick="window.open('${open}','_blank')">
-              <div class="aspect-[3/4] overflow-hidden relative" style="background:#F3F4F6;">
-                <img src="${thumb}" alt="${d.nome}" referrerpolicy="no-referrer"
-                  class="w-full h-full object-cover transition-transform group-hover:scale-105"
-                  onerror="document.getElementById('${cardId}').style.display='none'">
-              </div>
-              <div class="p-3">
-                <p class="text-xs font-semibold line-clamp-2 leading-snug" style="color:var(--text);">${d.nome}</p>
-              </div>
-            </div>`
-          }).join('')}
+          ${naoVistos.map(d => renderCard(d, 'drv-novo')).join('')}
         </div>
       </div>
       <div class="border-t my-6" style="border-color:var(--border);"></div>
     ` : ''
 
-    container.innerHTML = driveSection + `
+    const bibSection = drvComCapa.length ? `
       <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">
-        📚 Livros
+        📚 Biblioteca
       </p>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        ${BIBLIOTECA_LIVROS.map((l, i) => {
-          const url     = BIBLIOTECA_BASE + encodeURIComponent(l.arquivo)
-          const nomeEsc = l.titulo.replace(/'/g,"\\'")
-          const imgId   = `capa-livro-${i}`
-          return `
-          <div class="group rounded-2xl overflow-hidden transition-shadow hover:shadow-lg cursor-pointer"
-            style="background:var(--surface); border:1px solid var(--border);"
-            onclick="abrirLeitorPdf('${url}','${nomeEsc}')">
-            <div class="aspect-[3/4] overflow-hidden relative" style="background:${l.cor};">
-              <img id="${imgId}" src="" alt="${l.titulo}"
-                class="w-full h-full object-cover absolute inset-0 transition-transform group-hover:scale-105"
-                style="display:none;"
-                onload="this.style.display='block';this.nextElementSibling.style.display='none'"
-                onerror="this.style.display='none'">
-              <div class="w-full h-full flex flex-col items-center justify-center p-4 text-center">
-                <i data-lucide="book-open" class="w-10 h-10 mb-3 opacity-40" style="color:${l.corTexto};"></i>
-                <p class="text-sm font-bold leading-snug" style="color:white;">${l.titulo}</p>
-                <p class="text-xs mt-1.5 opacity-75" style="color:${l.corTexto};">${l.autor}</p>
-              </div>
-            </div>
-            <div class="p-3">
-              <p class="text-xs font-semibold line-clamp-1 leading-snug mb-2.5" style="color:var(--text);">${l.autor}</p>
-              <div class="flex gap-1.5">
-                <button onclick="event.stopPropagation();abrirLeitorPdf('${url}','${nomeEsc}')"
-                  class="flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 flex items-center justify-center gap-1"
-                  style="background:#EEF2FF; color:var(--primary);">
-                  <i data-lucide="book-open" class="w-3 h-3"></i>Ler
-                </button>
-                <a href="${url}" download onclick="event.stopPropagation()"
-                  class="flex-1 text-center py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80 flex items-center justify-center gap-1"
-                  style="background:#F0FDF4; color:#065F46;">
-                  <i data-lucide="download" class="w-3 h-3"></i>Baixar
-                </a>
-              </div>
-            </div>
-          </div>`
-        }).join('')}
-      </div>`
+        ${drvComCapa.map(d => renderCard(d, 'drv-bib')).join('')}
+      </div>
+    ` : `
+      <div class="text-center py-20" style="color:var(--muted);">
+        <i data-lucide="book-open" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+        <p class="text-sm">Nenhum documento sincronizado ainda. Clique em "Sincronizar" para puxar do Drive.</p>
+      </div>
+    `
 
+    container.innerHTML = recemSection + bibSection
     lucide.createIcons()
-    // Busca capas em paralelo após renderizar
-    BIBLIOTECA_LIVROS.forEach((l, i) => buscarCapaOpenLibrary(l.busca, `capa-livro-${i}`))
+  }
+
+  window.marcarDriveVisto = (driveId) => {
+    if (!currentUser?.id || !driveId) return
+    const k = `biblioteca_drv_vistos_${currentUser.id}`
+    const cur = new Set(JSON.parse(localStorage.getItem(k) || '[]'))
+    if (cur.has(driveId)) return
+    cur.add(driveId)
+    localStorage.setItem(k, JSON.stringify([...cur]))
+    // Re-renderiza a biblioteca se estiver visível (some da seção "Recém adicionado")
+    if (!document.getElementById('view-biblioteca')?.classList.contains('hidden')) carregarBiblioteca()
   }
 
   window.removerAula = async (id) => {
