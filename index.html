@@ -6260,29 +6260,31 @@
       .order('created_at', { ascending: false })
       .limit(60)
 
-    const driveSection = (drvDocs && drvDocs.length) ? `
+    // Mostra apenas PDFs sincronizados que TÊM capa (thumbnail do Drive). Cards sem capa
+    // ficam ocultos via onerror — o usuário só vê obras com capa visível.
+    const drvComCapa = (drvDocs||[]).filter(d => d.drive_id && d.tipo === 'pdf')
+    const driveSection = drvComCapa.length ? `
       <div class="mb-6">
         <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">
-          📂 Documentos do Drive <span class="font-normal" style="color:var(--muted);">(${drvDocs.length})</span>
+          📚 Acervo Sincronizado
         </p>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          ${drvDocs.map(d => {
-            const isPdf = d.tipo === 'pdf'
-            const nomeEsc = (d.nome||'').replace(/'/g,"\\'")
-            const onClick = isPdf
-              ? `onclick="abrirLeitorPdf('${d.url}','${nomeEsc}')"`
-              : `onclick="window.open('${d.url}','_blank')"`
-            const icone = isPdf ? 'file-text' : (d.tipo === 'doc' ? 'file-text' : (d.tipo === 'ppt' ? 'presentation' : 'link'))
-            const cor   = isPdf ? '#DC2626' : (d.tipo === 'doc' ? '#2563EB' : (d.tipo === 'ppt' ? '#EA580C' : '#059669'))
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          ${drvComCapa.map(d => {
+            const tituloEsc = (d.nome||'').replace(/'/g,"\\'")
+            const cardId = `drv-card-${d.drive_id}`
+            const thumb  = `https://drive.google.com/thumbnail?id=${d.drive_id}&sz=w400-h600`
+            const open   = `https://drive.google.com/file/d/${d.drive_id}/view`
             return `
-            <div class="rounded-2xl p-3 cursor-pointer transition-shadow hover:shadow-md flex items-center gap-3"
-              style="background:var(--surface); border:1px solid var(--border);" ${onClick}>
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:${cor}1A;">
-                <i data-lucide="${icone}" class="w-5 h-5" style="color:${cor};"></i>
+            <div id="${cardId}" class="group rounded-2xl overflow-hidden transition-shadow hover:shadow-lg cursor-pointer"
+              style="background:var(--surface); border:1px solid var(--border);"
+              onclick="window.open('${open}','_blank')">
+              <div class="aspect-[3/4] overflow-hidden relative" style="background:#F3F4F6;">
+                <img src="${thumb}" alt="${d.nome}" referrerpolicy="no-referrer"
+                  class="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  onerror="document.getElementById('${cardId}').style.display='none'">
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold truncate" style="color:var(--text);">${d.nome}</p>
-                <p class="text-xs mt-0.5" style="color:var(--muted);">${new Date(d.created_at).toLocaleDateString('pt-BR')}</p>
+              <div class="p-3">
+                <p class="text-xs font-semibold line-clamp-2 leading-snug" style="color:var(--text);">${d.nome}</p>
               </div>
             </div>`
           }).join('')}
