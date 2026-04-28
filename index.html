@@ -1950,6 +1950,67 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════
+     MODAL: EXCLUIR PASTA (admin)
+═══════════════════════════════════════════════════════ -->
+<div id="modal-excluir-pasta" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-md overflow-hidden fade-in">
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2" style="color:#B91C1C;">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>Excluir Pasta
+      </p>
+      <button onclick="fecharExcluirPasta()" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-6 space-y-4">
+      <p class="text-sm" style="color:var(--text);">
+        Excluir pasta <span id="excluir-pasta-nome" class="font-semibold"></span>?
+      </p>
+      <div id="excluir-pasta-conteudo-info" class="hidden rounded-xl px-3 py-2.5 text-xs" style="background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;"></div>
+
+      <!-- Modo: pasta vazia → confirmação simples -->
+      <div id="excluir-pasta-vazia" class="hidden">
+        <p class="text-xs" style="color:var(--muted);">A pasta está vazia. Pode ser excluída com segurança.</p>
+      </div>
+
+      <!-- Modo: pasta com conteúdo → escolha mover ou apagar -->
+      <div id="excluir-pasta-com-conteudo" class="hidden space-y-3">
+        <label class="block text-xs font-semibold uppercase tracking-wider" style="color:var(--muted);">
+          O que fazer com o conteúdo?
+        </label>
+        <div class="space-y-2">
+          <label class="flex items-start gap-2 p-3 rounded-xl border cursor-pointer hover:bg-gray-50" style="border-color:var(--border);">
+            <input type="radio" name="excluir-acao" value="mover" class="mt-0.5" checked>
+            <div class="flex-1">
+              <p class="text-sm font-semibold" style="color:var(--text);">Mover para outra pasta</p>
+              <select id="excluir-pasta-destino" class="input-field mt-2 text-sm">
+                <option value="">— Sem pasta (raiz) —</option>
+              </select>
+            </div>
+          </label>
+          <label class="flex items-start gap-2 p-3 rounded-xl border cursor-pointer hover:bg-red-50" style="border-color:#FECACA;">
+            <input type="radio" name="excluir-acao" value="apagar" class="mt-0.5">
+            <div class="flex-1">
+              <p class="text-sm font-semibold" style="color:#B91C1C;">Excluir tudo permanentemente</p>
+              <p class="text-xs mt-0.5" style="color:#991B1B;">Apaga subpastas e arquivos em cascata. Não pode ser desfeito.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <input type="hidden" id="excluir-pasta-id">
+      <div id="excluir-pasta-erro" class="hidden text-sm rounded-xl px-3 py-2.5" style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA;"></div>
+      <div class="flex gap-2">
+        <button onclick="fecharExcluirPasta()"
+          class="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
+        <button onclick="executarExclusaoPasta()" id="btn-executar-exclusao"
+          class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90" style="background:#DC2626;">Excluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
      MODAL: ADICIONAR USUÁRIO (admin)
 ═══════════════════════════════════════════════════════ -->
 <div id="modal-add-usuario" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,.5);">
@@ -2960,6 +3021,13 @@
                <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
              </button>`
           : ''}
+        ${isAdmin
+          ? `<button onclick="event.stopPropagation();abrirExcluirPasta('${folder.id}','${(folder.name||'').replace(/'/g,"\\'")}')"
+               class="opacity-0 group-hover/sf:opacity-100 p-0.5 rounded hover:bg-red-100 transition-all shrink-0"
+               title="Excluir pasta" style="color:#DC2626;">
+               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+             </button>`
+          : ''}
       </div>
       ${childrenHtml}
     </div>`
@@ -3120,6 +3188,130 @@
     fecharNovaSubpasta()
     await carregarSidebarPastas()
     if (pastaAtiva === parentId) await abrirViewPasta(parentId)
+  }
+
+  // ── EXCLUIR PASTA (admin) ────────────────────────────
+  // Coleta IDs descendentes (BFS) — evita mover conteúdo para uma pasta sendo excluída
+  async function descendentesPasta(folderId) {
+    const ids = new Set([folderId])
+    let frontier = [folderId]
+    while (frontier.length) {
+      const { data } = await db.from('folders').select('id').in('parent_id', frontier)
+      const novos = (data||[]).map(f => f.id).filter(id => !ids.has(id))
+      novos.forEach(id => ids.add(id))
+      frontier = novos
+    }
+    return ids
+  }
+
+  window.abrirExcluirPasta = async (folderId, folderNome) => {
+    if (!isAdmin) return
+    const erroEl = document.getElementById('excluir-pasta-erro')
+    erroEl.classList.add('hidden')
+    document.getElementById('excluir-pasta-id').value = folderId
+    document.getElementById('excluir-pasta-nome').textContent = `"${folderNome}"`
+
+    // Conta arquivos e subpastas (descendentes)
+    const desc = await descendentesPasta(folderId)
+    const idsArr = Array.from(desc)
+    const { count: nArq }  = await db.from('arquivos').select('id',{count:'exact',head:true}).in('folder_id', idsArr)
+    const { count: nSubs } = await db.from('folders').select('id',{count:'exact',head:true}).in('parent_id', idsArr)
+
+    const info = document.getElementById('excluir-pasta-conteudo-info')
+    const vazia = document.getElementById('excluir-pasta-vazia')
+    const comC  = document.getElementById('excluir-pasta-com-conteudo')
+
+    if ((nArq||0) === 0 && (nSubs||0) === 0) {
+      info.classList.add('hidden')
+      vazia.classList.remove('hidden')
+      comC.classList.add('hidden')
+    } else {
+      info.classList.remove('hidden')
+      vazia.classList.add('hidden')
+      comC.classList.remove('hidden')
+      const partes = []
+      if (nArq)  partes.push(`${nArq} arquivo(s)`)
+      if (nSubs) partes.push(`${nSubs} subpasta(s)`)
+      info.textContent = `Esta pasta contém ${partes.join(' e ')}.`
+
+      // Popula select de destino — exclui a pasta deletada e todos seus descendentes
+      const { data: todas } = await db.from('folders').select('id,name,parent_id,tipo').order('name')
+      const elegiveis = (todas||[]).filter(f => !desc.has(f.id))
+      const select = document.getElementById('excluir-pasta-destino')
+      select.innerHTML = '<option value="">— Sem pasta (raiz) —</option>' +
+        elegiveis.map(f => `<option value="${f.id}">📁 ${f.name}</option>`).join('')
+    }
+
+    document.getElementById('btn-executar-exclusao').disabled = false
+    document.getElementById('btn-executar-exclusao').textContent = 'Excluir'
+    const modal = document.getElementById('modal-excluir-pasta')
+    modal.classList.remove('hidden'); modal.classList.add('flex')
+    lucide.createIcons()
+  }
+
+  window.fecharExcluirPasta = () => {
+    const modal = document.getElementById('modal-excluir-pasta')
+    modal.classList.add('hidden'); modal.classList.remove('flex')
+  }
+
+  window.executarExclusaoPasta = async () => {
+    if (!isAdmin) return
+    const folderId = document.getElementById('excluir-pasta-id').value
+    const erroEl   = document.getElementById('excluir-pasta-erro')
+    const btn      = document.getElementById('btn-executar-exclusao')
+    erroEl.classList.add('hidden')
+    btn.disabled = true; btn.textContent = 'Excluindo…'
+
+    const isVazia = !document.getElementById('excluir-pasta-vazia').classList.contains('hidden')
+    const acao = isVazia ? 'vazia' :
+      (document.querySelector('input[name="excluir-acao"]:checked')?.value || 'mover')
+
+    try {
+      if (acao === 'mover') {
+        const destino = document.getElementById('excluir-pasta-destino').value || null
+        // Move arquivos diretos da pasta
+        const { error: e1 } = await db.from('arquivos').update({ folder_id: destino }).eq('folder_id', folderId)
+        if (e1) throw new Error(e1.message)
+        // Move subpastas diretas
+        const { error: e2 } = await db.from('folders').update({ parent_id: destino }).eq('parent_id', folderId)
+        if (e2) throw new Error(e2.message)
+        // Apaga só a pasta-alvo
+        const { error: e3 } = await db.from('folders').delete().eq('id', folderId)
+        if (e3) throw new Error(e3.message)
+      } else {
+        // Cascata: apaga arquivos e subpastas em todos os descendentes (incluindo a raiz)
+        const desc = await descendentesPasta(folderId)
+        const idsArr = Array.from(desc)
+        const { error: eA } = await db.from('arquivos').delete().in('folder_id', idsArr)
+        if (eA) throw new Error(eA.message)
+        // Deleta de baixo para cima — buscar profundidades
+        // Estratégia simples: loop até zerar (poucas pastas em jogo)
+        let restantes = idsArr.slice()
+        while (restantes.length) {
+          // Pega folhas: ids cujo parent_id está em `desc` mas que não tem filhos em `desc`
+          const { data: kids } = await db.from('folders').select('id,parent_id').in('id', restantes)
+          const temFilho = new Set((kids||[]).filter(k => restantes.includes(k.parent_id)).map(k => k.parent_id))
+          const folhas = restantes.filter(id => !temFilho.has(id))
+          if (!folhas.length) break
+          const { error: eF } = await db.from('folders').delete().in('id', folhas)
+          if (eF) throw new Error(eF.message)
+          restantes = restantes.filter(id => !folhas.includes(id))
+        }
+      }
+
+      fecharExcluirPasta()
+      pastaAtiva = null
+      await carregarSidebarPastas()
+      // Se a view-pasta estava aberta nesta pasta, volta
+      if (!document.getElementById('view-pasta')?.classList.contains('hidden')) {
+        navTo('professores', document.querySelector('a[href="#professores"]'))
+      }
+    } catch (err) {
+      erroEl.textContent = err.message || String(err)
+      erroEl.classList.remove('hidden')
+    } finally {
+      btn.disabled = false; btn.textContent = 'Excluir'
+    }
   }
 
   async function garantirPastaProf() {
