@@ -310,7 +310,7 @@
       <i data-lucide="users" class="w-4 h-4 shrink-0"></i>Professores
     </a>
     <a href="#feed" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
-      <i data-lucide="newspaper" class="w-4 h-4 shrink-0"></i>Feed
+      <i data-lucide="message-circle" class="w-4 h-4 shrink-0"></i>Chat
       <span id="badge-feed" class="hidden ml-auto flex items-center gap-1"></span>
     </a>
     <a href="#videos" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
@@ -318,6 +318,7 @@
     </a>
     <a href="#biblioteca" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
       <i data-lucide="library" class="w-4 h-4 shrink-0"></i>Biblioteca
+      <span id="badge-biblioteca-nav" class="hidden ml-auto text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full" style="background:#DC2626;">0</span>
     </a>
     <a id="nav-usuarios" href="#usuarios" class="nav-item hidden flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium">
       <i data-lucide="shield-check" class="w-4 h-4 shrink-0"></i>Usuários
@@ -840,16 +841,25 @@
     <!-- USUÁRIOS -->
     <!-- VIEW BIBLIOTECA ──────────────────────────────── -->
     <div id="view-biblioteca" class="hidden">
-      <div class="mb-6 flex items-start justify-between gap-4">
+      <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-bold" style="color:var(--text);">Biblioteca</h1>
+          <h1 class="text-2xl font-bold flex items-center gap-2" style="color:var(--text);">
+            Biblioteca
+            <span id="badge-biblioteca-novos" class="hidden text-white text-[11px] font-bold px-2 py-0.5 rounded-full" style="background:#DC2626;">0</span>
+          </h1>
           <p class="text-sm mt-0.5" style="color:var(--muted);">Acervo de PDFs — ProfEduCatec 2026</p>
         </div>
-        <a id="biblioteca-drive-link" href="https://drive.google.com/drive/folders/15ac3Hmg3ujAHhNUJdn1UKuw4AqaaBzuc?usp=sharing"
-          target="_blank"
-          class="btn-primary shrink-0 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
-          <i data-lucide="folder-open" class="w-4 h-4"></i>Abrir Drive
-        </a>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-sync-biblioteca" class="px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 hover:opacity-80 transition-opacity"
+            style="background:#FFF7ED; color:#B45309; border:1px solid #FED7AA;" title="Sincronizar com Google Drive">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i><span class="hidden sm:inline">Sincronizar</span>
+          </button>
+          <a id="biblioteca-drive-link" href="https://drive.google.com/drive/folders/15ac3Hmg3ujAHhNUJdn1UKuw4AqaaBzuc?usp=sharing"
+            target="_blank"
+            class="btn-primary px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+            <i data-lucide="folder-open" class="w-4 h-4"></i>Abrir Drive
+          </a>
+        </div>
       </div>
       <div id="biblioteca-container">
         <div class="flex flex-col items-center py-20" style="color:var(--muted);">
@@ -1338,12 +1348,13 @@
         <p class="text-xs mt-1.5" style="color:var(--muted);">Use "Link" para vídeos do Meet, YouTube etc.</p>
       </div>
       <div id="arq-file-wrap">
-        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Arquivo <span class="normal-case font-normal text-gray-400">(do seu computador)</span></label>
-        <label class="flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer hover:bg-gray-50 transition-colors" style="border-color:var(--border);">
-          <i data-lucide="upload" class="w-4 h-4 shrink-0" style="color:var(--primary);"></i>
-          <span id="arq-file-name" class="text-sm truncate" style="color:var(--muted);">Clique para selecionar…</span>
-          <input type="file" id="arq-file" accept=".pdf,.doc,.docx,.ppt,.pptx" class="hidden">
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Arquivos <span class="normal-case font-normal text-gray-400">(arraste ou clique — pode enviar vários)</span></label>
+        <label id="arq-dropzone" class="block px-3 py-4 rounded-xl border-2 border-dashed cursor-pointer hover:bg-gray-50 transition-colors text-center" style="border-color:var(--border);">
+          <i data-lucide="upload-cloud" class="w-6 h-6 mx-auto mb-1" style="color:var(--primary);"></i>
+          <span id="arq-file-name" class="block text-sm" style="color:var(--muted);">Clique ou arraste arquivos aqui…</span>
+          <input type="file" id="arq-file" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple class="hidden">
         </label>
+        <ul id="arq-file-list" class="mt-2 space-y-1 hidden"></ul>
       </div>
       <div>
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
@@ -2244,6 +2255,7 @@
 
     await Promise.all([ carregarAulas(), carregarSidebarPastas(), carregarProfessoresSidebar() ])
     calcularNaoLidos()
+    atualizarBadgeBiblioteca()
     if (isAdmin) await carregarUsuariosPendentes()
     setupRealtime()
     lucide.createIcons()
@@ -2911,7 +2923,7 @@
     const isGlobal   = folder.tipo === 'global'
     const owner      = folder.owner
     const isActive   = pastaAtiva === folder.id
-    const canAddSub  = isAdmin || (isTeacher && folder.owner_id === currentUser?.id)
+    const canAddSub  = isAdmin || isTeacher
     const indent     = depth * 10
 
     const folderIcon = isProf && owner
@@ -2997,7 +3009,7 @@
       driveBtn.classList.add('hidden')
     }
 
-    const canAddSub = isAdmin || (isTeacher && folder.owner_id === currentUser?.id)
+    const canAddSub = isAdmin || isTeacher
     const btn = document.getElementById('btn-nova-subpasta-view')
     btn.dataset.parentId = folderId
     canAddSub ? btn.classList.remove('hidden') : btn.classList.add('hidden')
@@ -4140,6 +4152,12 @@
             mostrarToastFeed(item, creator)
           }
         }
+        // Refresh badge da biblioteca quando novos materiais chegam
+        if (item.categoria === 'material') {
+          atualizarBadgeBiblioteca()
+          // Se a biblioteca está visível, recarrega
+          if (!document.getElementById('view-biblioteca')?.classList.contains('hidden')) carregarBiblioteca()
+        }
       }
       carregarFeed()
     }).subscribe()
@@ -4210,61 +4228,110 @@
     return db.storage.from('materiais').getPublicUrl(data.path).data.publicUrl
   }
 
+  // Lista mutável de arquivos selecionados (suporta drag&drop + múltiplas seleções)
+  let arqFilesSelecionados = []
+
+  function renderArqFileList() {
+    const ul = document.getElementById('arq-file-list')
+    const nameEl = document.getElementById('arq-file-name')
+    if (!ul) return
+    if (!arqFilesSelecionados.length) {
+      ul.classList.add('hidden')
+      ul.innerHTML = ''
+      nameEl.textContent = 'Clique ou arraste arquivos aqui…'
+      return
+    }
+    nameEl.textContent = `${arqFilesSelecionados.length} arquivo(s) selecionado(s)`
+    ul.classList.remove('hidden')
+    ul.innerHTML = arqFilesSelecionados.map((f, i) => `
+      <li class="flex items-center gap-2 px-2 py-1 rounded-lg text-xs" style="background:#F3F4F6;">
+        <i data-lucide="file" class="w-3.5 h-3.5 shrink-0" style="color:var(--primary);"></i>
+        <span class="flex-1 truncate" style="color:var(--text);">${f.name}</span>
+        <span class="shrink-0" style="color:var(--muted);">${(f.size/1024).toFixed(0)} KB</span>
+        <button type="button" data-idx="${i}" class="arq-file-remove p-0.5 rounded hover:bg-red-100" style="color:#DC2626;">
+          <i data-lucide="x" class="w-3 h-3"></i>
+        </button>
+      </li>`).join('')
+    lucide.createIcons()
+    ul.querySelectorAll('.arq-file-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx)
+        arqFilesSelecionados.splice(idx, 1)
+        renderArqFileList()
+      })
+    })
+  }
+
+  function adicionarArqFiles(fileList) {
+    Array.from(fileList || []).forEach(f => {
+      const dup = arqFilesSelecionados.some(x => x.name === f.name && x.size === f.size)
+      if (!dup) arqFilesSelecionados.push(f)
+    })
+    renderArqFileList()
+  }
+
   document.getElementById('form-arquivo').addEventListener('submit', async (e) => {
     e.preventDefault()
     const tipo      = document.querySelector('input[name="arq-tipo"]:checked').value
     const descricao = document.getElementById('arq-descricao').value.trim() || null
+    const nomeBase  = document.getElementById('arq-nome').value.trim()
+    const urlExt    = document.getElementById('arq-url').value.trim()
     const erroEl    = document.getElementById('arq-erro')
     const btn       = e.target.querySelector('[type="submit"]')
     erroEl.classList.add('hidden')
-    btn.disabled = true; btn.textContent = 'Publicando…'
+    btn.disabled = true
 
-    // Determinar URL — arquivo local tem prioridade sobre URL externa
-    let finalUrl = document.getElementById('arq-url').value.trim()
-    const fileInput = document.getElementById('arq-file')
-    if (fileInput.files[0]) {
-      try {
-        btn.textContent = 'Enviando arquivo…'
-        finalUrl = await uploadArquivoStorage(fileInput.files[0])
-      } catch(upErr) {
-        btn.disabled = false; btn.textContent = 'Publicar'
-        erroEl.textContent = upErr.message
-        erroEl.classList.remove('hidden')
-        return
-      }
-    }
-    if (!finalUrl) {
-      btn.disabled = false; btn.textContent = 'Publicar'
-      erroEl.textContent = tipo === 'link'
-        ? 'Informe a URL do link.'
-        : 'Selecione um arquivo ou informe uma URL externa.'
-      erroEl.classList.remove('hidden')
-      return
-    }
-
-    // Determinar pasta de destino
+    // Determinar pasta de destino (compartilhada por todos os arquivos do batch)
     let folderId = document.getElementById('arq-folder').value || null
     if (isTeacher && !folderId) folderId = await garantirPastaProf()
 
-    const { error } = await db.from('arquivos').insert({
-      nome: document.getElementById('arq-nome').value,
-      tipo, fonte: 'web', url: finalUrl,
-      created_by: currentUser.id,
-      ...(descricao && { descricao }),
-      ...(folderId  && { folder_id: folderId }),
-    })
+    const insertOne = async (nome, url) => {
+      return db.from('arquivos').insert({
+        nome, tipo, fonte: 'web', url,
+        created_by: currentUser.id,
+        ...(descricao && { descricao }),
+        ...(folderId  && { folder_id: folderId }),
+      })
+    }
 
-    btn.disabled = false; btn.textContent = 'Publicar'
+    try {
+      // Modo link/URL externa: 1 publicação, sem upload
+      if (tipo === 'link' || arqFilesSelecionados.length === 0) {
+        if (!urlExt) {
+          throw new Error(tipo === 'link'
+            ? 'Informe a URL do link.'
+            : 'Selecione ao menos um arquivo ou informe uma URL externa.')
+        }
+        btn.textContent = 'Publicando…'
+        const { error } = await insertOne(nomeBase || urlExt, urlExt)
+        if (error) throw new Error(error.message)
+      } else {
+        // Modo multi-upload: faz upload e cria 1 registro por arquivo
+        const total = arqFilesSelecionados.length
+        for (let i = 0; i < total; i++) {
+          const file = arqFilesSelecionados[i]
+          btn.textContent = `Enviando ${i+1}/${total}…`
+          const url = await uploadArquivoStorage(file)
+          // Nome: se houver "Nome do Material" e for 1 arquivo, usa-o; senão nome do arquivo (sem extensão)
+          const nomeArq = (total === 1 && nomeBase) ? nomeBase : file.name.replace(/\.[^.]+$/, '')
+          const { error } = await insertOne(nomeArq, url)
+          if (error) throw new Error(error.message)
+        }
+      }
 
-    if (error) {
-      erroEl.textContent = error.message
-      erroEl.classList.remove('hidden')
-    } else {
+      // Sucesso
       document.getElementById('modal-arquivo').classList.add('hidden')
       erroEl.classList.add('hidden')
       e.target.reset()
-      document.getElementById('arq-file-name').textContent = 'Clique para selecionar…'
+      arqFilesSelecionados = []
+      renderArqFileList()
       await carregarSidebarPastas()
+    } catch (err) {
+      erroEl.textContent = err.message || String(err)
+      erroEl.classList.remove('hidden')
+    } finally {
+      btn.disabled = false
+      btn.textContent = 'Publicar'
     }
   })
 
@@ -4320,7 +4387,7 @@
         navTo(target, e.currentTarget)
         if (target === 'professores') await carregarProfessores()
         if (target === 'feed') { await carregarFeed(); marcarFeedLido() }
-        if (target === 'biblioteca') await carregarBiblioteca()
+        if (target === 'biblioteca') { await carregarBiblioteca(); marcarBibliotecaLida() }
         if (target === 'disciplina-1') { abrirDisciplina(0); return }
         if (target === 'disciplina-2') { abrirDisciplina(1); return }
         if (target === 'disciplina-3') { abrirDisciplina(2); return }
@@ -4338,15 +4405,41 @@
       document.getElementById('modal-arquivo').classList.remove('hidden')
       // Resetar file picker ao abrir
       document.getElementById('arq-file').value = ''
-      document.getElementById('arq-file-name').textContent = 'Clique para selecionar…'
+      arqFilesSelecionados = []
+      renderArqFileList()
       lucide.createIcons()
     })
 
-    // Exibir nome do arquivo selecionado — biblioteca
+    // Botão Sincronizar Biblioteca ↔ Drive
+    document.getElementById('btn-sync-biblioteca')?.addEventListener('click', () => window.executarSyncBiblioteca())
+
+    // Seleção múltipla via input — biblioteca
     document.getElementById('arq-file').addEventListener('change', (e) => {
-      document.getElementById('arq-file-name').textContent =
-        e.target.files[0]?.name || 'Clique para selecionar…'
+      adicionarArqFiles(e.target.files)
+      e.target.value = '' // permite re-selecionar o mesmo arquivo
     })
+
+    // Drag & drop na dropzone
+    const dropzone = document.getElementById('arq-dropzone')
+    if (dropzone) {
+      ;['dragenter', 'dragover'].forEach(ev => {
+        dropzone.addEventListener(ev, (e) => {
+          e.preventDefault(); e.stopPropagation()
+          dropzone.style.borderColor = 'var(--primary)'
+          dropzone.style.background = '#EEF2FF'
+        })
+      })
+      ;['dragleave', 'drop'].forEach(ev => {
+        dropzone.addEventListener(ev, (e) => {
+          e.preventDefault(); e.stopPropagation()
+          dropzone.style.borderColor = ''
+          dropzone.style.background = ''
+        })
+      })
+      dropzone.addEventListener('drop', (e) => {
+        adicionarArqFiles(e.dataTransfer?.files)
+      })
+    }
 
     // Exibir nome do arquivo selecionado — disciplina
     document.getElementById('mat-disc-file').addEventListener('change', (e) => {
@@ -5832,10 +5925,172 @@
     } catch(_) { /* mantém fallback */ }
   }
 
+  // ── BIBLIOTECA ↔ GOOGLE DRIVE SYNC ───────────────────
+  const DRIVE_API_KEY = atob('QUl6YVN5QzY1T1dkMk9CdHJLVFJLODN0Ylo0NlFZbTdzaVZJS0xV')
+
+  async function getBibliotecaFolderId() {
+    const { data } = await db.from('config').select('value').eq('key','biblioteca_drive_folder_id').maybeSingle()
+    return data?.value || null
+  }
+
+  function tipoFromMime(mime, name) {
+    const m = (mime||'').toLowerCase()
+    const n = (name||'').toLowerCase()
+    if (m.includes('pdf') || n.endsWith('.pdf')) return 'pdf'
+    if (m.includes('wordprocessingml') || m.includes('msword') || /\.docx?$/.test(n)) return 'doc'
+    if (m.includes('presentationml') || m.includes('ms-powerpoint') || /\.pptx?$/.test(n)) return 'ppt'
+    return 'link'
+  }
+
+  async function listarArquivosDrive(folderId) {
+    const fields = encodeURIComponent('files(id,name,mimeType,webViewLink,iconLink,modifiedTime)')
+    const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`)
+    const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}&pageSize=200&key=${DRIVE_API_KEY}`
+    const r = await fetch(url)
+    if (!r.ok) throw new Error('Drive API ' + r.status + ' — verifique se a pasta é pública')
+    const j = await r.json()
+    return j.files || []
+  }
+
+  async function sincronizarBibliotecaDrive({ silent = true } = {}) {
+    const folderId = await getBibliotecaFolderId()
+    if (!folderId) return { added: 0, motivo: 'sem_config' }
+    if (!currentUser?.id) return { added: 0, motivo: 'sem_user' }
+
+    let driveFiles
+    try { driveFiles = await listarArquivosDrive(folderId) }
+    catch (e) {
+      if (!silent) console.error('[sync drive] falha:', e)
+      return { added: 0, error: e.message }
+    }
+    if (!driveFiles.length) return { added: 0 }
+
+    const ids = driveFiles.map(a => a.id)
+    const { data: existentes } = await db.from('arquivos').select('drive_id').in('drive_id', ids)
+    const jaTem = new Set((existentes||[]).map(x => x.drive_id))
+    const novos = driveFiles.filter(a => !jaTem.has(a.id))
+    if (!novos.length) return { added: 0 }
+
+    const inserts = novos.map(a => ({
+      nome: a.name.replace(/\.[^.]+$/, ''),
+      tipo: tipoFromMime(a.mimeType, a.name),
+      fonte: 'drive',
+      url: a.webViewLink || `https://drive.google.com/file/d/${a.id}/view`,
+      drive_id: a.id,
+      categoria: 'material',
+      created_by: currentUser.id,
+    }))
+    const { error } = await db.from('arquivos').insert(inserts)
+    if (error) {
+      if (!silent) console.error('[sync drive] insert:', error)
+      return { added: 0, error: error.message }
+    }
+
+    // Aviso no chat (1 mensagem por sync)
+    const lista = novos.slice(0, 5).map(n => '• ' + n.name).join('\n')
+    const extra = novos.length > 5 ? `\n…e mais ${novos.length - 5}.` : ''
+    await db.from('arquivos').insert({
+      nome: `${novos.length} novo(s) documento(s) na Biblioteca`,
+      categoria: 'chat',
+      tipo: 'texto',
+      created_by: currentUser.id,
+      descricao: `📚 Foram adicionados ${novos.length} arquivo(s) à Biblioteca:\n${lista}${extra}`,
+    })
+
+    return { added: novos.length, novos }
+  }
+
+  // Badge "novos arquivos desde última visita"
+  const bibliotecaLidaKey = () => currentUser ? `biblioteca_lida_${currentUser.id}` : null
+
+  async function atualizarBadgeBiblioteca() {
+    const k = bibliotecaLidaKey()
+    if (!k) return
+    const stored = localStorage.getItem(k)
+    const desde = stored || new Date(Date.now() - 7*24*3600*1000).toISOString()
+    const { count } = await db.from('arquivos')
+      .select('id', { count: 'exact', head: true })
+      .eq('categoria','material')
+      .gt('created_at', desde)
+    const n = count || 0
+    ;['badge-biblioteca-novos','badge-biblioteca-nav'].forEach(id => {
+      const el = document.getElementById(id)
+      if (!el) return
+      if (n > 0) { el.textContent = n > 99 ? '99+' : n; el.classList.remove('hidden') }
+      else el.classList.add('hidden')
+    })
+  }
+
+  function marcarBibliotecaLida() {
+    const k = bibliotecaLidaKey()
+    if (k) localStorage.setItem(k, new Date().toISOString())
+    atualizarBadgeBiblioteca()
+  }
+
+  window.executarSyncBiblioteca = async () => {
+    const btn = document.getElementById('btn-sync-biblioteca')
+    if (btn) { btn.disabled = true; btn.querySelector('span')?.replaceChildren(document.createTextNode('Sincronizando…')) }
+    const r = await sincronizarBibliotecaDrive({ silent: false })
+    if (btn) {
+      btn.disabled = false
+      btn.querySelector('span')?.replaceChildren(document.createTextNode('Sincronizar'))
+    }
+    if (r.error) alert('Erro ao sincronizar: ' + r.error)
+    else if (r.motivo === 'sem_config') alert('Pasta do Drive não configurada. Admin deve preencher config.biblioteca_drive_folder_id.')
+    else if (r.added === 0) alert('Nenhum arquivo novo no Drive.')
+    else { alert(`${r.added} arquivo(s) novo(s) adicionado(s) à biblioteca.`); await carregarBiblioteca() }
+  }
+
   async function carregarBiblioteca() {
     const container = document.getElementById('biblioteca-container')
 
-    container.innerHTML = `
+    // Sync silencioso em background (não bloqueia render)
+    sincronizarBibliotecaDrive({ silent: true }).then(r => {
+      if (r?.added > 0) carregarBiblioteca()
+    }).catch(()=>{})
+
+    // Buscar arquivos sincronizados do Drive
+    const { data: drvDocs } = await db.from('arquivos')
+      .select('id,nome,tipo,url,drive_id,created_at')
+      .eq('fonte','drive').eq('categoria','material')
+      .order('created_at', { ascending: false })
+      .limit(60)
+
+    const driveSection = (drvDocs && drvDocs.length) ? `
+      <div class="mb-6">
+        <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">
+          📂 Documentos do Drive <span class="font-normal" style="color:var(--muted);">(${drvDocs.length})</span>
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          ${drvDocs.map(d => {
+            const isPdf = d.tipo === 'pdf'
+            const nomeEsc = (d.nome||'').replace(/'/g,"\\'")
+            const onClick = isPdf
+              ? `onclick="abrirLeitorPdf('${d.url}','${nomeEsc}')"`
+              : `onclick="window.open('${d.url}','_blank')"`
+            const icone = isPdf ? 'file-text' : (d.tipo === 'doc' ? 'file-text' : (d.tipo === 'ppt' ? 'presentation' : 'link'))
+            const cor   = isPdf ? '#DC2626' : (d.tipo === 'doc' ? '#2563EB' : (d.tipo === 'ppt' ? '#EA580C' : '#059669'))
+            return `
+            <div class="rounded-2xl p-3 cursor-pointer transition-shadow hover:shadow-md flex items-center gap-3"
+              style="background:var(--surface); border:1px solid var(--border);" ${onClick}>
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:${cor}1A;">
+                <i data-lucide="${icone}" class="w-5 h-5" style="color:${cor};"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold truncate" style="color:var(--text);">${d.nome}</p>
+                <p class="text-xs mt-0.5" style="color:var(--muted);">${new Date(d.created_at).toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>`
+          }).join('')}
+        </div>
+      </div>
+      <div class="border-t my-6" style="border-color:var(--border);"></div>
+    ` : ''
+
+    container.innerHTML = driveSection + `
+      <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">
+        📚 Livros
+      </p>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         ${BIBLIOTECA_LIVROS.map((l, i) => {
           const url     = BIBLIOTECA_BASE + encodeURIComponent(l.arquivo)
