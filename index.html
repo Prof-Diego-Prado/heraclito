@@ -1746,6 +1746,24 @@
       </button>
     </div>
     <div class="p-5 space-y-5">
+      <!-- Qualidade da voz -->
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:rgba(255,255,255,.5);">Qualidade</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" data-tts-modo="premium" onclick="selecionarModoTts('premium')"
+            class="tts-modo-btn flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border transition-all text-left"
+            style="background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); color:rgba(255,255,255,.85);">
+            <span class="text-xs font-semibold flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3"></i> Premium</span>
+            <span class="text-[10px]" style="color:rgba(255,255,255,.55);">Vozes neurais · online</span>
+          </button>
+          <button type="button" data-tts-modo="sistema" onclick="selecionarModoTts('sistema')"
+            class="tts-modo-btn flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border transition-all text-left"
+            style="background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); color:rgba(255,255,255,.85);">
+            <span class="text-xs font-semibold flex items-center gap-1"><i data-lucide="cpu" class="w-3 h-3"></i> Sistema</span>
+            <span class="text-[10px]" style="color:rgba(255,255,255,.55);">Vozes do dispositivo · offline</span>
+          </button>
+        </div>
+      </div>
       <!-- Personagem -->
       <div>
         <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:rgba(255,255,255,.5);">Personagem</p>
@@ -1766,13 +1784,13 @@
       </div>
       <!-- Voz específica -->
       <div>
-        <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:rgba(255,255,255,.5);">Voz disponível no dispositivo</p>
+        <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:rgba(255,255,255,.5);">Voz</p>
         <select id="tts-voz-select"
           class="w-full px-3 py-2 rounded-xl text-sm outline-none"
           style="background:#12122a; border:1px solid rgba(255,255,255,.15); color:#fff;">
-          <option value="">— escolher automaticamente —</option>
+          <option value="">—</option>
         </select>
-        <p class="text-[11px] mt-1.5" style="color:rgba(255,255,255,.4);">As vozes vêm do navegador/sistema. Em português, o macOS oferece "Luciana" e o Windows "Maria".</p>
+        <p class="text-[11px] mt-1.5" style="color:rgba(255,255,255,.4);">★ marca vozes neurais (mais naturais). Premium usa internet; Sistema funciona offline com as vozes do navegador.</p>
       </div>
       <!-- Velocidade -->
       <div>
@@ -1823,12 +1841,47 @@
 </div>
 
 <style>
-  .tts-genero-btn.tts-ativo {
+  .tts-genero-btn.tts-ativo,
+  .tts-modo-btn.tts-ativo {
     background: rgba(34,197,94,.18) !important;
     border-color: #10b981 !important;
     color: #86efac !important;
   }
 </style>
+
+<!-- Modal: Colar texto manualmente para o Logos ler -->
+<div id="modal-logos-texto" class="fixed inset-0 z-[400] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7);">
+  <div class="rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" style="background:#1e1e2e; border:1px solid rgba(255,255,255,.15);">
+    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,.1);">
+      <p class="font-semibold text-sm flex items-center gap-2 text-white">
+        <i data-lucide="audio-lines" class="w-4 h-4" style="color:#86efac;"></i> Logos · ler texto
+      </p>
+      <button onclick="fecharModalLogosTexto()" class="p-1 rounded hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.5);">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-3">
+      <p class="text-xs" style="color:rgba(255,255,255,.6);">
+        Não foi possível capturar o trecho selecionado no PDF. Cole abaixo o texto que deseja ouvir
+        (você pode usar <kbd class="px-1.5 py-0.5 rounded text-[10px]" style="background:rgba(255,255,255,.1);">Ctrl+C</kbd> /
+        <kbd class="px-1.5 py-0.5 rounded text-[10px]" style="background:rgba(255,255,255,.1);">Ctrl+V</kbd>):
+      </p>
+      <textarea id="logos-texto-area" rows="6"
+        class="w-full px-3 py-2 rounded-xl text-sm outline-none resize-none"
+        style="background:#12122a; border:1px solid rgba(255,255,255,.15); color:#fff; line-height:1.5;"
+        placeholder="Cole o texto aqui…"></textarea>
+    </div>
+    <div class="px-5 py-3 flex justify-end gap-2" style="border-top:1px solid rgba(255,255,255,.1);">
+      <button type="button" onclick="fecharModalLogosTexto()"
+        class="px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.7);">Cancelar</button>
+      <button type="button" onclick="lerTextoColado()"
+        class="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors flex items-center gap-2"
+        style="background:#10b981;">
+        <i data-lucide="play" class="w-4 h-4"></i> Ler
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: Registrar Citação Direta -->
 <div id="modal-citar-trecho" class="fixed inset-0 z-[400] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7);">
@@ -5197,6 +5250,25 @@
 
     adobeViewer = new AdobeDC.View({ clientId: ADOBE_CLIENT_ID, divId: 'adobe-dc-view' })
 
+    // ── Logos: cachear seleção do PDF para leitura em voz alta ──
+    try {
+      adobeViewer.registerCallback(
+        AdobeDC.View.Enum.CallbackType.EVENT_LISTENER,
+        async function(event) {
+          if (event.type === 'PREVIEW_SELECTION_END') {
+            try {
+              const apis = await adobeViewer.getAPIs()
+              const sel = await apis.getSelectedContent()
+              if (sel?.data && sel.data.trim()) {
+                window._logosUltimaSelecao = sel.data.trim()
+              }
+            } catch {}
+          }
+        },
+        { enablePDFAnalytics: true, enableFilePreviewEvents: true, listenOn: ['PREVIEW_SELECTION_END'] }
+      )
+    } catch (e) { console.warn('[Logos] selection callback failed', e) }
+
     const previewPromise = adobeViewer.previewFile(
       { content: { promise: Promise.resolve(pdfBuffer) }, metaData: { fileName: titulo, id: fileId } },
       {
@@ -5257,18 +5329,33 @@
   }
 
   // ════════════════════════════════════════════════════════
-  //  LOGOS — Leitura em voz alta (Web Speech API)
-  //  Lê o texto selecionado no leitor de PDF (Adobe Embed)
+  //  LOGOS — Leitura em voz alta
+  //  Modos:  "sistema"  — Web Speech API (offline, rápido)
+  //          "premium"  — vozes neurais (Polly via StreamElements)
   // ════════════════════════════════════════════════════════
   const TTS_PREFS_KEY = 'heraclito_logos_prefs'
   let ttsPrefs = (() => {
     try { return JSON.parse(localStorage.getItem(TTS_PREFS_KEY) || '{}') } catch { return {} }
   })()
-  ttsPrefs = Object.assign({ genero: 'f', voiceURI: '', rate: 1, pitch: 1 }, ttsPrefs)
+  ttsPrefs = Object.assign(
+    { genero: 'f', voiceURI: '', rate: 1, pitch: 1, modo: 'premium', premiumVoz: 'Camila' },
+    ttsPrefs
+  )
 
-  // Vozes pt-BR conhecidas (heurística para masc/fem)
+  // Vozes premium (StreamElements/Amazon Polly Neural — gratuito, sem chave)
+  // Mais naturais que as vozes padrão do navegador
+  const VOZES_PREMIUM = [
+    { id: 'Camila',    nome: 'Camila',    genero: 'f', desc: 'pt-BR · neural' },
+    { id: 'Vitoria',   nome: 'Vitória',   genero: 'f', desc: 'pt-BR · padrão' },
+    { id: 'Thiago',    nome: 'Thiago',    genero: 'm', desc: 'pt-BR · neural' },
+    { id: 'Ricardo',   nome: 'Ricardo',   genero: 'm', desc: 'pt-BR · padrão' },
+    { id: 'Ines',      nome: 'Inês',      genero: 'f', desc: 'pt-PT · neural' },
+    { id: 'Cristiano', nome: 'Cristiano', genero: 'm', desc: 'pt-PT · padrão' },
+  ]
+
+  // Vozes sistema (heurística masc/fem)
   const VOZES_FEM = /(luciana|maria|camila|joana|vit[oó]ria|fernanda|helena|paulina|francisca|female|mulher)/i
-  const VOZES_MASC = /(felipe|daniel|ricardo|diego|jo[aã]o|paulo|antonio|carlos|male|homem)/i
+  const VOZES_MASC = /(felipe|daniel|ricardo|diego|jo[aã]o|paulo|antonio|carlos|male|homem|thiago)/i
 
   function listarVozesPt() {
     const all = window.speechSynthesis?.getVoices?.() || []
@@ -5278,11 +5365,9 @@
   function escolherVozAuto(genero) {
     const vozes = listarVozesPt()
     if (!vozes.length) return null
-    // 1. tenta por gênero usando regex
     const re = genero === 'm' ? VOZES_MASC : VOZES_FEM
     const m = vozes.find(v => re.test(v.name))
     if (m) return m
-    // 2. tenta pt-BR antes de pt-PT
     const br = vozes.find(v => /pt-BR/i.test(v.lang))
     return br || vozes[0]
   }
@@ -5296,9 +5381,10 @@
     return escolherVozAuto(ttsPrefs.genero)
   }
 
-  function ttsSpeak(texto) {
+  // ── Voz Sistema (Web Speech) ──────────────────────────
+  function ttsSpeakSistema(texto) {
     if (!('speechSynthesis' in window)) {
-      alert('Seu navegador não suporta leitura em voz alta (Web Speech API).')
+      alert('Seu navegador não suporta leitura em voz alta.')
       return
     }
     if (!texto || !texto.trim()) return
@@ -5312,6 +5398,103 @@
     u.onstart = () => mostrarControlesTts(true)
     u.onend = u.onerror = () => mostrarControlesTts(false)
     speechSynthesis.speak(u)
+  }
+
+  // ── Voz Premium (StreamElements/Polly Neural) ─────────
+  let _logosAudio = null
+  let _logosFila = []
+
+  function quebrarPorFrases(texto, max = 350) {
+    // Quebra em frases preservando pontuação. Caso uma frase exceda 'max',
+    // quebra também por vírgulas/espaços.
+    const frases = texto.replace(/\s+/g, ' ').match(/[^.!?…]+[.!?…]?/g) || [texto]
+    const blocos = []
+    for (const f of frases) {
+      const fr = f.trim()
+      if (!fr) continue
+      if (fr.length <= max) { blocos.push(fr); continue }
+      // sub-quebra em vírgulas
+      const partes = fr.split(/(?<=[,;:])\s+/)
+      let buf = ''
+      for (const p of partes) {
+        if ((buf + ' ' + p).trim().length > max) {
+          if (buf) blocos.push(buf.trim())
+          if (p.length > max) {
+            // último recurso: quebra por palavras
+            const ws = p.split(' ')
+            let w = ''
+            for (const x of ws) {
+              if ((w + ' ' + x).trim().length > max) { blocos.push(w.trim()); w = x }
+              else w = (w ? w + ' ' : '') + x
+            }
+            if (w) buf = w
+            else buf = ''
+          } else { buf = p }
+        } else { buf = (buf ? buf + ' ' : '') + p }
+      }
+      if (buf) blocos.push(buf.trim())
+    }
+    return blocos
+  }
+
+  function ttsSpeakPremium(texto, opts = {}) {
+    if (!texto || !texto.trim()) return
+    pararPremium()
+    const voice = opts.voice || ttsPrefs.premiumVoz || 'Camila'
+    _logosFila = quebrarPorFrases(texto)
+    _logosAudio = new Audio()
+    _logosAudio.preload = 'auto'
+    _logosAudio.playbackRate = parseFloat(ttsPrefs.rate) || 1
+    let idx = 0
+    let abortou = false
+    const proximo = () => {
+      if (abortou || !_logosAudio) return mostrarControlesTts(false)
+      if (idx >= _logosFila.length) {
+        mostrarControlesTts(false)
+        _logosAudio = null
+        return
+      }
+      const txt = _logosFila[idx++]
+      _logosAudio.src = `https://api.streamelements.com/kappa/v2/speech?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(txt)}`
+      _logosAudio.play().catch(err => {
+        console.error('[Logos premium] play error', err)
+        // fallback: usa voz do sistema para o restante
+        abortou = true
+        const restante = _logosFila.slice(idx - 1).join(' ')
+        setLeitorStatus('🔊 Voz premium falhou, usando sistema', '#fde68a')
+        setTimeout(() => setLeitorStatus(''), 3000)
+        ttsSpeakSistema(restante)
+      })
+    }
+    _logosAudio.onended = proximo
+    _logosAudio.onerror = () => {
+      if (!abortou) {
+        abortou = true
+        const restante = _logosFila.slice(Math.max(0, idx - 1)).join(' ')
+        setLeitorStatus('🔊 Erro na voz premium, usando sistema', '#fde68a')
+        setTimeout(() => setLeitorStatus(''), 3000)
+        ttsSpeakSistema(restante)
+      }
+    }
+    mostrarControlesTts(true)
+    proximo()
+  }
+
+  function pararPremium() {
+    if (_logosAudio) {
+      try { _logosAudio.pause() } catch {}
+      _logosAudio.src = ''
+      _logosAudio.onended = null
+      _logosAudio.onerror = null
+      _logosAudio = null
+    }
+    _logosFila = []
+  }
+
+  function ttsSpeak(texto, opts = {}) {
+    const modo = opts.modo || ttsPrefs.modo || 'premium'
+    if (modo === 'premium') ttsSpeakPremium(texto, opts)
+    else ttsSpeakSistema(texto)
   }
 
   function mostrarControlesTts(ativo) {
@@ -5330,30 +5513,52 @@
     }
   }
 
-  window.ttsLerSelecaoPdf = async () => {
-    if (!adobeViewer) return
+  // ── Captura da seleção do PDF ──────────────────────────
+  async function obterSelecaoPdf() {
+    // 1ª tentativa: API direta
     try {
       const apis = await adobeViewer.getAPIs()
       const sel = await apis.getSelectedContent()
-      const txt = (sel?.data || '').trim()
-      if (!txt) {
-        setLeitorStatus('Selecione um trecho no PDF para ouvir', '#fde68a')
-        setTimeout(() => setLeitorStatus(''), 3500)
-        return
-      }
-      setLeitorStatus(`🔊 Logos: lendo ${txt.length} caracteres…`, '#86efac')
-      setTimeout(() => setLeitorStatus(''), 4000)
-      ttsSpeak(txt)
-    } catch (err) {
-      console.error('[Logos] erro ao obter seleção:', err)
-      setLeitorStatus('Selecione o texto no PDF e clique em Logos', '#fde68a')
-      setTimeout(() => setLeitorStatus(''), 4000)
+      const t = (sel?.data || '').trim()
+      if (t) return t
+    } catch {}
+    // 2ª tentativa: cache via PREVIEW_SELECTION_END
+    const cached = (window._logosUltimaSelecao || '').trim()
+    if (cached) return cached
+    return ''
+  }
+
+  window.ttsLerSelecaoPdf = async () => {
+    if (!adobeViewer) return
+    const txt = await obterSelecaoPdf()
+    if (!txt) {
+      // Fallback: abre modal pra colar texto manualmente
+      abrirModalLogosTexto()
+      return
     }
+    setLeitorStatus(`🔊 Logos: lendo ${txt.length} caracteres…`, '#86efac')
+    setTimeout(() => setLeitorStatus(''), 3500)
+    ttsSpeak(txt)
+    // limpa cache pra próxima leitura ser explícita
+    window._logosUltimaSelecao = ''
   }
 
   window.ttsPausarRetomar = () => {
-    if (!('speechSynthesis' in window)) return
     const ico = document.getElementById('ico-tts-pausa')
+    // modo premium → audio element
+    if (_logosAudio) {
+      if (_logosAudio.paused) {
+        _logosAudio.play().catch(()=>{})
+        if (ico) ico.setAttribute('data-lucide', 'pause')
+      } else {
+        _logosAudio.pause()
+        if (ico) ico.setAttribute('data-lucide', 'play')
+      }
+      window.lucide?.createIcons?.()
+      return
+    }
+    // modo sistema → speechSynthesis
+    if (!('speechSynthesis' in window)) return
     if (speechSynthesis.paused) {
       speechSynthesis.resume()
       if (ico) ico.setAttribute('data-lucide', 'pause')
@@ -5365,8 +5570,8 @@
   }
 
   window.ttsParar = () => {
-    if (!('speechSynthesis' in window)) return
-    speechSynthesis.cancel()
+    pararPremium()
+    if ('speechSynthesis' in window) speechSynthesis.cancel()
     mostrarControlesTts(false)
   }
 
@@ -5374,13 +5579,42 @@
   function popularSelectVozes() {
     const sel = document.getElementById('tts-voz-select')
     if (!sel) return
-    const vozes = listarVozesPt()
-    sel.innerHTML = '<option value="">— escolher automaticamente —</option>' +
-      vozes.map(v => {
-        const marca = VOZES_FEM.test(v.name) ? '♀' : VOZES_MASC.test(v.name) ? '♂' : '·'
-        const sel = v.voiceURI === ttsPrefs.voiceURI ? 'selected' : ''
-        return `<option value="${v.voiceURI}" ${sel}>${marca} ${v.name} (${v.lang})</option>`
+    if (ttsPrefs.modo === 'premium') {
+      sel.innerHTML = VOZES_PREMIUM.map(v => {
+        const sym = v.genero === 'f' ? '♀' : '♂'
+        const star = /neural/.test(v.desc) ? ' ★' : ''
+        const selAttr = v.id === ttsPrefs.premiumVoz ? 'selected' : ''
+        return `<option value="${v.id}" ${selAttr}>${sym} ${v.nome}${star} — ${v.desc}</option>`
       }).join('')
+    } else {
+      const vozes = listarVozesPt()
+      if (!vozes.length) {
+        sel.innerHTML = '<option value="">(nenhuma voz pt-BR encontrada no dispositivo)</option>'
+        return
+      }
+      sel.innerHTML = '<option value="">— escolher automaticamente —</option>' +
+        vozes.map(v => {
+          const marca = VOZES_FEM.test(v.name) ? '♀' : VOZES_MASC.test(v.name) ? '♂' : '·'
+          const selAttr = v.voiceURI === ttsPrefs.voiceURI ? 'selected' : ''
+          return `<option value="${v.voiceURI}" ${selAttr}>${marca} ${v.name} (${v.lang})</option>`
+        }).join('')
+    }
+  }
+
+  window.selecionarModoTts = (modo) => {
+    ttsPrefs.modo = modo
+    document.querySelectorAll('.tts-modo-btn').forEach(b => {
+      b.classList.toggle('tts-ativo', b.dataset.ttsModo === modo)
+    })
+    popularSelectVozes()
+    // Filtra vozes premium do gênero atual no select (auto)
+    if (modo === 'premium') {
+      const v = VOZES_PREMIUM.find(x => x.genero === (ttsPrefs.genero || 'f') && /neural/.test(x.desc))
+      if (v && !ttsPrefs.premiumVoz) {
+        ttsPrefs.premiumVoz = v.id
+        document.getElementById('tts-voz-select').value = v.id
+      }
+    }
   }
 
   window.selecionarGeneroTts = (g) => {
@@ -5388,11 +5622,25 @@
     document.querySelectorAll('.tts-genero-btn').forEach(b => {
       b.classList.toggle('tts-ativo', b.dataset.ttsGenero === g)
     })
+    // Em modo premium, autoseleciona voz neural daquele gênero
+    if (ttsPrefs.modo === 'premium') {
+      const sel = document.getElementById('tts-voz-select')
+      const atual = VOZES_PREMIUM.find(v => v.id === sel?.value)
+      if (!atual || atual.genero !== g) {
+        const v = VOZES_PREMIUM.find(x => x.genero === g && /neural/.test(x.desc))
+                || VOZES_PREMIUM.find(x => x.genero === g)
+        if (v && sel) { sel.value = v.id; ttsPrefs.premiumVoz = v.id }
+      }
+    }
   }
 
   window.abrirConfigTts = () => {
     const modal = document.getElementById('modal-config-tts')
     modal.classList.remove('hidden'); modal.classList.add('flex')
+    // marca o modo ativo
+    document.querySelectorAll('.tts-modo-btn').forEach(b => {
+      b.classList.toggle('tts-ativo', b.dataset.ttsModo === (ttsPrefs.modo || 'premium'))
+    })
     selecionarGeneroTts(ttsPrefs.genero || 'f')
     popularSelectVozes()
     document.getElementById('tts-rate').value = ttsPrefs.rate
@@ -5408,12 +5656,13 @@
   }
 
   window.testarVozTts = () => {
-    // aplica os valores temporariamente do formulário antes de falar
+    const valVoz = document.getElementById('tts-voz-select').value
     const tmp = Object.assign({}, ttsPrefs, {
-      voiceURI: document.getElementById('tts-voz-select').value,
       rate: parseFloat(document.getElementById('tts-rate').value),
       pitch: parseFloat(document.getElementById('tts-pitch').value),
     })
+    if (ttsPrefs.modo === 'premium') tmp.premiumVoz = valVoz
+    else tmp.voiceURI = valVoz
     const original = ttsPrefs
     ttsPrefs = tmp
     ttsSpeak('Esta é a voz do Logos, leitor da plataforma Heráclito. Tudo flui, nada permanece.')
@@ -5421,13 +5670,39 @@
   }
 
   window.salvarConfigTts = () => {
-    ttsPrefs.voiceURI = document.getElementById('tts-voz-select').value
+    const valVoz = document.getElementById('tts-voz-select').value
+    if (ttsPrefs.modo === 'premium') ttsPrefs.premiumVoz = valVoz
+    else ttsPrefs.voiceURI = valVoz
     ttsPrefs.rate = parseFloat(document.getElementById('tts-rate').value)
     ttsPrefs.pitch = parseFloat(document.getElementById('tts-pitch').value)
     localStorage.setItem(TTS_PREFS_KEY, JSON.stringify(ttsPrefs))
     fecharConfigTts()
     setLeitorStatus('🔊 Voz salva', '#86efac')
     setTimeout(() => setLeitorStatus(''), 2000)
+  }
+
+  // ── Modal: colar texto manualmente ─────────────────────
+  function abrirModalLogosTexto() {
+    const modal = document.getElementById('modal-logos-texto')
+    if (!modal) {
+      setLeitorStatus('Selecione o texto no PDF antes de clicar em Logos', '#fde68a')
+      setTimeout(() => setLeitorStatus(''), 4500)
+      return
+    }
+    modal.classList.remove('hidden'); modal.classList.add('flex')
+    setTimeout(() => document.getElementById('logos-texto-area')?.focus(), 100)
+  }
+  window.fecharModalLogosTexto = () => {
+    const modal = document.getElementById('modal-logos-texto')
+    modal.classList.add('hidden'); modal.classList.remove('flex')
+  }
+  window.lerTextoColado = () => {
+    const t = (document.getElementById('logos-texto-area')?.value || '').trim()
+    if (!t) return
+    fecharModalLogosTexto()
+    setLeitorStatus(`🔊 Logos: lendo ${t.length} caracteres…`, '#86efac')
+    setTimeout(() => setLeitorStatus(''), 3500)
+    ttsSpeak(t)
   }
 
   // Carregar vozes (em alguns navegadores chega async)
@@ -5438,8 +5713,10 @@
   }
 
   window.fecharLeitorPdf = () => {
+    pararPremium()
     if (window.speechSynthesis) speechSynthesis.cancel()
     mostrarControlesTts(false)
+    window._logosUltimaSelecao = ''
     clearTimeout(annotationTimer)
     if (annotationMgr) salvarAnotacoes() // salva ao fechar
     const modal = document.getElementById('modal-leitor-pdf')
