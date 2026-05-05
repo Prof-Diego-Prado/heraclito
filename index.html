@@ -1472,6 +1472,28 @@
         style="color:#a5b4fc; background:rgba(99,102,241,.2);" title="Registrar citação direta deste PDF">
         <i data-lucide="quote" class="w-3.5 h-3.5"></i> Citar trecho
       </button>
+      <!-- Logos — leitura em voz alta (Λόγος, em homenagem à filosofia de Heráclito) -->
+      <button onclick="ttsLerSelecaoPdf()" id="btn-tts-ler"
+        class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:#86efac; background:rgba(34,197,94,.14);" title="Logos — ouvir o texto selecionado">
+        <i data-lucide="audio-lines" class="w-3.5 h-3.5"></i>
+        <span>Logos</span>
+      </button>
+      <button onclick="ttsPausarRetomar()" id="btn-tts-pausa"
+        class="hidden items-center gap-1.5 text-xs font-medium p-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:rgba(255,255,255,.7);" title="Pausar / retomar">
+        <i data-lucide="pause" class="w-3.5 h-3.5" id="ico-tts-pausa"></i>
+      </button>
+      <button onclick="ttsParar()" id="btn-tts-parar"
+        class="hidden items-center gap-1.5 text-xs font-medium p-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:rgba(255,255,255,.7);" title="Parar leitura">
+        <i data-lucide="square" class="w-3.5 h-3.5"></i>
+      </button>
+      <button onclick="abrirConfigTts()" id="btn-tts-config"
+        class="flex items-center gap-1.5 p-1.5 rounded-lg transition-colors hover:bg-white/10"
+        style="color:rgba(255,255,255,.7);" title="Configurar voz do Logos">
+        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+      </button>
       <!-- Abas da toolbar: Referências e Zotero -->
       <button onclick="togglePainelSecao('ref')" id="btn-tab-ref"
         class="hidden items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
@@ -1709,6 +1731,92 @@
     </div>
   </div>
 </div>
+
+<!-- Modal: Configuração do Logos (TTS) -->
+<div id="modal-config-tts" class="fixed inset-0 z-[400] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7);">
+  <div class="rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" style="background:#1e1e2e; border:1px solid rgba(255,255,255,.15);">
+    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,.1);">
+      <p class="font-semibold text-sm flex items-center gap-2 text-white">
+        <i data-lucide="audio-lines" class="w-4 h-4" style="color:#86efac;"></i>
+        Logos · voz do leitor
+      </p>
+      <button onclick="fecharConfigTts()" class="p-1 rounded hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.5);">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-5">
+      <!-- Personagem -->
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:rgba(255,255,255,.5);">Personagem</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" data-tts-genero="f" onclick="selecionarGeneroTts('f')"
+            class="tts-genero-btn flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border transition-all"
+            style="background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); color:rgba(255,255,255,.85);">
+            <i data-lucide="user-round" class="w-5 h-5"></i>
+            <span class="text-xs font-medium">Feminino</span>
+          </button>
+          <button type="button" data-tts-genero="m" onclick="selecionarGeneroTts('m')"
+            class="tts-genero-btn flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border transition-all"
+            style="background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); color:rgba(255,255,255,.85);">
+            <i data-lucide="user" class="w-5 h-5"></i>
+            <span class="text-xs font-medium">Masculino</span>
+          </button>
+        </div>
+      </div>
+      <!-- Voz específica -->
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:rgba(255,255,255,.5);">Voz disponível no dispositivo</p>
+        <select id="tts-voz-select"
+          class="w-full px-3 py-2 rounded-xl text-sm outline-none"
+          style="background:#12122a; border:1px solid rgba(255,255,255,.15); color:#fff;">
+          <option value="">— escolher automaticamente —</option>
+        </select>
+        <p class="text-[11px] mt-1.5" style="color:rgba(255,255,255,.4);">As vozes vêm do navegador/sistema. Em português, o macOS oferece "Luciana" e o Windows "Maria".</p>
+      </div>
+      <!-- Velocidade -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-semibold uppercase tracking-wider" style="color:rgba(255,255,255,.5);">Velocidade</p>
+          <span id="tts-rate-val" class="text-xs font-mono" style="color:#86efac;">1.0×</span>
+        </div>
+        <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1"
+          oninput="document.getElementById('tts-rate-val').textContent=parseFloat(this.value).toFixed(1)+'×'"
+          class="w-full">
+      </div>
+      <!-- Tom -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-semibold uppercase tracking-wider" style="color:rgba(255,255,255,.5);">Tom</p>
+          <span id="tts-pitch-val" class="text-xs font-mono" style="color:#86efac;">1.0</span>
+        </div>
+        <input type="range" id="tts-pitch" min="0.5" max="2" step="0.1" value="1"
+          oninput="document.getElementById('tts-pitch-val').textContent=parseFloat(this.value).toFixed(1)"
+          class="w-full">
+      </div>
+      <!-- Teste -->
+      <button type="button" onclick="testarVozTts()"
+        class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+        style="background:rgba(34,197,94,.18); color:#86efac;">
+        <i data-lucide="play" class="w-4 h-4"></i> Testar voz
+      </button>
+    </div>
+    <div class="px-5 py-3 flex justify-end gap-2" style="border-top:1px solid rgba(255,255,255,.1);">
+      <button type="button" onclick="fecharConfigTts()"
+        class="px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.7);">Cancelar</button>
+      <button type="button" onclick="salvarConfigTts()"
+        class="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors"
+        style="background:#10b981;">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tts-genero-btn.tts-ativo {
+    background: rgba(34,197,94,.18) !important;
+    border-color: #10b981 !important;
+    color: #86efac !important;
+  }
+</style>
 
 <!-- Modal: Registrar Citação Direta -->
 <div id="modal-citar-trecho" class="fixed inset-0 z-[400] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.7);">
@@ -5136,7 +5244,190 @@
     })
   }
 
+  // ════════════════════════════════════════════════════════
+  //  LOGOS — Leitura em voz alta (Web Speech API)
+  //  Lê o texto selecionado no leitor de PDF (Adobe Embed)
+  // ════════════════════════════════════════════════════════
+  const TTS_PREFS_KEY = 'heraclito_logos_prefs'
+  let ttsPrefs = (() => {
+    try { return JSON.parse(localStorage.getItem(TTS_PREFS_KEY) || '{}') } catch { return {} }
+  })()
+  ttsPrefs = Object.assign({ genero: 'f', voiceURI: '', rate: 1, pitch: 1 }, ttsPrefs)
+
+  // Vozes pt-BR conhecidas (heurística para masc/fem)
+  const VOZES_FEM = /(luciana|maria|camila|joana|vit[oó]ria|fernanda|helena|paulina|francisca|female|mulher)/i
+  const VOZES_MASC = /(felipe|daniel|ricardo|diego|jo[aã]o|paulo|antonio|carlos|male|homem)/i
+
+  function listarVozesPt() {
+    const all = window.speechSynthesis?.getVoices?.() || []
+    return all.filter(v => /^pt(-|$)/i.test(v.lang))
+  }
+
+  function escolherVozAuto(genero) {
+    const vozes = listarVozesPt()
+    if (!vozes.length) return null
+    // 1. tenta por gênero usando regex
+    const re = genero === 'm' ? VOZES_MASC : VOZES_FEM
+    const m = vozes.find(v => re.test(v.name))
+    if (m) return m
+    // 2. tenta pt-BR antes de pt-PT
+    const br = vozes.find(v => /pt-BR/i.test(v.lang))
+    return br || vozes[0]
+  }
+
+  function obterVozEscolhida() {
+    const vozes = listarVozesPt()
+    if (ttsPrefs.voiceURI) {
+      const v = vozes.find(x => x.voiceURI === ttsPrefs.voiceURI)
+      if (v) return v
+    }
+    return escolherVozAuto(ttsPrefs.genero)
+  }
+
+  function ttsSpeak(texto) {
+    if (!('speechSynthesis' in window)) {
+      alert('Seu navegador não suporta leitura em voz alta (Web Speech API).')
+      return
+    }
+    if (!texto || !texto.trim()) return
+    speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(texto)
+    u.lang = 'pt-BR'
+    u.rate = parseFloat(ttsPrefs.rate) || 1
+    u.pitch = parseFloat(ttsPrefs.pitch) || 1
+    const voz = obterVozEscolhida()
+    if (voz) u.voice = voz
+    u.onstart = () => mostrarControlesTts(true)
+    u.onend = u.onerror = () => mostrarControlesTts(false)
+    speechSynthesis.speak(u)
+  }
+
+  function mostrarControlesTts(ativo) {
+    const pausa = document.getElementById('btn-tts-pausa')
+    const parar = document.getElementById('btn-tts-parar')
+    if (!pausa || !parar) return
+    if (ativo) {
+      pausa.classList.remove('hidden'); pausa.classList.add('flex')
+      parar.classList.remove('hidden'); parar.classList.add('flex')
+    } else {
+      pausa.classList.add('hidden'); pausa.classList.remove('flex')
+      parar.classList.add('hidden'); parar.classList.remove('flex')
+      const ico = document.getElementById('ico-tts-pausa')
+      if (ico) ico.setAttribute('data-lucide', 'pause')
+      window.lucide?.createIcons?.()
+    }
+  }
+
+  window.ttsLerSelecaoPdf = async () => {
+    if (!adobeViewer) return
+    try {
+      const apis = await adobeViewer.getAPIs()
+      const sel = await apis.getSelectedContent()
+      const txt = (sel?.data || '').trim()
+      if (!txt) {
+        setLeitorStatus('Selecione um trecho no PDF para ouvir', '#fde68a')
+        setTimeout(() => setLeitorStatus(''), 3500)
+        return
+      }
+      setLeitorStatus(`🔊 Logos: lendo ${txt.length} caracteres…`, '#86efac')
+      setTimeout(() => setLeitorStatus(''), 4000)
+      ttsSpeak(txt)
+    } catch (err) {
+      console.error('[Logos] erro ao obter seleção:', err)
+      setLeitorStatus('Selecione o texto no PDF e clique em Logos', '#fde68a')
+      setTimeout(() => setLeitorStatus(''), 4000)
+    }
+  }
+
+  window.ttsPausarRetomar = () => {
+    if (!('speechSynthesis' in window)) return
+    const ico = document.getElementById('ico-tts-pausa')
+    if (speechSynthesis.paused) {
+      speechSynthesis.resume()
+      if (ico) ico.setAttribute('data-lucide', 'pause')
+    } else if (speechSynthesis.speaking) {
+      speechSynthesis.pause()
+      if (ico) ico.setAttribute('data-lucide', 'play')
+    }
+    window.lucide?.createIcons?.()
+  }
+
+  window.ttsParar = () => {
+    if (!('speechSynthesis' in window)) return
+    speechSynthesis.cancel()
+    mostrarControlesTts(false)
+  }
+
+  // ── Modal de configuração ──────────────────────────────
+  function popularSelectVozes() {
+    const sel = document.getElementById('tts-voz-select')
+    if (!sel) return
+    const vozes = listarVozesPt()
+    sel.innerHTML = '<option value="">— escolher automaticamente —</option>' +
+      vozes.map(v => {
+        const marca = VOZES_FEM.test(v.name) ? '♀' : VOZES_MASC.test(v.name) ? '♂' : '·'
+        const sel = v.voiceURI === ttsPrefs.voiceURI ? 'selected' : ''
+        return `<option value="${v.voiceURI}" ${sel}>${marca} ${v.name} (${v.lang})</option>`
+      }).join('')
+  }
+
+  window.selecionarGeneroTts = (g) => {
+    ttsPrefs.genero = g
+    document.querySelectorAll('.tts-genero-btn').forEach(b => {
+      b.classList.toggle('tts-ativo', b.dataset.ttsGenero === g)
+    })
+  }
+
+  window.abrirConfigTts = () => {
+    const modal = document.getElementById('modal-config-tts')
+    modal.classList.remove('hidden'); modal.classList.add('flex')
+    selecionarGeneroTts(ttsPrefs.genero || 'f')
+    popularSelectVozes()
+    document.getElementById('tts-rate').value = ttsPrefs.rate
+    document.getElementById('tts-rate-val').textContent = parseFloat(ttsPrefs.rate).toFixed(1) + '×'
+    document.getElementById('tts-pitch').value = ttsPrefs.pitch
+    document.getElementById('tts-pitch-val').textContent = parseFloat(ttsPrefs.pitch).toFixed(1)
+    window.lucide?.createIcons?.()
+  }
+
+  window.fecharConfigTts = () => {
+    const modal = document.getElementById('modal-config-tts')
+    modal.classList.add('hidden'); modal.classList.remove('flex')
+  }
+
+  window.testarVozTts = () => {
+    // aplica os valores temporariamente do formulário antes de falar
+    const tmp = Object.assign({}, ttsPrefs, {
+      voiceURI: document.getElementById('tts-voz-select').value,
+      rate: parseFloat(document.getElementById('tts-rate').value),
+      pitch: parseFloat(document.getElementById('tts-pitch').value),
+    })
+    const original = ttsPrefs
+    ttsPrefs = tmp
+    ttsSpeak('Esta é a voz do Logos, leitor da plataforma Heráclito. Tudo flui, nada permanece.')
+    ttsPrefs = original
+  }
+
+  window.salvarConfigTts = () => {
+    ttsPrefs.voiceURI = document.getElementById('tts-voz-select').value
+    ttsPrefs.rate = parseFloat(document.getElementById('tts-rate').value)
+    ttsPrefs.pitch = parseFloat(document.getElementById('tts-pitch').value)
+    localStorage.setItem(TTS_PREFS_KEY, JSON.stringify(ttsPrefs))
+    fecharConfigTts()
+    setLeitorStatus('🔊 Voz salva', '#86efac')
+    setTimeout(() => setLeitorStatus(''), 2000)
+  }
+
+  // Carregar vozes (em alguns navegadores chega async)
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = () => {
+      if (!document.getElementById('modal-config-tts')?.classList.contains('hidden')) popularSelectVozes()
+    }
+  }
+
   window.fecharLeitorPdf = () => {
+    if (window.speechSynthesis) speechSynthesis.cancel()
+    mostrarControlesTts(false)
     clearTimeout(annotationTimer)
     if (annotationMgr) salvarAnotacoes() // salva ao fechar
     const modal = document.getElementById('modal-leitor-pdf')
