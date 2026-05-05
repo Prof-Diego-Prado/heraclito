@@ -1474,12 +1474,76 @@
         <i data-lucide="quote" class="w-3.5 h-3.5"></i> Citar trecho
       </button>
       <!-- Logos — leitura em voz alta (Λόγος, em homenagem à filosofia de Heráclito) -->
-      <button onclick="ttsLerSelecaoPdf()" id="btn-tts-ler"
-        class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors hover:bg-white/10"
-        style="color:#86efac; background:rgba(34,197,94,.14);" title="Logos — ouvir o texto selecionado">
-        <i data-lucide="audio-lines" class="w-3.5 h-3.5"></i>
-        <span>Logos</span>
-      </button>
+      <div class="relative flex items-center" id="logos-split">
+        <button onclick="ttsLerSelecaoPdf()" id="btn-tts-ler"
+          class="flex items-center gap-1.5 text-xs font-medium pl-3 pr-2 py-1.5 rounded-l-lg transition-colors hover:bg-white/10"
+          style="color:#86efac; background:rgba(34,197,94,.14);" title="Logos — ouvir o texto selecionado">
+          <i data-lucide="audio-lines" class="w-3.5 h-3.5"></i>
+          <span>Logos</span>
+        </button>
+        <button onclick="toggleLogosMenu(event)" id="btn-tts-menu"
+          class="flex items-center pl-1 pr-2 py-1.5 rounded-r-lg transition-colors hover:bg-white/10"
+          style="color:#86efac; background:rgba(34,197,94,.14); border-left:1px solid rgba(0,0,0,.2);"
+          title="Mais opções de leitura">
+          <i data-lucide="chevron-down" class="w-3 h-3"></i>
+        </button>
+        <!-- Menu dropdown -->
+        <div id="logos-menu" class="hidden absolute right-0 top-full mt-1 z-[350] rounded-xl overflow-hidden shadow-2xl"
+          style="background:#1e1e2e; border:1px solid rgba(255,255,255,.15); min-width:240px;">
+          <button onclick="ttsLerSelecaoPdf(); fecharLogosMenu()"
+            class="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-left transition-colors hover:bg-white/5"
+            style="color:rgba(255,255,255,.85);">
+            <i data-lucide="text-cursor" class="w-3.5 h-3.5" style="color:#86efac;"></i>
+            <div>
+              <div class="font-medium">Ouvir seleção</div>
+              <div class="text-[10px]" style="color:rgba(255,255,255,.4);">Trecho marcado no PDF</div>
+            </div>
+          </button>
+          <button onclick="ttsLerPaginaAtual(); fecharLogosMenu()"
+            class="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-left transition-colors hover:bg-white/5"
+            style="color:rgba(255,255,255,.85);">
+            <i data-lucide="file-text" class="w-3.5 h-3.5" style="color:#86efac;"></i>
+            <div>
+              <div class="font-medium">Ouvir página atual</div>
+              <div class="text-[10px]" style="color:rgba(255,255,255,.4);">Lê a página visível</div>
+            </div>
+          </button>
+          <button onclick="ttsLerAPartirDaPagina(); fecharLogosMenu()"
+            class="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-left transition-colors hover:bg-white/5"
+            style="color:rgba(255,255,255,.85);">
+            <i data-lucide="play-circle" class="w-3.5 h-3.5" style="color:#86efac;"></i>
+            <div>
+              <div class="font-medium">Ouvir a partir daqui</div>
+              <div class="text-[10px]" style="color:rgba(255,255,255,.4);">Da página atual até o fim</div>
+            </div>
+          </button>
+          <button onclick="ttsLerDocumentoInteiro(); fecharLogosMenu()"
+            class="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-left transition-colors hover:bg-white/5"
+            style="color:rgba(255,255,255,.85);">
+            <i data-lucide="book-open-text" class="w-3.5 h-3.5" style="color:#86efac;"></i>
+            <div>
+              <div class="font-medium">Ouvir documento inteiro</div>
+              <div class="text-[10px]" style="color:rgba(255,255,255,.4);">Da primeira à última página</div>
+            </div>
+          </button>
+          <div style="border-top:1px solid rgba(255,255,255,.08);"></div>
+          <button onclick="abrirModalLogosTexto(); fecharLogosMenu()"
+            class="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-left transition-colors hover:bg-white/5"
+            style="color:rgba(255,255,255,.85);">
+            <i data-lucide="clipboard-paste" class="w-3.5 h-3.5" style="color:#a5b4fc;"></i>
+            <div>
+              <div class="font-medium">Colar texto e ouvir <span class="ml-1 text-[9px] px-1.5 py-0.5 rounded" style="background:rgba(165,180,252,.18); color:#c7d2fe;">★ Premium</span></div>
+              <div class="text-[10px]" style="color:rgba(255,255,255,.4);">Usar voz neural pt-BR</div>
+            </div>
+          </button>
+          <button onclick="abrirAjudaLogos(); fecharLogosMenu()"
+            class="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-left transition-colors hover:bg-white/5"
+            style="color:rgba(255,255,255,.6);">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+            <span>Como funciona o Logos</span>
+          </button>
+        </div>
+      </div>
       <button onclick="ttsPausarRetomar()" id="btn-tts-pausa"
         class="hidden items-center gap-1.5 text-xs font-medium p-1.5 rounded-lg transition-colors hover:bg-white/10"
         style="color:rgba(255,255,255,.7);" title="Pausar / retomar">
@@ -1746,24 +1810,9 @@
       </button>
     </div>
     <div class="p-5 space-y-5">
-      <!-- Qualidade da voz -->
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:rgba(255,255,255,.5);">Qualidade</p>
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" data-tts-modo="premium" onclick="selecionarModoTts('premium')"
-            class="tts-modo-btn flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border transition-all text-left"
-            style="background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); color:rgba(255,255,255,.85);">
-            <span class="text-xs font-semibold flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3"></i> Premium</span>
-            <span class="text-[10px]" style="color:rgba(255,255,255,.55);">Vozes neurais · online</span>
-          </button>
-          <button type="button" data-tts-modo="sistema" onclick="selecionarModoTts('sistema')"
-            class="tts-modo-btn flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border transition-all text-left"
-            style="background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); color:rgba(255,255,255,.85);">
-            <span class="text-xs font-semibold flex items-center gap-1"><i data-lucide="cpu" class="w-3 h-3"></i> Sistema</span>
-            <span class="text-[10px]" style="color:rgba(255,255,255,.55);">Vozes do dispositivo · offline</span>
-          </button>
-        </div>
-      </div>
+      <p class="text-[11px] -mt-1" style="color:rgba(255,255,255,.5);">
+        Configurações da voz <strong>Sistema</strong>, usada nos botões da toolbar (seleção, página, documento). A voz <strong>★ Premium</strong> é ativada apenas no modal de "Colar texto e ouvir".
+      </p>
       <!-- Personagem -->
       <div>
         <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:rgba(255,255,255,.5);">Personagem</p>
@@ -1854,7 +1903,7 @@
   <div class="rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" style="background:#1e1e2e; border:1px solid rgba(255,255,255,.15);">
     <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,.1);">
       <p class="font-semibold text-sm flex items-center gap-2 text-white">
-        <i data-lucide="audio-lines" class="w-4 h-4" style="color:#86efac;"></i> Logos · ler texto
+        <i data-lucide="clipboard-paste" class="w-4 h-4" style="color:#a5b4fc;"></i> Logos · colar texto
       </p>
       <button onclick="fecharModalLogosTexto()" class="p-1 rounded hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.5);">
         <i data-lucide="x" class="w-4 h-4"></i>
@@ -1862,23 +1911,94 @@
     </div>
     <div class="p-5 space-y-3">
       <p class="text-xs" style="color:rgba(255,255,255,.6);">
-        Não foi possível capturar o trecho selecionado no PDF. Cole abaixo o texto que deseja ouvir
-        (você pode usar <kbd class="px-1.5 py-0.5 rounded text-[10px]" style="background:rgba(255,255,255,.1);">Ctrl+C</kbd> /
-        <kbd class="px-1.5 py-0.5 rounded text-[10px]" style="background:rgba(255,255,255,.1);">Ctrl+V</kbd>):
+        Cole abaixo o texto que deseja ouvir. Aqui você pode escolher entre a voz <strong>★ Premium</strong> (mais natural, online) ou a voz do <strong>Sistema</strong> (offline).
       </p>
       <textarea id="logos-texto-area" rows="6"
         class="w-full px-3 py-2 rounded-xl text-sm outline-none resize-none"
         style="background:#12122a; border:1px solid rgba(255,255,255,.15); color:#fff; line-height:1.5;"
         placeholder="Cole o texto aqui…"></textarea>
     </div>
-    <div class="px-5 py-3 flex justify-end gap-2" style="border-top:1px solid rgba(255,255,255,.1);">
+    <div class="px-5 py-3 flex flex-wrap items-center justify-between gap-2" style="border-top:1px solid rgba(255,255,255,.1);">
       <button type="button" onclick="fecharModalLogosTexto()"
         class="px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.7);">Cancelar</button>
-      <button type="button" onclick="lerTextoColado()"
-        class="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors flex items-center gap-2"
-        style="background:#10b981;">
-        <i data-lucide="play" class="w-4 h-4"></i> Ler
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="lerTextoColado('sistema')"
+          class="px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5"
+          style="background:rgba(255,255,255,.08); color:rgba(255,255,255,.85);">
+          <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Sistema
+        </button>
+        <button type="button" onclick="lerTextoColado('premium')"
+          class="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors flex items-center gap-1.5"
+          style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> ★ Premium pt-BR
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Como funciona o Logos (ajuda) -->
+<div id="modal-ajuda-logos" class="fixed inset-0 z-[450] hidden items-center justify-center p-4" style="background:rgba(0,0,0,.75);">
+  <div class="rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" style="background:#1e1e2e; border:1px solid rgba(255,255,255,.15);">
+    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,.1);">
+      <p class="font-semibold text-sm flex items-center gap-2 text-white">
+        <i data-lucide="audio-lines" class="w-4 h-4" style="color:#86efac;"></i>
+        Como funciona o Logos
+      </p>
+      <button onclick="fecharAjudaLogos()" class="p-1 rounded hover:bg-white/10 transition-colors" style="color:rgba(255,255,255,.5);">
+        <i data-lucide="x" class="w-4 h-4"></i>
       </button>
+    </div>
+    <div class="p-5 space-y-4 text-sm" style="color:rgba(255,255,255,.85);">
+      <p style="color:rgba(255,255,255,.7);">
+        O <strong style="color:#86efac;">Logos</strong> é o leitor em voz alta da plataforma — pensado para acessibilidade e leitura assistida.
+      </p>
+      <div class="space-y-2">
+        <p class="text-xs uppercase tracking-wider font-semibold" style="color:rgba(255,255,255,.5);">No botão Logos da toolbar:</p>
+        <div class="space-y-2">
+          <div class="flex items-start gap-2.5">
+            <i data-lucide="text-cursor" class="w-4 h-4 mt-0.5 shrink-0" style="color:#86efac;"></i>
+            <div><strong>Ouvir seleção</strong> <span style="color:rgba(255,255,255,.55);">— marque o trecho no PDF e clique. (Funciona com a voz do sistema.)</span></div>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <i data-lucide="file-text" class="w-4 h-4 mt-0.5 shrink-0" style="color:#86efac;"></i>
+            <div><strong>Ouvir página atual</strong> <span style="color:rgba(255,255,255,.55);">— extrai o texto da página visível e lê.</span></div>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <i data-lucide="play-circle" class="w-4 h-4 mt-0.5 shrink-0" style="color:#86efac;"></i>
+            <div><strong>Ouvir a partir daqui</strong> <span style="color:rgba(255,255,255,.55);">— da página atual até o fim.</span></div>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <i data-lucide="book-open-text" class="w-4 h-4 mt-0.5 shrink-0" style="color:#86efac;"></i>
+            <div><strong>Ouvir documento inteiro</strong> <span style="color:rgba(255,255,255,.55);">— lê do início ao fim. Pode demorar bastante.</span></div>
+          </div>
+          <div class="flex items-start gap-2.5">
+            <i data-lucide="clipboard-paste" class="w-4 h-4 mt-0.5 shrink-0" style="color:#a5b4fc;"></i>
+            <div><strong>Colar texto e ouvir <span class="text-[10px] px-1.5 py-0.5 rounded ml-1" style="background:rgba(165,180,252,.18); color:#c7d2fe;">★ Premium</span></strong> <span style="color:rgba(255,255,255,.55);">— modal onde você pode usar a voz <strong>neural pt-BR</strong> (mais natural). Ideal para trechos que precisem de leitura limpa.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-xl p-3" style="background:rgba(99,102,241,.1); border:1px solid rgba(99,102,241,.25);">
+        <p class="text-xs" style="color:rgba(255,255,255,.7);">
+          <strong style="color:#a5b4fc;">Voz Sistema</strong> usa as vozes instaladas no seu computador (Luciana no Mac, Maria no Windows). Funciona offline e sem limite — recomendada para textos longos.
+        </p>
+        <p class="text-xs mt-2" style="color:rgba(255,255,255,.7);">
+          <strong style="color:#c7d2fe;">★ Voz Premium</strong> usa um motor neural pt-BR online — disponível apenas no modal "Colar texto" para evitar limites de uso.
+        </p>
+      </div>
+      <div class="flex items-start gap-2.5">
+        <i data-lucide="sliders-horizontal" class="w-4 h-4 mt-0.5 shrink-0" style="color:rgba(255,255,255,.6);"></i>
+        <div class="text-xs" style="color:rgba(255,255,255,.65);">No ícone de configuração você ajusta personagem (♀/♂), velocidade e tom da voz Sistema.</div>
+      </div>
+    </div>
+    <div class="px-5 py-3 flex items-center justify-between gap-2" style="border-top:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.02);">
+      <label class="flex items-center gap-2 text-xs cursor-pointer" style="color:rgba(255,255,255,.7);">
+        <input type="checkbox" id="ajuda-logos-naomais" class="rounded">
+        Não exibir novamente
+      </label>
+      <button type="button" onclick="fecharAjudaLogos()"
+        class="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors"
+        style="background:#10b981;">Entendi</button>
     </div>
   </div>
 </div>
@@ -5215,6 +5335,8 @@
     modal.classList.add('flex')
     lucide.createIcons()
     setLeitorStatus('Carregando…', 'rgba(255,255,255,.5)')
+    // Mostra ajuda do Logos no primeiro acesso
+    window.maybeMostrarAjudaLogos?.()
 
     // Aguardar SDK estar pronto
     await new Promise(resolve => {
@@ -5242,6 +5364,7 @@
         throw new Error('O arquivo não é um PDF válido (o servidor retornou HTML ou outro formato). Verifique a URL ou faça upload novamente.')
       }
       window._leitorPdfUrl = url
+      window._logosPdfBuffer = pdfBuffer // usado pelo Logos para extrair texto via pdf.js
       buscarOuCriarReferencia(url, titulo, pdfBuffer) // roda em background
     } catch(fetchErr) {
       setLeitorStatus('Erro ao baixar PDF: ' + fetchErr.message, '#fca5a5')
@@ -5338,20 +5461,9 @@
     try { return JSON.parse(localStorage.getItem(TTS_PREFS_KEY) || '{}') } catch { return {} }
   })()
   ttsPrefs = Object.assign(
-    { genero: 'f', voiceURI: '', rate: 1, pitch: 1, modo: 'premium', premiumVoz: 'Camila' },
+    { genero: 'f', voiceURI: '', rate: 1, pitch: 1, ajudaVista: false },
     ttsPrefs
   )
-
-  // Vozes premium (StreamElements/Amazon Polly Neural — gratuito, sem chave)
-  // Mais naturais que as vozes padrão do navegador
-  const VOZES_PREMIUM = [
-    { id: 'Camila',    nome: 'Camila',    genero: 'f', desc: 'pt-BR · neural' },
-    { id: 'Vitoria',   nome: 'Vitória',   genero: 'f', desc: 'pt-BR · padrão' },
-    { id: 'Thiago',    nome: 'Thiago',    genero: 'm', desc: 'pt-BR · neural' },
-    { id: 'Ricardo',   nome: 'Ricardo',   genero: 'm', desc: 'pt-BR · padrão' },
-    { id: 'Ines',      nome: 'Inês',      genero: 'f', desc: 'pt-PT · neural' },
-    { id: 'Cristiano', nome: 'Cristiano', genero: 'm', desc: 'pt-PT · padrão' },
-  ]
 
   // Vozes sistema (heurística masc/fem)
   const VOZES_FEM = /(luciana|maria|camila|joana|vit[oó]ria|fernanda|helena|paulina|francisca|female|mulher)/i
@@ -5437,11 +5549,12 @@
     return blocos
   }
 
-  function ttsSpeakPremium(texto, opts = {}) {
+  // Voz Premium = Google Translate TTS (endpoint não-oficial, gratuito, voz pt-BR neural-quality)
+  function ttsSpeakPremium(texto) {
     if (!texto || !texto.trim()) return
     pararPremium()
-    const voice = opts.voice || ttsPrefs.premiumVoz || 'Camila'
-    _logosFila = quebrarPorFrases(texto)
+    // Google TTS: máximo 200 chars por request
+    _logosFila = quebrarPorFrases(texto, 190)
     _logosAudio = new Audio()
     _logosAudio.preload = 'auto'
     _logosAudio.playbackRate = parseFloat(ttsPrefs.rate) || 1
@@ -5455,14 +5568,17 @@
         return
       }
       const txt = _logosFila[idx++]
-      _logosAudio.src = `https://api.streamelements.com/kappa/v2/speech?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(txt)}`
+      const params = new URLSearchParams({
+        ie: 'UTF-8', q: txt, tl: 'pt-BR', total: '1', idx: '0',
+        textlen: String(txt.length), client: 'tw-ob'
+      })
+      _logosAudio.src = `https://translate.google.com/translate_tts?${params.toString()}`
       _logosAudio.play().catch(err => {
         console.error('[Logos premium] play error', err)
-        // fallback: usa voz do sistema para o restante
         abortou = true
         const restante = _logosFila.slice(idx - 1).join(' ')
-        setLeitorStatus('🔊 Voz premium falhou, usando sistema', '#fde68a')
-        setTimeout(() => setLeitorStatus(''), 3000)
+        setLeitorStatus('🔊 Voz premium indisponível, usando sistema', '#fde68a')
+        setTimeout(() => setLeitorStatus(''), 3500)
         ttsSpeakSistema(restante)
       })
     }
@@ -5472,7 +5588,7 @@
         abortou = true
         const restante = _logosFila.slice(Math.max(0, idx - 1)).join(' ')
         setLeitorStatus('🔊 Erro na voz premium, usando sistema', '#fde68a')
-        setTimeout(() => setLeitorStatus(''), 3000)
+        setTimeout(() => setLeitorStatus(''), 3500)
         ttsSpeakSistema(restante)
       }
     }
@@ -5492,8 +5608,7 @@
   }
 
   function ttsSpeak(texto, opts = {}) {
-    const modo = opts.modo || ttsPrefs.modo || 'premium'
-    if (modo === 'premium') ttsSpeakPremium(texto, opts)
+    if (opts.premium) ttsSpeakPremium(texto)
     else ttsSpeakSistema(texto)
   }
 
@@ -5543,6 +5658,96 @@
     window._logosUltimaSelecao = ''
   }
 
+  // ── Dropdown menu ──────────────────────────────────────
+  window.toggleLogosMenu = (ev) => {
+    ev?.stopPropagation()
+    const m = document.getElementById('logos-menu')
+    m.classList.toggle('hidden')
+    if (!m.classList.contains('hidden')) window.lucide?.createIcons?.()
+  }
+  window.fecharLogosMenu = () => {
+    document.getElementById('logos-menu')?.classList.add('hidden')
+  }
+  document.addEventListener('click', (e) => {
+    const split = document.getElementById('logos-split')
+    if (split && !split.contains(e.target)) fecharLogosMenu()
+  })
+
+  // ── Extração via PDF.js ───────────────────────────────
+  async function extrairTextoPaginas(paginaInicial = 1, paginaFinal = null) {
+    if (!window._logosPdfBuffer) {
+      setLeitorStatus('PDF não carregado completamente, aguarde…', '#fde68a')
+      setTimeout(() => setLeitorStatus(''), 3500)
+      return ''
+    }
+    if (typeof pdfjsLib === 'undefined') {
+      setLeitorStatus('Engine de extração indisponível', '#fca5a5')
+      setTimeout(() => setLeitorStatus(''), 3500)
+      return ''
+    }
+    try {
+      // Clona o buffer para evitar "ArrayBuffer detached"
+      const buf = window._logosPdfBuffer.slice(0)
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise
+      const fim = paginaFinal || pdf.numPages
+      const ini = Math.max(1, paginaInicial)
+      const partes = []
+      for (let p = ini; p <= fim; p++) {
+        setLeitorStatus(`📄 Extraindo página ${p}/${fim}…`, 'rgba(255,255,255,.6)')
+        const page = await pdf.getPage(p)
+        const c = await page.getTextContent()
+        const pageText = c.items.map(i => i.str).join(' ')
+        partes.push(pageText)
+      }
+      // Limpeza simples: junta hífens de quebra de linha + colapsa espaços
+      let texto = partes.join('\n\n')
+      texto = texto.replace(/-\s+/g, '').replace(/\s+/g, ' ').trim()
+      setLeitorStatus('')
+      return texto
+    } catch (err) {
+      console.error('[Logos] extração falhou', err)
+      setLeitorStatus('Erro ao extrair texto: ' + (err?.message || err), '#fca5a5')
+      setTimeout(() => setLeitorStatus(''), 4000)
+      return ''
+    }
+  }
+
+  async function obterPaginaAtualPdf() {
+    if (!adobeViewer) return 1
+    try {
+      const apis = await adobeViewer.getAPIs()
+      if (typeof apis.getCurrentPage === 'function') {
+        const p = await apis.getCurrentPage()
+        return parseInt(p) || 1
+      }
+    } catch {}
+    return 1
+  }
+
+  window.ttsLerPaginaAtual = async () => {
+    const p = await obterPaginaAtualPdf()
+    setLeitorStatus(`📄 Lendo página ${p}…`, '#86efac')
+    const txt = await extrairTextoPaginas(p, p)
+    if (!txt) return
+    ttsSpeak(txt)
+  }
+
+  window.ttsLerAPartirDaPagina = async () => {
+    const p = await obterPaginaAtualPdf()
+    setLeitorStatus(`📑 Lendo a partir da página ${p}…`, '#86efac')
+    const txt = await extrairTextoPaginas(p)
+    if (!txt) return
+    ttsSpeak(txt)
+  }
+
+  window.ttsLerDocumentoInteiro = async () => {
+    if (!confirm('Ler o documento inteiro pode levar bastante tempo (a leitura usa a voz do sistema, que é offline e ilimitada). Deseja continuar?')) return
+    setLeitorStatus('📚 Lendo documento inteiro…', '#86efac')
+    const txt = await extrairTextoPaginas(1)
+    if (!txt) return
+    ttsSpeak(txt)
+  }
+
   window.ttsPausarRetomar = () => {
     const ico = document.getElementById('ico-tts-pausa')
     // modo premium → audio element
@@ -5575,46 +5780,21 @@
     mostrarControlesTts(false)
   }
 
-  // ── Modal de configuração ──────────────────────────────
+  // ── Modal de configuração (apenas voz Sistema) ─────────
   function popularSelectVozes() {
     const sel = document.getElementById('tts-voz-select')
     if (!sel) return
-    if (ttsPrefs.modo === 'premium') {
-      sel.innerHTML = VOZES_PREMIUM.map(v => {
-        const sym = v.genero === 'f' ? '♀' : '♂'
-        const star = /neural/.test(v.desc) ? ' ★' : ''
-        const selAttr = v.id === ttsPrefs.premiumVoz ? 'selected' : ''
-        return `<option value="${v.id}" ${selAttr}>${sym} ${v.nome}${star} — ${v.desc}</option>`
+    const vozes = listarVozesPt()
+    if (!vozes.length) {
+      sel.innerHTML = '<option value="">(nenhuma voz pt encontrada no dispositivo)</option>'
+      return
+    }
+    sel.innerHTML = '<option value="">— escolher automaticamente —</option>' +
+      vozes.map(v => {
+        const marca = VOZES_FEM.test(v.name) ? '♀' : VOZES_MASC.test(v.name) ? '♂' : '·'
+        const selAttr = v.voiceURI === ttsPrefs.voiceURI ? 'selected' : ''
+        return `<option value="${v.voiceURI}" ${selAttr}>${marca} ${v.name} (${v.lang})</option>`
       }).join('')
-    } else {
-      const vozes = listarVozesPt()
-      if (!vozes.length) {
-        sel.innerHTML = '<option value="">(nenhuma voz pt-BR encontrada no dispositivo)</option>'
-        return
-      }
-      sel.innerHTML = '<option value="">— escolher automaticamente —</option>' +
-        vozes.map(v => {
-          const marca = VOZES_FEM.test(v.name) ? '♀' : VOZES_MASC.test(v.name) ? '♂' : '·'
-          const selAttr = v.voiceURI === ttsPrefs.voiceURI ? 'selected' : ''
-          return `<option value="${v.voiceURI}" ${selAttr}>${marca} ${v.name} (${v.lang})</option>`
-        }).join('')
-    }
-  }
-
-  window.selecionarModoTts = (modo) => {
-    ttsPrefs.modo = modo
-    document.querySelectorAll('.tts-modo-btn').forEach(b => {
-      b.classList.toggle('tts-ativo', b.dataset.ttsModo === modo)
-    })
-    popularSelectVozes()
-    // Filtra vozes premium do gênero atual no select (auto)
-    if (modo === 'premium') {
-      const v = VOZES_PREMIUM.find(x => x.genero === (ttsPrefs.genero || 'f') && /neural/.test(x.desc))
-      if (v && !ttsPrefs.premiumVoz) {
-        ttsPrefs.premiumVoz = v.id
-        document.getElementById('tts-voz-select').value = v.id
-      }
-    }
   }
 
   window.selecionarGeneroTts = (g) => {
@@ -5622,25 +5802,11 @@
     document.querySelectorAll('.tts-genero-btn').forEach(b => {
       b.classList.toggle('tts-ativo', b.dataset.ttsGenero === g)
     })
-    // Em modo premium, autoseleciona voz neural daquele gênero
-    if (ttsPrefs.modo === 'premium') {
-      const sel = document.getElementById('tts-voz-select')
-      const atual = VOZES_PREMIUM.find(v => v.id === sel?.value)
-      if (!atual || atual.genero !== g) {
-        const v = VOZES_PREMIUM.find(x => x.genero === g && /neural/.test(x.desc))
-                || VOZES_PREMIUM.find(x => x.genero === g)
-        if (v && sel) { sel.value = v.id; ttsPrefs.premiumVoz = v.id }
-      }
-    }
   }
 
   window.abrirConfigTts = () => {
     const modal = document.getElementById('modal-config-tts')
     modal.classList.remove('hidden'); modal.classList.add('flex')
-    // marca o modo ativo
-    document.querySelectorAll('.tts-modo-btn').forEach(b => {
-      b.classList.toggle('tts-ativo', b.dataset.ttsModo === (ttsPrefs.modo || 'premium'))
-    })
     selecionarGeneroTts(ttsPrefs.genero || 'f')
     popularSelectVozes()
     document.getElementById('tts-rate').value = ttsPrefs.rate
@@ -5656,29 +5822,49 @@
   }
 
   window.testarVozTts = () => {
-    const valVoz = document.getElementById('tts-voz-select').value
     const tmp = Object.assign({}, ttsPrefs, {
+      voiceURI: document.getElementById('tts-voz-select').value,
       rate: parseFloat(document.getElementById('tts-rate').value),
       pitch: parseFloat(document.getElementById('tts-pitch').value),
     })
-    if (ttsPrefs.modo === 'premium') tmp.premiumVoz = valVoz
-    else tmp.voiceURI = valVoz
     const original = ttsPrefs
     ttsPrefs = tmp
-    ttsSpeak('Esta é a voz do Logos, leitor da plataforma Heráclito. Tudo flui, nada permanece.')
+    ttsSpeakSistema('Esta é a voz do Logos, leitor da plataforma Heráclito. Tudo flui, nada permanece.')
     ttsPrefs = original
   }
 
   window.salvarConfigTts = () => {
-    const valVoz = document.getElementById('tts-voz-select').value
-    if (ttsPrefs.modo === 'premium') ttsPrefs.premiumVoz = valVoz
-    else ttsPrefs.voiceURI = valVoz
+    ttsPrefs.voiceURI = document.getElementById('tts-voz-select').value
     ttsPrefs.rate = parseFloat(document.getElementById('tts-rate').value)
     ttsPrefs.pitch = parseFloat(document.getElementById('tts-pitch').value)
     localStorage.setItem(TTS_PREFS_KEY, JSON.stringify(ttsPrefs))
     fecharConfigTts()
     setLeitorStatus('🔊 Voz salva', '#86efac')
     setTimeout(() => setLeitorStatus(''), 2000)
+  }
+
+  // ── Ajuda flutuante (primeiro acesso) ──────────────────
+  window.abrirAjudaLogos = () => {
+    const modal = document.getElementById('modal-ajuda-logos')
+    if (!modal) return
+    modal.classList.remove('hidden'); modal.classList.add('flex')
+    document.getElementById('ajuda-logos-naomais').checked = !!ttsPrefs.ajudaVista
+    window.lucide?.createIcons?.()
+  }
+  window.fecharAjudaLogos = () => {
+    const modal = document.getElementById('modal-ajuda-logos')
+    const naoMais = document.getElementById('ajuda-logos-naomais')?.checked
+    if (typeof naoMais === 'boolean') {
+      ttsPrefs.ajudaVista = naoMais
+      localStorage.setItem(TTS_PREFS_KEY, JSON.stringify(ttsPrefs))
+    }
+    modal.classList.add('hidden'); modal.classList.remove('flex')
+  }
+  // Mostra ajuda na primeira vez que o leitor de PDF abre
+  window.maybeMostrarAjudaLogos = () => {
+    if (!ttsPrefs.ajudaVista) {
+      setTimeout(() => abrirAjudaLogos(), 800)
+    }
   }
 
   // ── Modal: colar texto manualmente ─────────────────────
@@ -5696,13 +5882,15 @@
     const modal = document.getElementById('modal-logos-texto')
     modal.classList.add('hidden'); modal.classList.remove('flex')
   }
-  window.lerTextoColado = () => {
+  window.lerTextoColado = (modo) => {
     const t = (document.getElementById('logos-texto-area')?.value || '').trim()
     if (!t) return
     fecharModalLogosTexto()
-    setLeitorStatus(`🔊 Logos: lendo ${t.length} caracteres…`, '#86efac')
+    const usaPremium = modo === 'premium'
+    const label = usaPremium ? '★ Premium' : 'Sistema'
+    setLeitorStatus(`🔊 Logos (${label}): lendo ${t.length} caracteres…`, '#86efac')
     setTimeout(() => setLeitorStatus(''), 3500)
-    ttsSpeak(t)
+    ttsSpeak(t, { premium: usaPremium })
   }
 
   // Carregar vozes (em alguns navegadores chega async)
