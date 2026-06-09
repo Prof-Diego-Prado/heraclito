@@ -1389,56 +1389,75 @@
   <div class="glass rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] overflow-y-auto fade-in">
     <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
       <p class="font-bold flex items-center gap-2" style="color:var(--text);">
-        <i data-lucide="calendar-check" class="w-5 h-5" style="color:var(--primary);"></i>
-        <span id="mat-disc-titulo-modal">Adicionar Material à Disciplina</span>
+        <i data-lucide="book-plus" class="w-5 h-5" style="color:var(--primary);"></i>
+        <span>Publicar Material</span>
       </p>
       <button onclick="fecharModalMatDisc()" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
     <form id="form-mat-disc" class="p-6 space-y-4">
-      <input type="hidden" id="mat-disc-idx">
+      <!-- 1. Disciplina (obrigatório) -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Disciplina <span style="color:#DC2626">*</span></label>
+        <select id="mat-disc-idx" class="input-field" required onchange="atualizarProfessoresModal()">
+          <option value="">— Selecione a disciplina —</option>
+          <option value="0">DPD 4008 — Fundamentos em Processos Inovadores e Culturas Digitais</option>
+          <option value="1">DPD 4004 (MPTED) — Métodos, Pesquisa Científica e Ética</option>
+          <option value="2">DPD 4004 (FPTEEB) — Fundamentos em Pesquisas e Tecnologias Educacionais</option>
+        </select>
+      </div>
+      <!-- 2. Professor (obrigatório, dependente da disciplina) -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Professor(a) <span style="color:#DC2626">*</span></label>
+        <select id="mat-disc-prof" class="input-field" required>
+          <option value="">— Selecione a disciplina primeiro —</option>
+        </select>
+      </div>
+      <!-- 3. Tipo + Data -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Data da Aula</label>
-          <input type="date" id="mat-disc-data" class="input-field" required>
-        </div>
-        <div>
           <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Tipo</label>
-          <select id="mat-disc-tipo" class="input-field">
+          <select id="mat-disc-tipo" class="input-field" onchange="atualizarTipoModal()">
             <option value="pdf">PDF</option>
             <option value="doc">Word / Doc</option>
             <option value="ppt">Apresentação</option>
-            <option value="link">Link</option>
+            <option value="link">Link Drive / URL</option>
           </select>
         </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Data da Aula <span class="normal-case font-normal text-gray-400">(opcional)</span></label>
+          <input type="date" id="mat-disc-data" class="input-field">
+        </div>
       </div>
+      <!-- 4. Nome do material -->
       <div>
-        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Professor Responsável</label>
-        <input type="text" id="mat-disc-prof" class="input-field" placeholder="Ex: Prof. Dr. Flávio Rodrigues de Oliveira" required>
-      </div>
-      <div>
-        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome do Material</label>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Nome do Material <span style="color:#DC2626">*</span></label>
         <input type="text" id="mat-disc-nome" class="input-field" placeholder="Ex: Slides — Culturas Digitais e Docência" required>
       </div>
+      <!-- 5. Arquivo (oculto para tipo link) -->
       <div id="mat-file-wrap">
-        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Arquivo <span class="normal-case font-normal text-gray-400">(do seu computador)</span></label>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Arquivo <span class="normal-case font-normal text-gray-400">(PDF, DOC, PPT do seu computador)</span></label>
         <label class="flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer hover:bg-gray-50 transition-colors" style="border-color:var(--border);">
           <i data-lucide="upload" class="w-4 h-4 shrink-0" style="color:var(--primary);"></i>
           <span id="mat-file-name" class="text-sm truncate" style="color:var(--muted);">Clique para selecionar…</span>
           <input type="file" id="mat-disc-file" accept=".pdf,.doc,.docx,.ppt,.pptx" class="hidden">
         </label>
       </div>
+      <!-- 6. URL externa / Drive -->
       <div>
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
-          URL externa <span id="mat-url-hint" class="normal-case font-normal text-gray-400">(se não enviou arquivo acima)</span><span id="mat-url-req" class="normal-case font-normal text-gray-400 hidden"> (obrigatório para links)</span>
+          <span id="mat-url-label">URL do Drive ou link externo</span>
+          <span id="mat-url-hint" class="normal-case font-normal text-gray-400"> (se não enviou arquivo acima)</span>
+          <span id="mat-url-req" class="normal-case font-normal text-gray-400 hidden"> — obrigatório para links</span>
         </label>
-        <input type="url" id="mat-disc-url" class="input-field" placeholder="https://...">
+        <input type="url" id="mat-disc-url" class="input-field" placeholder="https://drive.google.com/... ou https://...">
       </div>
+      <!-- 7. Descrição -->
       <div>
-        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Texto / Conteúdo da Aula <span class="normal-case font-normal">(opcional)</span></label>
-        <textarea id="mat-disc-descricao" rows="3" class="input-field resize-none"
-          placeholder="Descreva o conteúdo abordado nesta aula…"></textarea>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">Descrição / Conteúdo <span class="normal-case font-normal">(opcional)</span></label>
+        <textarea id="mat-disc-descricao" rows="2" class="input-field resize-none"
+          placeholder="Descreva brevemente o conteúdo deste material…"></textarea>
       </div>
       <div id="mat-disc-erro" class="hidden rounded-xl px-3 py-2 text-sm" style="background:#FEF2F2; color:#B91C1C;"></div>
       <div class="flex justify-end gap-2 pt-1">
@@ -2811,8 +2830,10 @@
   function renderMatDisc(discIdx, arquivos) {
     const container = document.getElementById('disc-mat-aulas')
     const btnAdd = document.getElementById('btn-add-mat-disc')
-    if (btnAdd) btnAdd.classList.toggle('hidden', !(isAdmin || isTeacher))
-    btnAdd && (btnAdd.onclick = () => abrirModalMatDisc(discIdx))
+    if (btnAdd) {
+      btnAdd.classList.remove('hidden')
+      btnAdd.onclick = () => abrirModalMatDisc(discIdx)
+    }
 
     if (!arquivos.length) {
       container.innerHTML = `<div class="flex flex-col items-center py-10" style="color:var(--muted);">
@@ -2838,7 +2859,7 @@
       const cl   = tipoColor(a.tipo)
       const nomeEsc = (a.nome||'').replace(/'/g,"\\'")
       const delBtn = isAdmin
-        ? `<button onclick="removerMatDisc('${a.id}')"
+        ? `<button onclick="removerMatDisc('${a.id}',${a.disc_id||1})"
             class="p-1 rounded-lg opacity-40 hover:opacity-100 hover:bg-red-50 transition-opacity"
             style="color:#DC2626;" title="Remover">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -2876,34 +2897,72 @@
     lucide.createIcons()
   }
 
-  window.removerMatDisc = async (id) => {
+  window.removerMatDisc = async (id, discId) => {
     if (!confirm('Remover este material?')) return
     const { error } = await db.from('arquivos').delete().eq('id', id)
     if (!error) {
-      // Atualiza cache e re-renderiza
       for (const k of [1,2,3]) {
         if (discArquivosCache[k]) discArquivosCache[k] = discArquivosCache[k].filter(a => a.id !== id)
       }
       const cont = document.getElementById('disc-mat-aulas')
       if (cont) {
-        const discIdx = parseInt(document.getElementById('mat-disc-idx')?.value||'0') || 0
-        renderMatDisc(discIdx, discArquivosCache[discIdx+1]||[])
+        const di = (discId || 1) - 1
+        renderMatDisc(di, discArquivosCache[discId || 1] || [])
       }
     }
   }
 
+  // Mapa disciplina (1-based) → professores
+  const PROF_POR_DISC = {
+    1: ['Profa. Dra. Maria Luisa Furlan Costa', 'Prof. Dr. Flávio Rodrigues de Oliveira'],
+    2: ['Profª. Dra. Marli Delmonico de Araujo Futata'],
+    3: ['Profª. Dra. Marli Delmonico de Araujo Futata', 'Profª. Dra. Renata Oliveira dos Santos'],
+  }
+
+  window.atualizarProfessoresModal = function() {
+    const discSel = document.getElementById('mat-disc-idx')
+    const profSel = document.getElementById('mat-disc-prof')
+    const val = discSel?.value
+    if (val === '' || val === null || val === undefined) {
+      profSel.innerHTML = '<option value="">— Selecione a disciplina primeiro —</option>'
+      return
+    }
+    const profs = PROF_POR_DISC[parseInt(val) + 1] || []
+    profSel.innerHTML = '<option value="">— Selecione o(a) professor(a) —</option>' +
+      profs.map(p => `<option value="${p}">${p}</option>`).join('')
+    if (profs.length === 1) profSel.value = profs[0]
+  }
+
+  window.atualizarTipoModal = function() {
+    const tipo    = document.getElementById('mat-disc-tipo')?.value
+    const wrap    = document.getElementById('mat-file-wrap')
+    const urlHint = document.getElementById('mat-url-hint')
+    const urlReq  = document.getElementById('mat-url-req')
+    if (tipo === 'link') {
+      wrap?.classList.add('hidden')
+      urlHint?.classList.add('hidden')
+      urlReq?.classList.remove('hidden')
+    } else {
+      wrap?.classList.remove('hidden')
+      urlHint?.classList.remove('hidden')
+      urlReq?.classList.add('hidden')
+    }
+  }
+
   function abrirModalMatDisc(discIdx) {
-    const modal = document.getElementById('modal-mat-disc')
-    document.getElementById('mat-disc-idx').value = discIdx
-    document.getElementById('mat-disc-titulo-modal').textContent =
-      `Adicionar Material — Disciplina ${discIdx+1}`
-    const d = DISCIPLINAS[discIdx]
-    document.getElementById('mat-disc-prof').value = d?.docentes?.split('·')[0]?.trim() || ''
-    document.getElementById('mat-disc-data').value = ''
-    document.getElementById('mat-disc-nome').value = ''
-    document.getElementById('mat-disc-url').value  = ''
+    const modal   = document.getElementById('modal-mat-disc')
+    const discSel = document.getElementById('mat-disc-idx')
+    document.getElementById('mat-disc-nome').value      = ''
+    document.getElementById('mat-disc-data').value      = ''
+    document.getElementById('mat-disc-url').value       = ''
     document.getElementById('mat-disc-descricao').value = ''
+    document.getElementById('mat-disc-tipo').value      = 'pdf'
     document.getElementById('mat-disc-erro').classList.add('hidden')
+    document.getElementById('mat-file-name').textContent = 'Clique para selecionar…'
+    document.getElementById('mat-disc-file').value = ''
+    discSel.value = (discIdx !== null && discIdx !== undefined) ? String(discIdx) : ''
+    atualizarProfessoresModal()
+    atualizarTipoModal()
     modal.classList.remove('hidden')
     modal.classList.add('flex')
     lucide.createIcons()
@@ -2915,16 +2974,47 @@
     modal.classList.remove('flex')
   }
 
+  async function notificarMaterialNoChat(nomeMat, discIdx, profNome) {
+    try {
+      const d = DISCIPLINAS[discIdx]
+      const autorNome = currentProfile?.name || currentProfile?.username || 'Usuário'
+      const texto = `📚 Novo material publicado!\n\n"${nomeMat}"\n\n📖 ${d?.codigo || 'Disc. ' + (discIdx+1)}\n👤 Prof(a): ${profNome || '—'}\n✍️ Por: ${autorNome}`
+      await db.from('arquivos').insert({
+        nome: `📚 ${nomeMat.slice(0, 70)}`,
+        tipo: 'texto', url: null, fonte: 'web', categoria: 'chat',
+        descricao: texto, created_by: currentUser.id
+      })
+    } catch(_) {}
+  }
+
   document.getElementById('form-mat-disc')?.addEventListener('submit', async (e) => {
     e.preventDefault()
-    const btn     = document.getElementById('btn-submit-mat-disc')
-    const erro    = document.getElementById('mat-disc-erro')
-    const discIdx = parseInt(document.getElementById('mat-disc-idx').value)
-    const tipo    = document.getElementById('mat-disc-tipo').value
+    const btn  = document.getElementById('btn-submit-mat-disc')
+    const erro = document.getElementById('mat-disc-erro')
     erro.classList.add('hidden')
+
+    const discIdxVal = document.getElementById('mat-disc-idx').value
+    if (discIdxVal === '' || discIdxVal === null) {
+      erro.textContent = 'Selecione a disciplina.'
+      erro.classList.remove('hidden'); return
+    }
+    const discIdx    = parseInt(discIdxVal)
+    const tipo       = document.getElementById('mat-disc-tipo').value
+    const profNome   = document.getElementById('mat-disc-prof').value.trim()
+    const nomeMat    = document.getElementById('mat-disc-nome').value.trim()
+
+    if (!profNome) {
+      erro.textContent = 'Selecione o(a) professor(a) responsável.'
+      erro.classList.remove('hidden'); return
+    }
+    if (!nomeMat) {
+      erro.textContent = 'Informe o nome do material.'
+      erro.classList.remove('hidden'); return
+    }
+
     btn.disabled = true; btn.textContent = 'Publicando…'
 
-    // URL: arquivo local tem prioridade sobre URL externa
+    // Arquivo local tem prioridade sobre URL externa
     let finalUrl = document.getElementById('mat-disc-url').value.trim()
     const fileInput = document.getElementById('mat-disc-file')
     if (fileInput.files[0]) {
@@ -2934,34 +3024,32 @@
       } catch(upErr) {
         btn.disabled = false; btn.textContent = 'Publicar'
         erro.textContent = upErr.message
-        erro.classList.remove('hidden')
-        return
+        erro.classList.remove('hidden'); return
       }
     }
     if (!finalUrl) {
       btn.disabled = false; btn.textContent = 'Publicar'
       erro.textContent = tipo === 'link'
-        ? 'Informe a URL do link.'
+        ? 'Informe a URL do Drive ou link externo.'
         : 'Selecione um arquivo ou informe uma URL externa.'
-      erro.classList.remove('hidden')
-      return
+      erro.classList.remove('hidden'); return
     }
 
-    const profNomeDisc = document.getElementById('mat-disc-prof').value.trim() || null
-    const discIdDisc   = discIdx + 1
-    const folderIdDisc = await garantirPastaDiscProf(discIdDisc, profNomeDisc)
+    const discId   = discIdx + 1
+    const folderId = await garantirPastaDiscProf(discId, profNome)
 
     const payload = {
-      nome:          document.getElementById('mat-disc-nome').value.trim(),
+      nome:           nomeMat,
       tipo,
-      url:           finalUrl,
-      fonte:         'web',
-      disc_id:       discIdDisc,
-      aula_data:     document.getElementById('mat-disc-data').value || null,
-      professor_nome:profNomeDisc,
-      descricao_aula:document.getElementById('mat-disc-descricao').value.trim() || null,
-      created_by:    currentUser.id,
-      ...(folderIdDisc && { folder_id: folderIdDisc }),
+      url:            finalUrl,
+      fonte:          'web',
+      categoria:      'material',
+      disc_id:        discId,
+      aula_data:      document.getElementById('mat-disc-data').value || null,
+      professor_nome: profNome,
+      descricao_aula: document.getElementById('mat-disc-descricao').value.trim() || null,
+      created_by:     currentUser.id,
+      ...(folderId && { folder_id: folderId }),
     }
 
     const { data, error } = await db.from('arquivos').insert(payload).select().single()
@@ -2969,16 +3057,28 @@
 
     if (error) {
       erro.textContent = error.message
-      erro.classList.remove('hidden')
-      return
+      erro.classList.remove('hidden'); return
     }
 
     fecharModalMatDisc()
-    document.getElementById('mat-file-name').textContent = 'Clique para selecionar…'
-    if (!discArquivosCache[discIdx+1]) discArquivosCache[discIdx+1] = []
-    discArquivosCache[discIdx+1].push(data)
-    discArquivosCache[discIdx+1].sort((a,b) => (a.aula_data||'').localeCompare(b.aula_data||''))
-    renderMatDisc(discIdx, discArquivosCache[discIdx+1])
+
+    // Atualiza cache da disciplina e re-renderiza se estiver visível
+    if (!discArquivosCache[discId]) discArquivosCache[discId] = []
+    discArquivosCache[discId].push(data)
+    discArquivosCache[discId].sort((a,b) => (a.aula_data||'').localeCompare(b.aula_data||''))
+    const discView = document.getElementById('view-disciplina')
+    if (discView && !discView.classList.contains('hidden')) {
+      renderMatDisc(discIdx, discArquivosCache[discId])
+    }
+
+    // Notificação no bate-papo
+    await notificarMaterialNoChat(nomeMat, discIdx, profNome)
+
+    // Atualiza feed se estiver visível
+    const feedView = document.getElementById('view-feed')
+    if (feedView && !feedView.classList.contains('hidden')) {
+      await carregarFeed()
+    }
   })
 
   function isoDate(d) { return d.toISOString().slice(0,10) }
@@ -3922,9 +4022,8 @@
     document.getElementById('tab-materiais').classList.toggle('ativo', tab === 'material')
     document.getElementById('tab-chat').classList.toggle('ativo', tab === 'chat')
     // Compose boxes
-    const canPost = isTeacher || currentProfile?.role === 'student'
-    document.getElementById('feed-compose').classList.toggle('hidden', !canPost || tab !== 'material')
-    document.getElementById('chat-compose').classList.toggle('hidden', !canPost || tab !== 'chat')
+    document.getElementById('feed-compose').classList.toggle('hidden', tab !== 'material')
+    document.getElementById('chat-compose').classList.toggle('hidden', tab !== 'chat')
     fecharCompose()
     carregarFeed()
     // Marcar aba como lida
@@ -5096,21 +5195,9 @@
     }, 1000)
   }
 
-  // Expandir compose ao clicar no placeholder
+  // Clicar no placeholder abre o modal unificado de publicação
   document.getElementById('compose-placeholder')?.addEventListener('click', () => {
-    document.getElementById('compose-placeholder').classList.add('hidden')
-    const form = document.getElementById('compose-form')
-    form.classList.remove('hidden')
-    lucide.createIcons()
-    // Verificar cooldown para alunos
-    const rem = getCooldownRemaining()
-    if (rem > 0) iniciarCooldownUI(rem)
-    else {
-      document.getElementById('compose-cooldown').classList.add('hidden')
-      const btn = document.getElementById('btn-compose-publicar')
-      if (btn) btn.disabled = false
-    }
-    document.getElementById('compose-texto').focus()
+    abrirModalMatDisc(null)
   })
 
   document.getElementById('btn-compose-cancelar')?.addEventListener('click', fecharCompose)
