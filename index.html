@@ -1415,8 +1415,30 @@
     </div>
 
     <form id="form-novo-material" class="p-6 space-y-4">
+      <!-- 0. Destino: Disciplina ou Biblioteca -->
+      <div class="flex gap-2 p-1 rounded-xl" style="background:#F1F5F9;">
+        <button type="button" id="nm-tab-disc"
+          onclick="nmAtualizarDestino('disciplina')"
+          class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all"
+          style="background:#fff; color:#4338CA; box-shadow:0 1px 3px rgba(0,0,0,.12);">
+          <i data-lucide="graduation-cap" class="w-4 h-4"></i>Disciplina
+        </button>
+        <button type="button" id="nm-tab-bib"
+          onclick="nmAtualizarDestino('biblioteca')"
+          class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all"
+          style="color:#64748B;">
+          <i data-lucide="library" class="w-4 h-4"></i>Biblioteca
+        </button>
+      </div>
+
+      <!-- Aviso Biblioteca (visível só quando destino=biblioteca) -->
+      <div id="nm-aviso-biblioteca" class="hidden rounded-xl px-4 py-3 text-sm leading-snug" style="background:#FFFBEB; border:1px solid #FCD34D; color:#92400E;">
+        <p class="font-semibold mb-0.5">📚 Biblioteca — para obras completas</p>
+        <p>Use esta opção para <strong>obras completas</strong> (livros, teses, dissertações) ou materiais <strong>não vinculados a disciplinas ou professores específicos</strong>. Para slides, apostilas e leituras de aula, prefira a opção <em>Disciplina</em>.</p>
+      </div>
+
       <!-- 1. Professor(a) -->
-      <div>
+      <div id="nm-campo-prof">
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
           Professor(a) <span style="color:#DC2626">*</span>
         </label>
@@ -1430,13 +1452,19 @@
       </div>
 
       <!-- 2. Disciplina (filtrada pelo professor) -->
-      <div>
+      <div id="nm-campo-disc">
         <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
           Disciplina <span style="color:#DC2626">*</span>
         </label>
         <select id="nm-disc" class="input-field" required>
           <option value="">— Selecione o(a) professor(a) primeiro —</option>
         </select>
+      </div>
+
+      <!-- Aviso de duplicata (visível quando arquivo já existe) -->
+      <div id="nm-aviso-duplicata" class="hidden rounded-xl px-4 py-3 text-sm leading-snug" style="background:#FFFBEB; border:1px solid #FCD34D; color:#92400E;">
+        <p class="font-semibold mb-0.5">⚠️ Arquivo já cadastrado</p>
+        <p id="nm-duplicata-texto">Já existe um arquivo com este nome na plataforma. Verifique se o material já está disponível antes de enviar para evitar duplicações.</p>
       </div>
 
       <!-- 3. Nome do material -->
@@ -3062,6 +3090,58 @@
   }
 
   let nmFiles = []
+  let nmDestinoAtual = 'disciplina'
+
+  window.nmAtualizarDestino = function(dest) {
+    nmDestinoAtual = dest
+    const isBib = dest === 'biblioteca'
+    document.getElementById('nm-campo-prof').classList.toggle('hidden', isBib)
+    document.getElementById('nm-campo-disc').classList.toggle('hidden', isBib)
+    document.getElementById('nm-aviso-biblioteca').classList.toggle('hidden', !isBib)
+    document.getElementById('nm-prof').required = !isBib
+    document.getElementById('nm-disc').required = !isBib
+    document.getElementById('nm-aviso-duplicata').classList.add('hidden')
+    const tabDisc = document.getElementById('nm-tab-disc')
+    const tabBib  = document.getElementById('nm-tab-bib')
+    if (isBib) {
+      tabBib.style.background  = '#fff'; tabBib.style.color  = '#4338CA'; tabBib.style.boxShadow  = '0 1px 3px rgba(0,0,0,.12)'
+      tabDisc.style.background = '';     tabDisc.style.color = '#64748B'; tabDisc.style.boxShadow = ''
+    } else {
+      tabDisc.style.background = '#fff'; tabDisc.style.color = '#4338CA'; tabDisc.style.boxShadow = '0 1px 3px rgba(0,0,0,.12)'
+      tabBib.style.background  = '';     tabBib.style.color  = '#64748B'; tabBib.style.boxShadow  = ''
+    }
+  }
+
+  window.nmVerificarDuplicata = async function(fileName) {
+    try {
+      const nome = fileName.replace(/\.[^.]+$/, '')
+      const ext  = fileName.split('.').pop().toLowerCase()
+      const { data } = await db.from('arquivos').select('id,nome').ilike('nome', `%${nome}%`).limit(5)
+      const achou = (data||[]).some(a => {
+        const n = (a.nome||'').toLowerCase()
+        return n.includes(nome.toLowerCase()) && n.includes(`.${ext}`)
+          || n === nome.toLowerCase()
+      })
+      const aviso = document.getElementById('nm-aviso-duplicata')
+      const txt   = document.getElementById('nm-duplicata-texto')
+      if (achou) {
+        txt.textContent = `Já existe um arquivo com o nome "${fileName}" na plataforma. Verifique se o material já está disponível antes de enviar para evitar duplicações.`
+        aviso.classList.remove('hidden')
+      } else {
+        aviso.classList.add('hidden')
+      }
+    } catch(_) {}
+  }
+
+  async function garantirPastaBiblioteca() {
+    const { data: existe } = await db.from('folders').select('id').eq('name','Biblioteca').is('parent_id', null).maybeSingle()
+    if (existe?.id) return existe.id
+    const { data: nova, error } = await db.from('folders').insert({
+      name: 'Biblioteca', tipo: 'global', created_by: currentUser.id
+    }).select('id').single()
+    if (error) throw new Error('Erro ao criar pasta Biblioteca: ' + error.message)
+    return nova.id
+  }
 
   window.nmAtualizarDiscs = function() {
     const prof = document.getElementById('nm-prof')?.value
@@ -3078,6 +3158,7 @@
 
   window.abrirModalNovoMaterial = function() {
     nmFiles = []
+    nmDestinoAtual = 'disciplina'
     document.getElementById('nm-prof').value  = ''
     document.getElementById('nm-disc').innerHTML = '<option value="">— Selecione o(a) professor(a) primeiro —</option>'
     document.getElementById('nm-nome').value  = ''
@@ -3087,6 +3168,8 @@
     document.getElementById('nm-file-list').classList.add('hidden')
     document.getElementById('nm-erro').classList.add('hidden')
     document.getElementById('nm-progress').classList.add('hidden')
+    document.getElementById('nm-aviso-duplicata').classList.add('hidden')
+    nmAtualizarDestino('disciplina')
     nmResetDropzone()
     const modal = document.getElementById('modal-novo-material')
     modal.classList.remove('hidden')
@@ -3128,6 +3211,7 @@
       if (!dup) nmFiles.push(f)
     })
     nmRenderFileList()
+    if (nmFiles.length > 0) nmVerificarDuplicata(nmFiles[0].name)
   }
 
   function nmRenderFileList() {
@@ -3170,72 +3254,116 @@
     const pBar  = document.getElementById('nm-progress-bar')
     erro.classList.add('hidden')
 
+    const isBib    = nmDestinoAtual === 'biblioteca'
     const profNome = document.getElementById('nm-prof').value.trim()
     const discIdxV = document.getElementById('nm-disc').value
     const nomeMat  = document.getElementById('nm-nome').value.trim()
     const urlExt   = document.getElementById('nm-url').value.trim()
 
-    if (!profNome) { erro.textContent = 'Selecione o(a) professor(a).'; erro.classList.remove('hidden'); return }
-    if (discIdxV === '') { erro.textContent = 'Selecione a disciplina.'; erro.classList.remove('hidden'); return }
+    if (!isBib && !profNome) { erro.textContent = 'Selecione o(a) professor(a).'; erro.classList.remove('hidden'); return }
+    if (!isBib && discIdxV === '') { erro.textContent = 'Selecione a disciplina.'; erro.classList.remove('hidden'); return }
     if (!nmFiles.length && !urlExt) { erro.textContent = 'Adicione um arquivo ou informe um link externo.'; erro.classList.remove('hidden'); return }
 
-    const discIdx = parseInt(discIdxV)
-    const discId  = discIdx + 1
-    btn.disabled  = true
-
-    const folderId = await garantirPastaDiscProf(discId, profNome)
+    btn.disabled = true
 
     try {
-      if (urlExt && !nmFiles.length) {
-        // Apenas link externo
-        btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>Publicando…'
-        lucide.createIcons()
-        const { error } = await db.from('arquivos').insert({
-          nome: nomeMat || urlExt.slice(0, 80),
-          tipo: 'link', url: urlExt, fonte: 'web', categoria: 'material',
-          disc_id: discId, professor_nome: profNome,
-          created_by: currentUser.id,
-          ...(folderId && { folder_id: folderId }),
-        })
-        if (error) throw new Error(error.message)
-        await notificarMaterialNoChat(nomeMat || urlExt.slice(0, 60), discIdx, profNome)
-      } else {
-        // Upload de arquivo(s)
-        prog.classList.remove('hidden')
-        for (let i = 0; i < nmFiles.length; i++) {
-          const f = nmFiles[i]
-          pLabel.textContent = `Enviando ${f.name}…`
-          pPct.textContent   = `${Math.round((i / nmFiles.length) * 100)}%`
-          pBar.style.width   = `${Math.round((i / nmFiles.length) * 100)}%`
-          btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>${i+1}/${nmFiles.length}`
+      if (isBib) {
+        // ── Destino: Biblioteca ──
+        const folderId = await garantirPastaBiblioteca()
+
+        if (urlExt && !nmFiles.length) {
+          btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>Publicando…'
           lucide.createIcons()
-
-          const finalUrl = await uploadArquivoStorage(f)
-          const ext  = f.name.split('.').pop().toLowerCase()
-          const tipo = { pdf:'pdf', doc:'doc', docx:'doc', ppt:'ppt', pptx:'ppt' }[ext] || 'pdf'
-          const nome = (nmFiles.length === 1 && nomeMat) ? nomeMat : (nomeMat ? `${nomeMat} (${i+1})` : f.name.replace(/\.[^.]+$/, ''))
-
           const { error } = await db.from('arquivos').insert({
-            nome, tipo, url: finalUrl, fonte: 'web', categoria: 'material',
+            nome: nomeMat || urlExt.slice(0, 80),
+            tipo: 'link', url: urlExt, fonte: 'web', categoria: 'material',
+            created_by: currentUser.id,
+            ...(folderId && { folder_id: folderId }),
+          })
+          if (error) throw new Error(error.message)
+        } else {
+          prog.classList.remove('hidden')
+          for (let i = 0; i < nmFiles.length; i++) {
+            const f = nmFiles[i]
+            pLabel.textContent = `Enviando ${f.name}…`
+            pPct.textContent   = `${Math.round((i / nmFiles.length) * 100)}%`
+            pBar.style.width   = `${Math.round((i / nmFiles.length) * 100)}%`
+            btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>${i+1}/${nmFiles.length}`
+            lucide.createIcons()
+
+            const finalUrl = await uploadArquivoStorage(f)
+            const ext  = f.name.split('.').pop().toLowerCase()
+            const tipo = { pdf:'pdf', doc:'doc', docx:'doc', ppt:'ppt', pptx:'ppt' }[ext] || 'pdf'
+            const nome = (nmFiles.length === 1 && nomeMat) ? nomeMat : (nomeMat ? `${nomeMat} (${i+1})` : f.name.replace(/\.[^.]+$/, ''))
+
+            const { error } = await db.from('arquivos').insert({
+              nome, tipo, url: finalUrl, fonte: 'web', categoria: 'material',
+              created_by: currentUser.id,
+              ...(folderId && { folder_id: folderId }),
+            })
+            if (error) throw new Error(error.message)
+          }
+          pPct.textContent = '100%'
+          pBar.style.width = '100%'
+        }
+
+        // Atualiza biblioteca se estiver visível
+        if (!document.getElementById('view-biblioteca')?.classList.contains('hidden')) await carregarBiblioteca()
+
+      } else {
+        // ── Destino: Disciplina ──
+        const discIdx  = parseInt(discIdxV)
+        const discId   = discIdx + 1
+        const folderId = await garantirPastaDiscProf(discId, profNome)
+
+        if (urlExt && !nmFiles.length) {
+          btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>Publicando…'
+          lucide.createIcons()
+          const { error } = await db.from('arquivos').insert({
+            nome: nomeMat || urlExt.slice(0, 80),
+            tipo: 'link', url: urlExt, fonte: 'web', categoria: 'material',
             disc_id: discId, professor_nome: profNome,
             created_by: currentUser.id,
             ...(folderId && { folder_id: folderId }),
-            ...(urlExt && { descricao: `Link relacionado: ${urlExt}` }),
           })
           if (error) throw new Error(error.message)
+          await notificarMaterialNoChat(nomeMat || urlExt.slice(0, 60), discIdx, profNome)
+        } else {
+          prog.classList.remove('hidden')
+          for (let i = 0; i < nmFiles.length; i++) {
+            const f = nmFiles[i]
+            pLabel.textContent = `Enviando ${f.name}…`
+            pPct.textContent   = `${Math.round((i / nmFiles.length) * 100)}%`
+            pBar.style.width   = `${Math.round((i / nmFiles.length) * 100)}%`
+            btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>${i+1}/${nmFiles.length}`
+            lucide.createIcons()
 
-          if (i === 0) await notificarMaterialNoChat(nome, discIdx, profNome)
+            const finalUrl = await uploadArquivoStorage(f)
+            const ext  = f.name.split('.').pop().toLowerCase()
+            const tipo = { pdf:'pdf', doc:'doc', docx:'doc', ppt:'ppt', pptx:'ppt' }[ext] || 'pdf'
+            const nome = (nmFiles.length === 1 && nomeMat) ? nomeMat : (nomeMat ? `${nomeMat} (${i+1})` : f.name.replace(/\.[^.]+$/, ''))
+
+            const { error } = await db.from('arquivos').insert({
+              nome, tipo, url: finalUrl, fonte: 'web', categoria: 'material',
+              disc_id: discId, professor_nome: profNome,
+              created_by: currentUser.id,
+              ...(folderId && { folder_id: folderId }),
+              ...(urlExt && { descricao: `Link relacionado: ${urlExt}` }),
+            })
+            if (error) throw new Error(error.message)
+            if (i === 0) await notificarMaterialNoChat(nome, discIdx, profNome)
+          }
+          pPct.textContent = '100%'
+          pBar.style.width = '100%'
         }
-        pPct.textContent = '100%'
-        pBar.style.width = '100%'
-      }
 
-      // Atualiza cache da disciplina se estiver visível
-      if (discArquivosCache[discId]) {
-        const { data } = await db.from('arquivos').select('*').eq('disc_id', discId).order('aula_data', { ascending: true })
-        discArquivosCache[discId] = data || []
-        const discView = document.getElementById('view-disciplina')
-        if (discView && !discView.classList.contains('hidden')) renderMatDisc(discIdx, discArquivosCache[discId])
+        // Atualiza cache da disciplina se estiver visível
+        if (discArquivosCache[discId]) {
+          const { data } = await db.from('arquivos').select('*').eq('disc_id', discId).order('aula_data', { ascending: true })
+          discArquivosCache[discId] = data || []
+          const discView = document.getElementById('view-disciplina')
+          if (discView && !discView.classList.contains('hidden')) renderMatDisc(discIdx, discArquivosCache[discId])
+        }
       }
 
       fecharModalNovoMaterial()
@@ -7457,6 +7585,14 @@
       .order('created_at', { ascending: false })
       .limit(60)
 
+    // Buscar uploads web para a Biblioteca (sem disciplina vinculada)
+    const { data: webDocs } = await db.from('arquivos')
+      .select('id,nome,tipo,url,created_at')
+      .eq('fonte','web').eq('categoria','material')
+      .is('disc_id', null)
+      .order('created_at', { ascending: false })
+      .limit(60)
+
     // PDFs sincronizados que têm capa renderizável (thumbnail do Drive)
     const drvComCapa = (drvDocs||[]).filter(d => d.drive_id && d.tipo === 'pdf')
 
@@ -7484,6 +7620,24 @@
         </div>`
     }
 
+    const tipoIcon = tipo => ({ pdf:'file-text', doc:'file', ppt:'presentation', link:'link' }[tipo] || 'file')
+    const tipoColor = tipo => ({ pdf:'#B91C1C', doc:'#1D4ED8', ppt:'#C2410C', link:'#059669' }[tipo] || '#6B7280')
+
+    const renderWebCard = (d) => {
+      const onclick = d.url ? `window.open('${d.url.replace(/'/g,"\\'")}','_blank')` : ''
+      return `
+        <div class="group rounded-2xl overflow-hidden transition-shadow hover:shadow-lg cursor-pointer flex flex-col"
+          style="background:var(--surface); border:1px solid var(--border);"
+          onclick="${onclick}">
+          <div class="flex-1 flex items-center justify-center aspect-[3/4]" style="background:#F5F7FF;">
+            <i data-lucide="${tipoIcon(d.tipo)}" class="w-10 h-10" style="color:${tipoColor(d.tipo)};"></i>
+          </div>
+          <div class="p-3">
+            <p class="text-xs font-semibold line-clamp-2 leading-snug" style="color:var(--text);">${d.nome}</p>
+          </div>
+        </div>`
+    }
+
     const recemSection = naoVistos.length ? `
       <div class="mb-6">
         <p class="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:var(--muted);">
@@ -7498,19 +7652,31 @@
 
     const bibSection = drvComCapa.length ? `
       <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">
-        📚 Biblioteca
+        📚 Biblioteca — Drive
       </p>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
         ${drvComCapa.map(d => renderCard(d, 'drv-bib')).join('')}
       </div>
-    ` : `
+    ` : ''
+
+    const webSection = (webDocs||[]).length ? `
+      ${bibSection ? '<div class="border-t my-4" style="border-color:var(--border);"></div>' : ''}
+      <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--muted);">
+        📤 Enviados por usuários
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        ${(webDocs||[]).map(d => renderWebCard(d)).join('')}
+      </div>
+    ` : ''
+
+    const empty = !drvComCapa.length && !(webDocs||[]).length ? `
       <div class="text-center py-20" style="color:var(--muted);">
         <i data-lucide="book-open" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
-        <p class="text-sm">Nenhum documento sincronizado ainda. Clique em "Sincronizar" para puxar do Drive.</p>
+        <p class="text-sm">Nenhum documento na biblioteca ainda. Clique em "Sincronizar" ou envie um arquivo.</p>
       </div>
-    `
+    ` : ''
 
-    container.innerHTML = recemSection + bibSection
+    container.innerHTML = recemSection + bibSection + webSection + empty
     lucide.createIcons()
   }
 
