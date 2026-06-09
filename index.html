@@ -418,6 +418,13 @@
     </div>
 
     <div class="flex items-center gap-3 ml-auto">
+      <!-- Botão Novo Material -->
+      <button id="btn-novo-material" class="hidden px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+        style="background:#EEF2FF; color:#4338CA; border:1.5px solid #C7D2FE;"
+        onclick="abrirModalNovoMaterial()">
+        <i data-lucide="file-plus" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Novo Material</span>
+      </button>
       <!-- Botão Nova Aula -->
       <button id="btn-nova-aula" class="hidden btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -475,9 +482,16 @@
           <h1 class="text-2xl font-bold" style="color:var(--text);">Calendário</h1>
           <p class="text-sm mt-0.5" style="color:var(--muted);">Cronograma ProfEduCatec — Turma 2026</p>
         </div>
-        <button id="btn-nova-aula-2" class="hidden btn-primary px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
-          <i data-lucide="plus" class="w-4 h-4"></i>Nova Aula
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="btn-novo-material-2" class="hidden px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors"
+            style="background:#EEF2FF; color:#4338CA; border:1.5px solid #C7D2FE;"
+            onclick="abrirModalNovoMaterial()">
+            <i data-lucide="file-plus" class="w-4 h-4"></i>Novo Material
+          </button>
+          <button id="btn-nova-aula-2" class="hidden btn-primary px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>Nova Aula
+          </button>
+        </div>
       </div>
 
       <!-- Banners lado a lado: Próxima Aula + Próximo Artigo -->
@@ -1379,6 +1393,125 @@
       <div class="flex justify-end gap-2 pt-1">
         <button type="button" class="fechar-modal px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">Cancelar</button>
         <button type="submit" class="btn-primary px-5 py-2 rounded-xl text-sm font-semibold">Publicar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL NOVO MATERIAL (drive-style upload)
+═══════════════════════════════════════════════════════ -->
+<div id="modal-novo-material" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,.55);">
+  <div class="glass rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[94vh] overflow-y-auto fade-in">
+    <!-- Header -->
+    <div class="px-6 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="font-bold flex items-center gap-2" style="color:var(--text);">
+        <i data-lucide="file-plus" class="w-5 h-5" style="color:#4338CA;"></i>
+        Novo Material
+      </p>
+      <button onclick="fecharModalNovoMaterial()" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <form id="form-novo-material" class="p-6 space-y-4">
+      <!-- 1. Professor(a) -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
+          Professor(a) <span style="color:#DC2626">*</span>
+        </label>
+        <select id="nm-prof" class="input-field" required onchange="nmAtualizarDiscs()">
+          <option value="">— Selecione o(a) professor(a) —</option>
+          <option value="Profa. Dra. Maria Luisa Furlan Costa">Profa. Dra. Maria Luisa Furlan Costa</option>
+          <option value="Prof. Dr. Flávio Rodrigues de Oliveira">Prof. Dr. Flávio Rodrigues de Oliveira</option>
+          <option value="Profª. Dra. Marli Delmonico de Araujo Futata">Profª. Dra. Marli Delmonico de Araujo Futata</option>
+          <option value="Profª. Dra. Renata Oliveira dos Santos">Profª. Dra. Renata Oliveira dos Santos</option>
+        </select>
+      </div>
+
+      <!-- 2. Disciplina (filtrada pelo professor) -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
+          Disciplina <span style="color:#DC2626">*</span>
+        </label>
+        <select id="nm-disc" class="input-field" required>
+          <option value="">— Selecione o(a) professor(a) primeiro —</option>
+        </select>
+      </div>
+
+      <!-- 3. Nome do material -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
+          Nome do Material <span class="normal-case font-normal text-gray-400">(opcional — usa nome do arquivo se vazio)</span>
+        </label>
+        <input type="text" id="nm-nome" class="input-field" placeholder="Ex: Slides — Aula 3 · Culturas Digitais">
+      </div>
+
+      <!-- 4. Área de upload estilo Drive -->
+      <div>
+        <label class="block text-xs font-semibold mb-2 uppercase tracking-wider" style="color:var(--muted);">
+          Arquivo <span style="color:#DC2626">*</span>
+          <span class="normal-case font-normal text-gray-400"> — PDF, DOC, PPT</span>
+        </label>
+
+        <!-- Drop zone -->
+        <div id="nm-dropzone"
+          class="relative rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all select-none"
+          style="border:2px dashed #C7D2FE; background:#F5F7FF; min-height:160px; padding:24px;"
+          onclick="document.getElementById('nm-file-input').click()"
+          ondragover="nmOnDragOver(event)"
+          ondragleave="nmOnDragLeave(event)"
+          ondrop="nmOnDrop(event)">
+          <div id="nm-drop-icon" class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:#EEF2FF;">
+            <i data-lucide="upload-cloud" class="w-7 h-7" style="color:#4338CA;"></i>
+          </div>
+          <div class="text-center">
+            <p class="text-sm font-semibold" style="color:#4338CA;">Arraste o arquivo aqui</p>
+            <p class="text-xs mt-0.5" style="color:var(--muted);">ou</p>
+          </div>
+          <button type="button"
+            class="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors pointer-events-none"
+            style="background:#4338CA; color:#fff;">
+            <i data-lucide="plus" class="w-4 h-4"></i>Selecionar arquivo
+          </button>
+          <p id="nm-drop-hint" class="text-[11px]" style="color:var(--muted);">PDF, DOCX, PPTX — máx. 50 MB</p>
+          <input type="file" id="nm-file-input" accept=".pdf,.doc,.docx,.ppt,.pptx" class="hidden"
+            onchange="nmAdicionarFiles(this.files)">
+        </div>
+
+        <!-- Lista de arquivos selecionados -->
+        <ul id="nm-file-list" class="hidden mt-2 space-y-1"></ul>
+      </div>
+
+      <!-- 5. URL externa (Drive, DOI, link) -->
+      <div>
+        <label class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--muted);">
+          Link externo <span class="normal-case font-normal text-gray-400">(Drive, DOI, artigo — se não fez upload)</span>
+        </label>
+        <input type="url" id="nm-url" class="input-field" placeholder="https://drive.google.com/... ou https://doi.org/...">
+      </div>
+
+      <div id="nm-erro" class="hidden rounded-xl px-3 py-2 text-sm" style="background:#FEF2F2; color:#B91C1C;"></div>
+      <div id="nm-progress" class="hidden">
+        <div class="flex items-center justify-between text-xs mb-1" style="color:var(--muted);">
+          <span id="nm-progress-label">Enviando…</span>
+          <span id="nm-progress-pct">0%</span>
+        </div>
+        <div class="w-full rounded-full h-1.5" style="background:#E0E7FF;">
+          <div id="nm-progress-bar" class="h-1.5 rounded-full transition-all" style="background:#4338CA; width:0%"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="fecharModalNovoMaterial()"
+          class="px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors" style="color:var(--muted);">
+          Cancelar
+        </button>
+        <button type="submit" id="nm-btn-submit"
+          class="px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors"
+          style="background:#4338CA; color:#fff;">
+          <i data-lucide="upload" class="w-4 h-4"></i>Publicar
+        </button>
       </div>
     </form>
   </div>
@@ -2607,6 +2740,9 @@
       mostrarAlterarSenha()
     }
 
+    // Botão Novo Material visível para todos os usuários logados
+    document.querySelectorAll('#btn-novo-material, #btn-novo-material-2').forEach(b => b.classList.remove('hidden'))
+
     if (isAdmin) {
       document.querySelectorAll('#btn-nova-aula, #btn-nova-aula-2').forEach(b => b.classList.remove('hidden'))
       document.getElementById('btn-add-usuario').classList.remove('hidden')
@@ -2911,6 +3047,212 @@
       }
     }
   }
+
+  // ── NOVO MATERIAL (drive-style) ──────────────────────
+
+  // Mapa professor → disciplinas em que leciona
+  const NM_DISC_POR_PROF = {
+    'Profa. Dra. Maria Luisa Furlan Costa':   [{ idx: 0, label: 'DPD 4008 — Fundamentos em Processos Inovadores e Culturas Digitais' }],
+    'Prof. Dr. Flávio Rodrigues de Oliveira': [{ idx: 0, label: 'DPD 4008 — Fundamentos em Processos Inovadores e Culturas Digitais' }],
+    'Profª. Dra. Marli Delmonico de Araujo Futata': [
+      { idx: 1, label: 'DPD 4004 (MPTED) — Métodos, Pesquisa Científica e Ética' },
+      { idx: 2, label: 'DPD 4004 (FPTEEB) — Fundamentos em Pesquisas e Tecnologias Educacionais' },
+    ],
+    'Profª. Dra. Renata Oliveira dos Santos': [{ idx: 2, label: 'DPD 4004 (FPTEEB) — Fundamentos em Pesquisas e Tecnologias Educacionais' }],
+  }
+
+  let nmFiles = []
+
+  window.nmAtualizarDiscs = function() {
+    const prof = document.getElementById('nm-prof')?.value
+    const sel  = document.getElementById('nm-disc')
+    if (!prof) {
+      sel.innerHTML = '<option value="">— Selecione o(a) professor(a) primeiro —</option>'
+      return
+    }
+    const discs = NM_DISC_POR_PROF[prof] || []
+    sel.innerHTML = '<option value="">— Selecione a disciplina —</option>' +
+      discs.map(d => `<option value="${d.idx}">${d.label}</option>`).join('')
+    if (discs.length === 1) sel.value = String(discs[0].idx)
+  }
+
+  window.abrirModalNovoMaterial = function() {
+    nmFiles = []
+    document.getElementById('nm-prof').value  = ''
+    document.getElementById('nm-disc').innerHTML = '<option value="">— Selecione o(a) professor(a) primeiro —</option>'
+    document.getElementById('nm-nome').value  = ''
+    document.getElementById('nm-url').value   = ''
+    document.getElementById('nm-file-input').value = ''
+    document.getElementById('nm-file-list').innerHTML = ''
+    document.getElementById('nm-file-list').classList.add('hidden')
+    document.getElementById('nm-erro').classList.add('hidden')
+    document.getElementById('nm-progress').classList.add('hidden')
+    nmResetDropzone()
+    const modal = document.getElementById('modal-novo-material')
+    modal.classList.remove('hidden')
+    modal.classList.add('flex')
+    lucide.createIcons()
+  }
+
+  window.fecharModalNovoMaterial = function() {
+    const modal = document.getElementById('modal-novo-material')
+    modal.classList.add('hidden')
+    modal.classList.remove('flex')
+    nmFiles = []
+  }
+
+  function nmResetDropzone() {
+    const dz = document.getElementById('nm-dropzone')
+    if (dz) {
+      dz.style.borderColor = '#C7D2FE'
+      dz.style.background  = '#F5F7FF'
+    }
+  }
+
+  window.nmOnDragOver = function(e) {
+    e.preventDefault()
+    const dz = document.getElementById('nm-dropzone')
+    dz.style.borderColor = '#4338CA'
+    dz.style.background  = '#EEF2FF'
+  }
+  window.nmOnDragLeave = function(e) { nmResetDropzone() }
+  window.nmOnDrop = function(e) {
+    e.preventDefault()
+    nmResetDropzone()
+    nmAdicionarFiles(e.dataTransfer.files)
+  }
+
+  window.nmAdicionarFiles = function(fileList) {
+    Array.from(fileList || []).forEach(f => {
+      const dup = nmFiles.some(x => x.name === f.name && x.size === f.size)
+      if (!dup) nmFiles.push(f)
+    })
+    nmRenderFileList()
+  }
+
+  function nmRenderFileList() {
+    const ul = document.getElementById('nm-file-list')
+    if (!nmFiles.length) { ul.classList.add('hidden'); ul.innerHTML = ''; return }
+    ul.classList.remove('hidden')
+    const tipoIcon = name => {
+      const ext = name.split('.').pop().toLowerCase()
+      return { pdf: 'file-text', doc: 'file', docx: 'file', ppt: 'presentation', pptx: 'presentation' }[ext] || 'file'
+    }
+    const tipoColor = name => {
+      const ext = name.split('.').pop().toLowerCase()
+      return { pdf: '#B91C1C', doc: '#1D4ED8', docx: '#1D4ED8', ppt: '#C2410C', pptx: '#C2410C' }[ext] || '#6B7280'
+    }
+    ul.innerHTML = nmFiles.map((f, i) => `
+      <li class="flex items-center gap-2.5 px-3 py-2 rounded-xl" style="background:#F5F7FF; border:1px solid #E0E7FF;">
+        <i data-lucide="${tipoIcon(f.name)}" class="w-4 h-4 shrink-0" style="color:${tipoColor(f.name)};"></i>
+        <span class="flex-1 truncate text-xs font-medium" style="color:var(--text);">${f.name}</span>
+        <span class="text-[11px] shrink-0" style="color:var(--muted);">${(f.size/1024/1024).toFixed(1)} MB</span>
+        <button type="button" data-idx="${i}" class="nm-remove p-1 rounded-lg hover:bg-red-50 transition-colors" style="color:#DC2626;">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </li>`).join('')
+    lucide.createIcons()
+    ul.querySelectorAll('.nm-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        nmFiles.splice(parseInt(btn.dataset.idx), 1)
+        nmRenderFileList()
+      })
+    })
+  }
+
+  document.getElementById('form-novo-material')?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const erro  = document.getElementById('nm-erro')
+    const btn   = document.getElementById('nm-btn-submit')
+    const prog  = document.getElementById('nm-progress')
+    const pLabel = document.getElementById('nm-progress-label')
+    const pPct  = document.getElementById('nm-progress-pct')
+    const pBar  = document.getElementById('nm-progress-bar')
+    erro.classList.add('hidden')
+
+    const profNome = document.getElementById('nm-prof').value.trim()
+    const discIdxV = document.getElementById('nm-disc').value
+    const nomeMat  = document.getElementById('nm-nome').value.trim()
+    const urlExt   = document.getElementById('nm-url').value.trim()
+
+    if (!profNome) { erro.textContent = 'Selecione o(a) professor(a).'; erro.classList.remove('hidden'); return }
+    if (discIdxV === '') { erro.textContent = 'Selecione a disciplina.'; erro.classList.remove('hidden'); return }
+    if (!nmFiles.length && !urlExt) { erro.textContent = 'Adicione um arquivo ou informe um link externo.'; erro.classList.remove('hidden'); return }
+
+    const discIdx = parseInt(discIdxV)
+    const discId  = discIdx + 1
+    btn.disabled  = true
+
+    const folderId = await garantirPastaDiscProf(discId, profNome)
+
+    try {
+      if (urlExt && !nmFiles.length) {
+        // Apenas link externo
+        btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>Publicando…'
+        lucide.createIcons()
+        const { error } = await db.from('arquivos').insert({
+          nome: nomeMat || urlExt.slice(0, 80),
+          tipo: 'link', url: urlExt, fonte: 'web', categoria: 'material',
+          disc_id: discId, professor_nome: profNome,
+          created_by: currentUser.id,
+          ...(folderId && { folder_id: folderId }),
+        })
+        if (error) throw new Error(error.message)
+        await notificarMaterialNoChat(nomeMat || urlExt.slice(0, 60), discIdx, profNome)
+      } else {
+        // Upload de arquivo(s)
+        prog.classList.remove('hidden')
+        for (let i = 0; i < nmFiles.length; i++) {
+          const f = nmFiles[i]
+          pLabel.textContent = `Enviando ${f.name}…`
+          pPct.textContent   = `${Math.round((i / nmFiles.length) * 100)}%`
+          pBar.style.width   = `${Math.round((i / nmFiles.length) * 100)}%`
+          btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>${i+1}/${nmFiles.length}`
+          lucide.createIcons()
+
+          const finalUrl = await uploadArquivoStorage(f)
+          const ext  = f.name.split('.').pop().toLowerCase()
+          const tipo = { pdf:'pdf', doc:'doc', docx:'doc', ppt:'ppt', pptx:'ppt' }[ext] || 'pdf'
+          const nome = (nmFiles.length === 1 && nomeMat) ? nomeMat : (nomeMat ? `${nomeMat} (${i+1})` : f.name.replace(/\.[^.]+$/, ''))
+
+          const { error } = await db.from('arquivos').insert({
+            nome, tipo, url: finalUrl, fonte: 'web', categoria: 'material',
+            disc_id: discId, professor_nome: profNome,
+            created_by: currentUser.id,
+            ...(folderId && { folder_id: folderId }),
+            ...(urlExt && { descricao: `Link relacionado: ${urlExt}` }),
+          })
+          if (error) throw new Error(error.message)
+
+          if (i === 0) await notificarMaterialNoChat(nome, discIdx, profNome)
+        }
+        pPct.textContent = '100%'
+        pBar.style.width = '100%'
+      }
+
+      // Atualiza cache da disciplina se estiver visível
+      if (discArquivosCache[discId]) {
+        const { data } = await db.from('arquivos').select('*').eq('disc_id', discId).order('aula_data', { ascending: true })
+        discArquivosCache[discId] = data || []
+        const discView = document.getElementById('view-disciplina')
+        if (discView && !discView.classList.contains('hidden')) renderMatDisc(discIdx, discArquivosCache[discId])
+      }
+
+      fecharModalNovoMaterial()
+
+      const feedView = document.getElementById('view-feed')
+      if (feedView && !feedView.classList.contains('hidden')) await carregarFeed()
+
+    } catch(err) {
+      erro.textContent = err.message
+      erro.classList.remove('hidden')
+      prog.classList.add('hidden')
+    } finally {
+      btn.disabled = false
+      btn.innerHTML = '<i data-lucide="upload" class="w-4 h-4"></i>Publicar'
+      lucide.createIcons()
+    }
+  })
 
   // Mapa disciplina (1-based) → professores
   const PROF_POR_DISC = {
