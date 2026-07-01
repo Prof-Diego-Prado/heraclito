@@ -940,7 +940,7 @@
             <i data-lucide="users" class="w-4 h-4" style="color:var(--primary);"></i>
           </div>
           <p class="font-semibold text-sm" style="color:var(--text);">Todos os Usuários</p>
-          <button id="btn-add-usuario" onclick="abrirAddUsuario()"
+          <button id="btn-add-usuario" type="button"
             class="ml-auto btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold hidden">
             <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>Adicionar
           </button>
@@ -5188,7 +5188,10 @@
   })
 
   // ── REALTIME ─────────────────────────────────────────
+  let realtimeConfigurado = false
   function setupRealtime() {
+    if (realtimeConfigurado) return
+    realtimeConfigurado = true
     db.channel('aulas').on('postgres_changes',{event:'*',schema:'public',table:'aulas'}, carregarAulas).subscribe()
     db.channel('arquivos').on('postgres_changes',{event:'*',schema:'public',table:'arquivos'}, async (payload) => {
       if (payload.eventType === 'INSERT') {
@@ -5463,6 +5466,7 @@
       renderArqFileList()
       lucide.createIcons()
     })
+    document.getElementById('btn-add-usuario').addEventListener('click', abrirAddUsuario)
 
     // Botão Sincronizar Biblioteca ↔ Drive
     document.getElementById('btn-sync-biblioteca')?.addEventListener('click', () => window.executarSyncBiblioteca())
