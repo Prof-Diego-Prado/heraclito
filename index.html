@@ -2572,6 +2572,11 @@
         <input type="checkbox" id="add-aprovado" class="w-4 h-4 rounded accent-indigo-600" checked>
         <label for="add-aprovado" class="text-sm cursor-pointer" style="color:var(--muted);">Aprovar conta imediatamente</label>
       </div>
+      <!-- Forçar troca de senha -->
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="add-forcar-troca-senha" class="w-4 h-4 rounded accent-indigo-600" checked>
+        <label for="add-forcar-troca-senha" class="text-sm cursor-pointer" style="color:var(--muted);">Obrigar troca de senha no 1º acesso</label>
+      </div>
       <!-- Erro -->
       <p id="add-usuario-erro" class="hidden text-xs font-medium" style="color:#DC2626;"></p>
       <!-- Botão -->
@@ -5140,6 +5145,7 @@
     const senha    = document.getElementById('add-senha').value
     const role     = document.querySelector('input[name="add-role"]:checked').value
     const aprovado = document.getElementById('add-aprovado').checked
+    const forcarTrocaSenha = document.getElementById('add-forcar-troca-senha').checked
     const erroEl   = document.getElementById('add-usuario-erro')
     const btn      = document.getElementById('btn-add-usuario-submit')
     erroEl.classList.add('hidden')
@@ -5169,6 +5175,7 @@
 
     const perfil = {
       id: userId, email, name: nome, username, role, approved: aprovado,
+      must_change_password: forcarTrocaSenha,
       ...(role === 'student' && discArr.length > 0 && { disciplinas: discArr }),
       ...(role === 'teacher' && {
         institution:      document.getElementById('add-instituicao').value.trim() || null,
