@@ -4906,6 +4906,12 @@
         <option value="4001,4008" ${u.disciplinas?.includes('4001') && u.disciplinas?.includes('4008') ? 'selected':''}>4001+4008</option>
       </select>` : ''
 
+    const resetSenhaBtn = isAdmin ? `
+      <button onclick="enviarResetSenha('${u.email.replace(/'/g,"\\'")}')"
+        class="p-1 rounded-lg hover:bg-indigo-50 transition-colors text-gray-400 hover:text-indigo-600" title="Enviar redefinição de senha">
+        <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+      </button>` : ''
+
     const deleteBtn = isAdmin && u.role !== 'admin' ? `
       <button onclick="deletarUsuario('${u.id}','${u.name.replace(/'/g,"\\'")}')"
         class="p-1 rounded-lg hover:bg-red-50 transition-colors text-gray-400 hover:text-red-500" title="Excluir">
@@ -4931,11 +4937,13 @@
             </button>
           </div>` : u.role === 'admin' ? `
           <span class="badge shrink-0" style="background:${rbg}; color:${rtc};">${roleLabel[u.role]}</span>
-          <span class="text-xs font-medium shrink-0" style="color:#059669;">Ativo</span>` : `
+          <span class="text-xs font-medium shrink-0" style="color:#059669;">Ativo</span>
+          ${resetSenhaBtn}` : `
           <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
             ${roleSelectorHtml}
             ${disciplinaHtml}
             <span class="text-xs font-medium" style="color:${statusColor};">${statusLabel}</span>
+            ${resetSenhaBtn}
             ${deleteBtn}
           </div>`}
       </div>`
@@ -5084,6 +5092,14 @@
     await carregarTodosUsuarios()
     await carregarProfessoresSidebar()
     await carregarMaterialDidatico()
+  }
+
+  window.enviarResetSenha = async (email) => {
+    if (!isAdmin) return
+    if (!confirm(`Enviar email de redefinição de senha para ${email}?`)) return
+    const { error } = await db.auth.resetPasswordForEmail(email)
+    if (error) alert('Erro ao enviar: ' + error.message)
+    else alert(`Email de redefinição enviado para ${email}. Peça para o usuário checar a caixa de entrada (e spam).`)
   }
 
   // ── ADICIONAR USUÁRIO (admin) ─────────────────────────
@@ -5412,6 +5428,7 @@
     const view = document.getElementById(`view-${target}`)
     if (view) view.classList.remove('hidden')
   }
+  window.navTo = navTo // exposto para uso em onclick inline (breadcrumbs)
 
   function setupEventListeners() {
     // Checkbox Artigo — auto-seleciona vermelho e oculta picker de cor
@@ -6439,6 +6456,7 @@
     modal.classList.remove('hidden'); modal.classList.add('flex')
     setTimeout(() => document.getElementById('logos-texto-area')?.focus(), 100)
   }
+  window.abrirModalLogosTexto = abrirModalLogosTexto // exposto para uso em onclick inline
   window.fecharModalLogosTexto = () => {
     const modal = document.getElementById('modal-logos-texto')
     modal.classList.add('hidden'); modal.classList.remove('flex')
